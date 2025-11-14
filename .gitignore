@@ -1,0 +1,28 @@
+# Unity 생성 파일
+[Ll]ibrary/
+[Tt]emp/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Oo]bj/
+
+# 사용자별 설정
+*.csproj
+*.unityproj
+*.sln
+*.user
+*.userprefs
+*.pidb
+*.booproj
+
+# 자동 생성
+sysinfo.txt
+*.apk
+*.aab
+*.exe
+*.app
+*.unitypackage
+
+# IDE
+.vscode/
+.idea/

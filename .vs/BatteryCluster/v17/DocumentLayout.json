@@ -1,0 +1,70 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Unity_Project\\BatteryCluster\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{1E270D0B-80E9-FCA2-BBFA-FF7AF89AD2A2}|Assembly-CSharp.csproj|c:\\unity_project\\batterycluster\\assets\\scripts\\mission\\missiontextanimatorslide.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1E270D0B-80E9-FCA2-BBFA-FF7AF89AD2A2}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\mission\\missiontextanimatorslide.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1E270D0B-80E9-FCA2-BBFA-FF7AF89AD2A2}|Assembly-CSharp.csproj|c:\\unity_project\\batterycluster\\assets\\scripts\\mission\\missionapplicationctrl.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1E270D0B-80E9-FCA2-BBFA-FF7AF89AD2A2}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\mission\\missionapplicationctrl.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1E270D0B-80E9-FCA2-BBFA-FF7AF89AD2A2}|Assembly-CSharp.csproj|C:\\Unity_Project\\BatteryCluster\\assets\\scripts\\windowfilming\\stepcountdownui.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1E270D0B-80E9-FCA2-BBFA-FF7AF89AD2A2}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\windowfilming\\stepcountdownui.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "MissionTextAnimatorSlide.cs",
+              "DocumentMoniker": "C:\\Unity_Project\\BatteryCluster\\Assets\\Scripts\\MIssion\\MissionTextAnimatorSlide.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\MIssion\\MissionTextAnimatorSlide.cs",
+              "ToolTip": "C:\\Unity_Project\\BatteryCluster\\Assets\\Scripts\\MIssion\\MissionTextAnimatorSlide.cs",
+              "RelativeToolTip": "Assets\\Scripts\\MIssion\\MissionTextAnimatorSlide.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAHAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-14T02:00:42.167Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "StepCountdownUI.cs",
+              "DocumentMoniker": "C:\\Unity_Project\\BatteryCluster\\Assets\\Scripts\\WindowFilming\\StepCountdownUI.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\WindowFilming\\StepCountdownUI.cs",
+              "ToolTip": "C:\\Unity_Project\\BatteryCluster\\Assets\\Scripts\\WindowFilming\\StepCountdownUI.cs",
+              "RelativeToolTip": "Assets\\Scripts\\WindowFilming\\StepCountdownUI.cs",
+              "ViewState": "AgIAALkAAAAAAAAAAIAwwOEAAABTAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-14T01:40:26.65Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "MissionApplicationCtrl.cs",
+              "DocumentMoniker": "C:\\Unity_Project\\BatteryCluster\\Assets\\Scripts\\MIssion\\MissionApplicationCtrl.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\MIssion\\MissionApplicationCtrl.cs",
+              "ToolTip": "C:\\Unity_Project\\BatteryCluster\\Assets\\Scripts\\MIssion\\MissionApplicationCtrl.cs",
+              "RelativeToolTip": "Assets\\Scripts\\MIssion\\MissionApplicationCtrl.cs",
+              "ViewState": "AgIAACUAAAAAAAAAAAAowD4AAAAlAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-14T01:31:51.555Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

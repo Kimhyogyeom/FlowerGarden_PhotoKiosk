@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 246efdb762aba0147bf14a94ae6e5a52, type: 3}
+  m_Name: SoundDatabase
+  m_EditorClassIdentifier: 
+  _fadeIn: {fileID: 0}
+  _fadeOut: {fileID: 0}
+  _startButton: {fileID: 0}
+  _frameChangeButton: {fileID: 0}
+  _filmingStartButton: {fileID: 0}
+  _frameSelectButton: {fileID: 0}
+  _frameApplicationButton: {fileID: 0}
+  _filmingButton: {fileID: 0}
+  _backButton: {fileID: 0}
+  _filmingOutputButton: {fileID: 0}
+  _numberSfx1: {fileID: 0}
+  _numberSfx2: {fileID: 0}
+  _numberSfx3: {fileID: 0}
+  _photoSFX: {fileID: 0}
+  _outputSuccess: {fileID: 0}
