@@ -1,8 +1,14 @@
 using UnityEngine;
 
+/// <summary>
+/// ë¯¸ì…˜ í…ìŠ¤íŠ¸ë¥¼ ê´€ë¦¬í•˜ëŠ” ì»¨íŠ¸ë¡¤ëŸ¬
+/// - ê° ì»·(1~4ì»·)ì— ëŒ€í•´ 3ê°œì”© ë¯¸ì…˜ ë¬¸êµ¬ë¥¼ ê°€ì§€ê³  ìˆìŒ
+/// - GetRandomMissionMessage(stepIndex)ë¥¼ í˜¸ì¶œí•˜ë©´
+///   í•´ë‹¹ ì»·ì— ë§ëŠ” ë¬¸êµ¬ ì¤‘ í•˜ë‚˜ë¥¼ ëœë¤ìœ¼ë¡œ ë°˜í™˜
+/// </summary>
 public class MissionApplicationCtrl : MonoBehaviour
 {
-    // °øÅë ÇÁ¸®ÇÈ½º (¹«Áö°³ "MISSION ")
+    // ê³µí†µ í”„ë¦¬í”½ìŠ¤ (ë¬´ì§€ê°œ "MISSION ")
     private const string MissionPrefix =
         "<color=#FF0000>M</color>" +
         "<color=#FFA500>I</color>" +
@@ -12,31 +18,33 @@ public class MissionApplicationCtrl : MonoBehaviour
         "<color=#000080>O</color>" +
         "<color=#800080>N</color> ";
 
-    // 1ÄÆ: ¼¼ °¡Áö ·£´ı ¹®±¸
-    private string _missionMessage00_0 = MissionPrefix + "1ÄÆ: »ìÂ¦ ¹Ì¼Ò~";
-    private string _missionMessage00_1 = MissionPrefix + "1ÄÆ: ¼öÁİ°Ô ¹Ì¼Ò~";
-    private string _missionMessage00_2 = MissionPrefix + "1ÄÆ: »óÅ­ÇÏ°Ô ¿ô±â~";
+    // 1ì»·: ì„¸ ê°€ì§€ ëœë¤ ë¬¸êµ¬
+    private string _missionMessage00_0 = MissionPrefix + "1ì»·: ì‚´ì§ ë¯¸ì†Œ~";
+    private string _missionMessage00_1 = MissionPrefix + "1ì»·: ìˆ˜ì¤ê²Œ ë¯¸ì†Œ~";
+    private string _missionMessage00_2 = MissionPrefix + "1ì»·: ìƒí¼í•˜ê²Œ ì›ƒê¸°~";
 
-    // 2ÄÆ: ¼¼ °¡Áö ·£´ı ¹®±¸
-    private string _missionMessage01_0 = MissionPrefix + "2ÄÆ: ³î¶õ Ç¥Á¤~!";
-    private string _missionMessage01_1 = MissionPrefix + "2ÄÆ: ±ôÂ¦! ³î¶õ ´«~";
-    private string _missionMessage01_2 = MissionPrefix + "2ÄÆ: ¿Í! °¨Åº Ç¥Á¤~";
+    // 2ì»·: ì„¸ ê°€ì§€ ëœë¤ ë¬¸êµ¬
+    private string _missionMessage01_0 = MissionPrefix + "2ì»·: ë†€ë€ í‘œì •~!";
+    private string _missionMessage01_1 = MissionPrefix + "2ì»·: ê¹œì§! ë†€ë€ ëˆˆ~";
+    private string _missionMessage01_2 = MissionPrefix + "2ì»·: ì™€! ê°íƒ„ í‘œì •~";
 
-    // 3ÄÆ: ¼¼ °¡Áö ·£´ı ¹®±¸
-    private string _missionMessage02_0 = MissionPrefix + "3ÄÆ: ¼Õ°¡¶ô ÇÏÆ®~";
-    private string _missionMessage02_1 = MissionPrefix + "3ÄÆ: µÎ ¼Õ ÇÏÆ®~";
-    private string _missionMessage02_2 = MissionPrefix + "3ÄÆ: º¼ Âô±ß ÇÏÆ®~";
+    // 3ì»·: ì„¸ ê°€ì§€ ëœë¤ ë¬¸êµ¬
+    private string _missionMessage02_0 = MissionPrefix + "3ì»·: ì†ê°€ë½ í•˜íŠ¸~";
+    private string _missionMessage02_1 = MissionPrefix + "3ì»·: ë‘ ì† í•˜íŠ¸~";
+    private string _missionMessage02_2 = MissionPrefix + "3ì»·: ë³¼ ì°¡ê¸‹ í•˜íŠ¸~";
 
-    // 4ÄÆ: ¼¼ °¡Áö ·£´ı ¹®±¸
-    private string _missionMessage03_0 = MissionPrefix + "4ÄÆ: ÀÚÀ¯ Æ÷Áî~~";
-    private string _missionMessage03_1 = MissionPrefix + "4ÄÆ: Á¦ÀÏ ¿ô±ä Æ÷Áî!";
-    private string _missionMessage03_2 = MissionPrefix + "4ÄÆ: ´ÜÃ¼ Æ÷Áî ÂûÄ¬!";
+    // 4ì»·: ì„¸ ê°€ì§€ ëœë¤ ë¬¸êµ¬
+    private string _missionMessage03_0 = MissionPrefix + "4ì»·: ììœ  í¬ì¦ˆ~~";
+    private string _missionMessage03_1 = MissionPrefix + "4ì»·: ì œì¼ ì›ƒê¸´ í¬ì¦ˆ!";
+    private string _missionMessage03_2 = MissionPrefix + "4ì»·: ë‹¨ì²´ í¬ì¦ˆ ì°°ì¹µ!";
 
     /// <summary>
-    /// È£Ãâ¿ë ÇÔ¼ö : Step
+    /// ì´¬ì˜ ë‹¨ê³„(stepIndex)ì— ë§ëŠ” ë¯¸ì…˜ ë¬¸êµ¬ë¥¼ ëœë¤ìœ¼ë¡œ í•˜ë‚˜ ë°˜í™˜
+    /// - stepIndex: 0 â†’ 1ì»·, 1 â†’ 2ì»·, 2 â†’ 3ì»·, 3 â†’ 4ì»·
+    /// - ê·¸ ì™¸ ê°’ì€ ë¹ˆ ë¬¸ìì—´ ë°˜í™˜
     /// </summary>
-    /// <param name="stepIndex"></param>
-    /// <returns></returns>
+    /// <param name="stepIndex">0~3 ì‚¬ì´ì˜ ì´¬ì˜ ë‹¨ê³„ ì¸ë±ìŠ¤</param>
+    /// <returns>í•´ë‹¹ ì»·ì˜ ë¯¸ì…˜ ë¬¸êµ¬(ëœë¤) ë˜ëŠ” ë¹ˆ ë¬¸ìì—´</returns>
     public string GetRandomMissionMessage(int stepIndex)
     {
         switch (stepIndex)
@@ -71,10 +79,10 @@ public class MissionApplicationCtrl : MonoBehaviour
     }
 
     /// <summary>
-    /// ·£´ıÀ¸·Î µ¹¸±³à¼®
+    /// ì „ë‹¬ëœ ë¬¸ìì—´ í›„ë³´ë“¤ ì¤‘ í•˜ë‚˜ë¥¼ ëœë¤ìœ¼ë¡œ ì„ íƒí•´ì„œ ë°˜í™˜
     /// </summary>
-    /// <param name="candidates"></param>
-    /// <returns></returns>
+    /// <param name="candidates">ëœë¤ ì„ íƒ ëŒ€ìƒ ë¬¸ìì—´ ë°°ì—´</param>
+    /// <returns>ëœë¤ìœ¼ë¡œ ê³ ë¥¸ ë¬¸ìì—´, ì—†ìœ¼ë©´ ë¹ˆ ë¬¸ìì—´</returns>
     private string GetRandomFrom(params string[] candidates)
     {
         if (candidates == null || candidates.Length == 0)

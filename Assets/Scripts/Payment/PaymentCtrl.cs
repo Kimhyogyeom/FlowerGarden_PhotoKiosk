@@ -3,32 +3,37 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 
+/// <summary>
+/// ê²°ì œ ì²˜ë¦¬ ì»¨íŠ¸ë¡¤ëŸ¬
+/// - ê²°ì œ íŒ¨ë„ì´ ì¼œì¡Œì„ ë•Œ ìë™ìœ¼ë¡œ ê²°ì œë¥¼ ì‹œì‘ (Mock / ì‹¤ì œ ê²°ì œ ë¶„ê¸°)
+/// - ë¡œë”© UI íšŒì „, ê²°ì œ ì„±ê³µ/ì‹¤íŒ¨ ì²˜ë¦¬, íŒ¨ë„ ì „í™˜ê¹Œì§€ ë‹´ë‹¹
+/// </summary>
 public class PaymentCtrl : MonoBehaviour
 {
     [Header("Panels")]
-    [SerializeField] private GameObject _paymentPanel;
-    [SerializeField] private GameObject _readyPanel;
-    [SerializeField] private TextMeshProUGUI _textMeshPro;
-    [SerializeField] private GameObject _loadingImage;
+    [SerializeField] private GameObject _paymentPanel;      // ê²°ì œìš© íŒ¨ë„
+    [SerializeField] private GameObject _readyPanel;        // ê²°ì œ ì™„ë£Œ í›„ ëŒì•„ê°ˆ ëŒ€ê¸°(Ready) íŒ¨ë„
+    [SerializeField] private TextMeshProUGUI _textMeshPro;  // ê²°ì œ ìƒíƒœ ë©”ì‹œì§€ ì¶œë ¥ìš© í…ìŠ¤íŠ¸
+    [SerializeField] private GameObject _loadingImage;      // ë¡œë”©(ìŠ¤í”¼ë„ˆ) ì´ë¯¸ì§€ ì˜¤ë¸Œì íŠ¸
 
     [Header("Mock Settings")]
-    [SerializeField] private bool _useMock = true;          // ³ªÁß¿¡ false ·Î ¹Ù²Ù¸é ½ÇÁ¦ °áÁ¦ ¸ğµå
-    [SerializeField] private float _mockApproveDelay = 5f;
-    [SerializeField] private bool _alwaysSuccess = true;
+    [SerializeField] private bool _useMock = true;          // ì‹¤ì œ ê²°ì œ ì—°ë™ ì „ê¹Œì§€ ì‚¬ìš©í•  ëª¨ì˜ ê²°ì œ í”Œë˜ê·¸ (true = ëª¨ì˜ ê²°ì œ ëª¨ë“œ)
+    [SerializeField] private float _mockApproveDelay = 5f;  // ëª¨ì˜ ê²°ì œ ìŠ¹ì¸ê¹Œì§€ ê¸°ë‹¤ë¦´ ì‹œê°„(ì´ˆ)
+    [SerializeField] private bool _alwaysSuccess = true;    // Mock ëª¨ë“œì—ì„œ í•­ìƒ ì„±ê³µ ì²˜ë¦¬í• ì§€ ì—¬ë¶€
 
     [Header("Loading Settings")]
-    [Tooltip("·Îµù ¾ÆÀÌÄÜ È¸Àü ¼Óµµ (µµ/ÃÊ, ¿À¸¥ÂÊ(½Ã°è ¹æÇâ) È¸Àü)")]
+    [Tooltip("ë¡œë”© ì´ë¯¸ì§€ê°€ íšŒì „í•˜ëŠ” ì†ë„ (ë„/ì´ˆ, ì‹œê³„ ë°©í–¥ íšŒì „)")]
     [SerializeField] private float _loadingRotateSpeed = 360f;
 
-    private bool _isProcessing = false;
-    private Coroutine _loadingCoroutine;
+    private bool _isProcessing = false;        // í˜„ì¬ ê²°ì œ ì²˜ë¦¬ ì¤‘ì¸ì§€ ì—¬ë¶€
+    private Coroutine _loadingCoroutine;       // ë¡œë”© íšŒì „ ì½”ë£¨í‹´ í•¸ë“¤
 
     private void OnEnable()
     {
-        // ±¸µ¶
+        // ê²°ì œ íŒ¨ë„ í™œì„±í™” ë¸Œë¡œë“œìºìŠ¤í„° ì´ë²¤íŠ¸ êµ¬ë…
         PaymentPanelEnableBroadcaster.OnPaymentPanelEnabled += TryStartPayment;
 
-        // ÀÌ¹Ì PaymentPanelÀÌ ÄÑÁ® ÀÖ´Â °æ¿ì ´ëºñ
+        // ì´ë¯¸ PaymentPanel ì´ í™œì„±í™”ëœ ìƒíƒœë¡œ ì¼œì¡Œë‹¤ë©´, ë°”ë¡œ ê²°ì œ ì‹œë„
         if (_paymentPanel != null && _paymentPanel.activeInHierarchy)
         {
             TryStartPayment();
@@ -38,12 +43,18 @@ public class PaymentCtrl : MonoBehaviour
     private void OnDisable()
     {
         PaymentPanelEnableBroadcaster.OnPaymentPanelEnabled -= TryStartPayment;
-        StopLoading(); // È¤½Ã ²¨Áú ¶§ µ¹°í ÀÖÀ¸¸é Á¤¸®
+        // ì˜¤ë¸Œì íŠ¸ê°€ ë¹„í™œì„±í™”ë  ë•Œ ë¡œë”© íšŒì „ì´ ë‚¨ì•„ìˆì§€ ì•Šë„ë¡ ì •ë¦¬
+        StopLoading();
     }
 
+    /// <summary>
+    /// ê²°ì œ ì‹œì‘ì„ ì‹œë„í•˜ëŠ” í•¨ìˆ˜
+    /// - PaymentPanelEnableBroadcaster ì´ë²¤íŠ¸ ë° OnEnable ì—ì„œ í˜¸ì¶œ
+    /// </summary>
     private void TryStartPayment()
     {
-        // PaymentCtrl°¡ ºñÈ°¼º »óÅÂ¸é ¹«½Ã (ÀÌº¥Æ®°¡ ³²¾ÆÀÖÀ» ¼öµµ ÀÖ¾î¼­)
+        // PaymentCtrl ì´ ë¹„í™œì„±í™” ìƒíƒœë©´ ê²°ì œ ì‹œì‘í•˜ì§€ ì•ŠìŒ
+        // (ì´ë²¤íŠ¸ê°€ ë¨¼ì € ë‚ ì•„ì™€ë„ ì—¬ê¸°ì„œ ë§‰í˜)
         if (!isActiveAndEnabled)
             return;
 
@@ -58,26 +69,29 @@ public class PaymentCtrl : MonoBehaviour
 
         if (_useMock)
         {
-            Debug.Log("[PAY-MOCK] ¸ğÀÇ °áÁ¦ ½ÃÀÛ");
+            Debug.Log("[PAY-MOCK] ëª¨ì˜ ê²°ì œ ì‹œì‘");
             StartCoroutine(MockPaymentRoutine());
-            // ³ªÁß¿¡ Mock ÄÚ·çÆ¾ ´ë½Å ½ÇÁ¦ SDK È£Ãâ ³Ö°í,
-            // ¼º°ø/½ÇÆĞ¿¡¼­ OnPaymentApproved / OnPaymentFailed È£Ãâ.
+            // ì‹¤ì œ ì—°ë™ ì‹œì—ëŠ” ì—¬ê¸° ëŒ€ì‹  ê²°ì œ SDK í˜¸ì¶œ í›„
+            // ì„±ê³µ/ì‹¤íŒ¨ ì½œë°±ì—ì„œ OnPaymentApproved / OnPaymentFailed í˜¸ì¶œ.
         }
         else
         {
-            Debug.Log("[PAY-REAL] ½ÇÁ¦ °áÁ¦ ¿äÃ» ½ÃÀÛ");
-            StartRealPayment();   // ¿©±â¿¡ ³ªÁß¿¡ SDK È£Ãâ¸¸ Ã¤¿ì¸é µÊ
+            Debug.Log("[PAY-REAL] ì‹¤ì œ ê²°ì œ ìš”ì²­ ì‹œì‘");
+            StartRealPayment();   // ì‹¤ì œ ê²°ì œ SDK ì—°ë™ ìœ„ì¹˜
         }
     }
 
-    // ---------- ·Îµù ÄÚ·çÆ¾ ----------
+    // ---------- ë¡œë”© íšŒì „ ê´€ë ¨ ----------
 
+    /// <summary>
+    /// ë¡œë”© ì´ë¯¸ì§€ í™œì„±í™” ë° íšŒì „ ì½”ë£¨í‹´ ì‹œì‘
+    /// </summary>
     private void StartLoading()
     {
         if (_loadingImage == null)
             return;
 
-        // ÃÊ±â »óÅÂ ¼¼ÆÃ
+        // ì²˜ìŒ ê°ë„ ì´ˆê¸°í™” í›„ ë¡œë”© ì´ë¯¸ì§€ í™œì„±í™”
         _loadingImage.SetActive(true);
         _loadingImage.transform.localRotation = Quaternion.identity;
 
@@ -87,6 +101,9 @@ public class PaymentCtrl : MonoBehaviour
         _loadingCoroutine = StartCoroutine(LoadingCoroutine());
     }
 
+    /// <summary>
+    /// ë¡œë”© íšŒì „ ì •ì§€ ë° ì´ˆê¸° ìƒíƒœë¡œ ë³µì›
+    /// </summary>
     private void StopLoading()
     {
         if (_loadingImage == null)
@@ -102,6 +119,9 @@ public class PaymentCtrl : MonoBehaviour
         _loadingImage.SetActive(false);
     }
 
+    /// <summary>
+    /// ê²°ì œ ì§„í–‰ ì¤‘ ë¡œë”© ì´ë¯¸ì§€ë¥¼ ê³„ì† íšŒì „ì‹œí‚¤ëŠ” ì½”ë£¨í‹´
+    /// </summary>
     private IEnumerator LoadingCoroutine()
     {
         if (_loadingImage == null)
@@ -110,14 +130,14 @@ public class PaymentCtrl : MonoBehaviour
         var rect = _loadingImage.transform as RectTransform;
         float angle = 0f;
 
-        // _isProcessing µ¿¾È È¸Àü
+        // _isProcessing ì´ true ì¸ ë™ì•ˆ íšŒì „
         while (_isProcessing)
         {
             float dt = Time.deltaTime;
-            // ¿À¸¥ÂÊ(½Ã°è ¹æÇâ) È¸Àü ¡æ Z°¢µµ¸¦ °¨¼Ò
+            // ì´ˆë‹¹ _loadingRotateSpeed ë„ë§Œí¼ Zì¶•ìœ¼ë¡œ íšŒì „(ì‹œê³„ ë°©í–¥)
             angle -= _loadingRotateSpeed * dt;
 
-            // °¢µµ ´©Àû °ª °ü¸® (¼±ÅÃ»çÇ×)
+            // ê°ë„ ê°’ì´ ë„ˆë¬´ ì»¤ì§€ì§€ ì•Šë„ë¡ í•œ ë°”í€´ ë„˜ìœ¼ë©´ ë³´ì •
             if (angle <= -360f)
                 angle += 360f;
 
@@ -125,25 +145,31 @@ public class PaymentCtrl : MonoBehaviour
             yield return null;
         }
 
-        // ¿©±â±îÁö ¿À¸é °áÁ¦ ¿Ï·á/½ÇÆĞ·Î Á¾·áµÈ »óÅÂ
+        // ê²°ì œê°€ ëë‚˜ë©´ StopLoading() ì—ì„œ ì´ˆê¸°í™” ì²˜ë¦¬
     }
 
-    // ---------- MOCK °áÁ¦ ----------
+    // ---------- MOCK ê²°ì œ ì²˜ë¦¬ ----------
 
+    /// <summary>
+    /// ëª¨ì˜ ê²°ì œ í”Œë¡œìš°
+    /// - ì§€ì • ì‹œê°„ ëŒ€ê¸° í›„ í•­ìƒ ì„±ê³µ í˜¹ì€ ì‹¤íŒ¨ ì½œë°± í˜¸ì¶œ
+    /// </summary>
     private IEnumerator MockPaymentRoutine()
     {
-        // °áÁ¦ ´ë±â ¿¬Ãâ
+        // ì‚¬ìš©ìì—ê²Œ ê²°ì œ ì§„í–‰ ì¤‘ ë¬¸êµ¬ í‘œì‹œ
         if (_textMeshPro != null)
-            _textMeshPro.text = "°áÁ¦ ÁøÇàÁß ...";
+            _textMeshPro.text = "ê²°ì œ ì²˜ë¦¬ ì¤‘ì…ë‹ˆë‹¤...";
 
         yield return new WaitForSeconds(_mockApproveDelay);
 
         if (_alwaysSuccess)
         {
             if (_textMeshPro != null)
-                _textMeshPro.text = "°áÁ¦ ¿Ï·á";
+                _textMeshPro.text = "ê²°ì œ ì„±ê³µ";
 
-            StopLoading();  // OnPaymentApproved() ¿¡¼­µµ È£Ãâ µÇÁö¸¸ ÀÓ½Ã Å×½ºÆ®¿ëÀ¸·Î ÁøÇà
+            // ì‹¤ì œë¼ë©´ OnPaymentApproved() ì•ˆì—ì„œ StopLoading() ì„ í˜¸ì¶œí•  ìˆ˜ë„ ìˆì§€ë§Œ
+            // ì—¬ê¸°ì„œëŠ” ë¨¼ì € ë¡œë”©ì„ ì •ì§€í•œ ë’¤ ì•½ê°„ ë”œë ˆì´ í›„ ìŠ¹ì¸ ì²˜ë¦¬
+            StopLoading();
 
             yield return new WaitForSeconds(2f);
 
@@ -151,67 +177,77 @@ public class PaymentCtrl : MonoBehaviour
         }
         else
         {
-            OnPaymentFailed("MOCK: °áÁ¦ ½ÇÆĞ (Å×½ºÆ®)");
+            OnPaymentFailed("MOCK: ê²°ì œ ì‹¤íŒ¨ (í…ŒìŠ¤íŠ¸ìš©)");
         }
     }
 
-    // ---------- ½ÇÁ¦ °áÁ¦ (³ªÁß¿¡ ±¸Çö) ----------
+    // ---------- ì‹¤ì œ ê²°ì œ (SDK ì—°ë™ ì§€ì ) ----------
 
+    /// <summary>
+    /// ì‹¤ì œ ê²°ì œ ì—°ë™ ì‹œì‘ ì§€ì 
+    /// - ìƒìš© í™˜ê²½ì—ì„œëŠ” ì—¬ê¸°ì—ì„œ ê²°ì œ SDK ë˜ëŠ” ì™¸ë¶€ EXE ë¥¼ í˜¸ì¶œ
+    /// - ì½œë°±/ì‘ë‹µì„ ë°›ì€ í›„ OnPaymentApproved ë˜ëŠ” OnPaymentFailed í˜¸ì¶œ
+    /// </summary>
     private void StartRealPayment()
     {
-        // ¿¹½Ã ÆĞÅÏ 1: SDK°¡ Äİ¹é ÇüÅÂÀÎ °æ¿ì (°¡Àå ÀÌ»óÀû)
-
+        // ì‹¤ì œ ê²°ì œ ì—°ë™ ì˜ˆì‹œ (SDK ì‚¬ìš© ì‹œ)
         // JtnetSdk.RequestPayment(
         //      amount: 4000,
         //      orderId: "ORDER_001",
         //      onSuccess: () => { OnPaymentApproved(); },
-        //      onFail: (err) => { OnPaymentFailed(err); }
+        //      onFail:    (err) => { OnPaymentFailed(err); }
         // );
-        // aount : °áÁ¦±İ¾×
-        // orderId : ÁÖ¹®¹øÈ£, Æ®·£Àè¼Ç ID
-        // onSuccess : °áÁ¦°¡ ¼º°øÇÏ¸é Äİ¹é
-        // onFail : ½ÇÆĞ ½Ã ºÎ¸¦ ÇÔ¼ö
+        // amount : ê²°ì œ ê¸ˆì•¡
+        // orderId : ì£¼ë¬¸ ë²ˆí˜¸, íŠ¸ëœì­ì…˜ ID
+        // onSuccess : ê²°ì œ ìŠ¹ì¸ ì‹œ í˜¸ì¶œë  ì½œë°±
+        // onFail : ê²°ì œ ì‹¤íŒ¨ ì‹œ í˜¸ì¶œë  ì½œë°±
 
-        // ¿¹½Ã ÆĞÅÏ 2: EXE ½ÇÇà ÈÄ °á°ú ÆÄÀÏ/ÄÚµå ÀĞ´Â ¹æ½ÄÀÌ¸é,
-        // º°µµ ÄÚ·çÆ¾/¾²·¹µå¿¡¼­ °¨½ÃÇÏ´Ù°¡ ÃÖÁ¾ÀûÀ¸·Î
-        // OnPaymentApproved() ¶Ç´Â OnPaymentFailed(reason)¸¸ È£ÃâÇØÁÖ¸é µÊ.
-
-        // Áß¿äÇÑ °Ç:
-        // "¼º°ø" ½Ã ¡æ ¹İµå½Ã OnPaymentApproved()
-        // "½ÇÆĞ" ½Ã ¡æ ¹İµå½Ã OnPaymentFailed(..)
-        // ÀÌ µÎ °³¸¸ ÁöÄÑÁÖ¸é, ³ª¸ÓÁö ÇÃ·Î¿ì(Ready ÆĞ³Î, ÃÔ¿µ, ÀÎ¼â)´Â ±×´ë·Î µ¿ÀÛÇÔ.
+        // ë˜ëŠ” ë³„ë„ EXE í˜¸ì¶œ ë°©ì‹:
+        // - ì™¸ë¶€ í”„ë¡œê·¸ë¨ê³¼ í†µì‹ í•˜ì—¬ ê²°ì œ ê²°ê³¼ë¥¼ ë°›ì•„ì˜¨ ë’¤
+        //   ì„±ê³µ ì‹œ OnPaymentApproved(), ì‹¤íŒ¨ ì‹œ OnPaymentFailed(reason) í˜¸ì¶œ.
 
         if (_textMeshPro != null)
-            _textMeshPro.text = "°áÁ¦ ÁøÇàÁß ...";
+            _textMeshPro.text = "ê²°ì œ ì²˜ë¦¬ ì¤‘ì…ë‹ˆë‹¤...";
     }
 
-    // ---------- °øÅë Äİ¹é ----------
+    // ---------- ê²°ì œ ê²°ê³¼ ì½œë°± ----------
 
+    /// <summary>
+    /// ê²°ì œ ì„±ê³µ ì‹œ í˜¸ì¶œ
+    /// </summary>
     private void OnPaymentApproved()
     {
         _isProcessing = false;
         StopLoading();
 
-        Debug.Log("[PAY] ½ÂÀÎ ¿Ï·á");
+        Debug.Log("[PAY] ê²°ì œ ìŠ¹ì¸");
 
+        // ìƒíƒœë¥¼ Ready ë¡œ ë˜ëŒë¦¼
         GameManager.Instance.SetState(KioskState.Ready);
 
+        // ê²°ì œ íŒ¨ë„ì€ ë‹«ê³ , Ready íŒ¨ë„ì„ ë‹¤ì‹œ í‘œì‹œ
         if (_paymentPanel != null) _paymentPanel.SetActive(false);
         if (_readyPanel != null) _readyPanel.SetActive(true);
     }
 
+    /// <summary>
+    /// ê²°ì œ ì‹¤íŒ¨ ì‹œ í˜¸ì¶œ
+    /// </summary>
     private void OnPaymentFailed(string reason)
     {
         _isProcessing = false;
         StopLoading();
 
-        Debug.LogWarning("[PAY] °áÁ¦ ½ÇÆĞ: " + reason);
+        Debug.LogWarning("[PAY] ê²°ì œ ì‹¤íŒ¨: " + reason);
 
+        // ê²°ì œ ëŒ€ê¸° ìƒíƒœë¡œ ë˜ëŒë¦¼ (ì¬ì‹œë„ ê°€ëŠ¥ ìƒíƒœ)
         GameManager.Instance.SetState(KioskState.WaitingForPayment);
 
         if (_textMeshPro != null)
-            _textMeshPro.text = "°áÁ¦ ½ÇÆĞ\n" + reason;
+            _textMeshPro.text = "ê²°ì œì— ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n" + reason;
 
-        // ½ÇÆĞ ½Ã: ÆĞ³Î À¯Áö, ¹®±¸¸¸ º¯°æ. Àç½Ãµµ ¹öÆ° µîÀº ¿©±â¼­ Ãß°¡ °¡´É.
+        // ì´í›„ UX ì˜ˆì‹œ:
+        // - 'ë‹¤ì‹œ ì‹œë„' ë²„íŠ¼ìœ¼ë¡œ ê²°ì œ ì¬ì‹œë„
+        // - 'ì²˜ìŒìœ¼ë¡œ' ë²„íŠ¼ìœ¼ë¡œ Ready í™”ë©´ ë³µê·€ ë“± ì¶”ê°€ ì²˜ë¦¬ ê°€ëŠ¥
     }
 }

@@ -1,9 +1,9 @@
 // PrintController.cs (lean version)
-// - RawImage ¼Ò½º ÅØ½ºÃ³(uvRect Æ÷ÇÔ) ¿ì¼± º¹»ç ¡æ ½ÇÆĞ ½Ã È­¸é Ä¸Ã³(ÀÚ½Ä Æ÷ÇÔ °¡´É)
-// - (¿É¼Ç) È¸Àü/¹Ì·¯/(¿É¼Ç) ¼¼·Î Cover ¸®»ùÇÃ
-// - JPG ÀúÀå: photo_raw_yyyyMMdd_HHmmss.jpg (persistentDataPath)
-// - Windows: ±âº» ¾Û printto ¡æ ½ÇÆĞ ½Ã OS print Æú¹é (+ "»çÁø ÀÎ¼â" Ã¢ ÀÚµ¿ Enter)
-// - ÁøÇà UI(fill) ¾Ö´Ï¸ŞÀÌ¼Ç + ¿Ï·á Äİ¹é
+// - RawImage ì†ŒìŠ¤ í…ìŠ¤ì²˜(uvRect í¬í•¨) ìš°ì„  ë³µì‚¬ â†’ ì‹¤íŒ¨ ì‹œ í™”ë©´ ìº¡ì²˜(ìì‹ í¬í•¨ ê°€ëŠ¥)
+// - (ì˜µì…˜) íšŒì „/ë¯¸ëŸ¬/(ì˜µì…˜) ì„¸ë¡œ Cover ë¦¬ìƒ˜í”Œ
+// - JPG ì €ì¥: photo_raw_yyyyMMdd_HHmmss.jpg (persistentDataPath)
+// - Windows: ê¸°ë³¸ ì•± printto â†’ ì‹¤íŒ¨ ì‹œ OS print í´ë°± (+ "ì‚¬ì§„ ì¸ì‡„" ì°½ ìë™ Enter)
+// - ì§„í–‰ UI(fill) ì• ë‹ˆë©”ì´ì…˜ + ì™„ë£Œ ì½œë°±
 
 using System;
 using System.Collections;
@@ -13,57 +13,84 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// ì¸ì‡„ ì „ì²´ í”Œë¡œìš°ë¥¼ ë‹´ë‹¹í•˜ëŠ” ì»¨íŠ¸ë¡¤ëŸ¬
+/// - UI ì˜ì—­ ìº¡ì²˜ â†’ ì˜µì…˜(íšŒì „/ë¯¸ëŸ¬/ì»¤ë²„) â†’ íŒŒì¼ ì €ì¥ â†’ Windows ì¸ì‡„ í˜¸ì¶œ
+/// - ì§„í–‰ UI(fill)ë¡œ ì¸ì‡„ ì§„í–‰ ìƒí™©ì„ ëŒ€ëµì ìœ¼ë¡œ í‘œí˜„
+/// - ì¸ì‡„ ì™„ë£Œ ì‹œ OutputSuccessCtrl ì—ê²Œ ì•Œë¦¼
+/// </summary>
 public class PrintController : MonoBehaviour
 {
     [Header("Compoment")]
     [SerializeField] private OutputSuccessCtrl _outputSuccessCtrl;
+    // ì¸ì‡„ ì™„ë£Œ í›„ "ì¸ì‡„ì¤‘ â†’ ì¸ì‡„ì™„ë£Œ" í™”ë©´ ì „í™˜ì„ ë‹´ë‹¹í•˜ëŠ” ì»¨íŠ¸ë¡¤ëŸ¬
 
     [Header("Capture Source")]
-    [Tooltip("RawImage.texture ¿øº»(uvRect Æ÷ÇÔ)À¸·Î º¹»ç (ÀÚ½Ä UI°¡ ÇÊ¿ä ¾øÀ¸¸é ±ÇÀå)")]
+    [Tooltip("RawImage.texture ì›ë³¸(uvRect í¬í•¨)ìœ¼ë¡œ ë³µì‚¬ (ìì‹ UIê°€ í•„ìš” ì—†ìœ¼ë©´ ê¶Œì¥)")]
     [SerializeField] private bool _captureFromSourceTexture = true;
+    // true: RawImage ì— ì„¤ì •ëœ í…ìŠ¤ì²˜ë¥¼ ì§ì ‘ ë³µì‚¬ (uvRect ë°˜ì˜)
+    // false: í™”ë©´ ìº¡ì²˜ ë°©ì‹ë§Œ ì‚¬ìš©
 
-    [Tooltip("ÀÚ½Ä UI±îÁö Æ÷ÇÔÇØ È­¸é Ä¸Ã³")]
+    [Tooltip("ìì‹ UIê¹Œì§€ í¬í•¨í•´ í™”ë©´ ìº¡ì²˜")]
     [SerializeField] private bool _includeChildrenInCapture = false;
+    // true: RectTransform ê¸°ì¤€ìœ¼ë¡œ ìì‹ê¹Œì§€ ëª¨ë‘ í¬í•¨ë˜ëŠ” ì˜ì—­ì„ ìº¡ì²˜
+    // false: RectTransformì˜ ì‚¬ê°í˜• ì˜ì—­ë§Œ ìº¡ì²˜
 
     public enum RotationMode { None, ForceCW, ForceCCW }
 
     [Header("Transform")]
-    [Tooltip("ÀúÀå Àü¿¡ È¸Àü (¼¼·Î °­Á¦ µî ÇÊ¿ä ½Ã)")]
+    [Tooltip("ì €ì¥ ì „ì— íšŒì „ (ì„¸ë¡œ ê°•ì œ ë“± í•„ìš” ì‹œ)")]
     [SerializeField] private RotationMode _rotation = RotationMode.None;
+    // ì¸ì‡„ ì „ì— 90ë„ íšŒì „ì´ í•„ìš”í•  ë•Œ ì‚¬ìš© (ì„¸ë¡œ/ê°€ë¡œ ë³€í™˜ ë“±)
 
-    [Tooltip("ÀúÀå Àü¿¡ ÁÂ¿ì(°Å¿ï) µÚÁı±â")]
+    [Tooltip("ì €ì¥ ì „ì— ì¢Œìš°(ê±°ìš¸) ë’¤ì§‘ê¸°")]
     [SerializeField] private bool _mirrorHorizontally = false;
+    // true: ì¸ì‡„ ì „ì— ì¢Œìš° ë°˜ì „(ê±°ìš¸ ëª¨ë“œ) ì ìš©
 
     [Header("Portrait Cover (Optional)")]
-    [Tooltip("¼¼·Î ºñÀ²·Î ¿©¹é ¾øÀÌ 'Cover' ¸®»ùÇÃ")]
+    [Tooltip("ì„¸ë¡œ ë¹„ìœ¨ë¡œ ì—¬ë°± ì—†ì´ 'Cover' ë¦¬ìƒ˜í”Œ")]
     [SerializeField] private bool _forcePortraitCover = false;
+    // true: ì§€ì •ëœ ì¶œë ¥ í•´ìƒë„ì— ë§ì¶° ì—¬ë°± ì—†ì´ ì±„ìš°ëŠ” Cover ë°©ì‹ ë¦¬ìƒ˜í”Œë§
+
     [SerializeField] private int _outputWidth = 1240;
     [SerializeField] private int _outputHeight = 1844;
+    // Cover ê²°ê³¼ë¬¼(ìµœì¢… ì¸ì‡„ìš©) ëª©í‘œ í•´ìƒë„
 
     [Header("Windows Print Target")]
-    [Tooltip("printto¿¡ »ç¿ëÇÒ ÇÁ¸°ÅÍ ÀÌ¸§ (ºñ¿ì¸é ±âº» ÇÁ¸°ÅÍ·Î OS print »ç¿ë)")]
+    [Tooltip("printtoì— ì‚¬ìš©í•  í”„ë¦°í„° ì´ë¦„ (ë¹„ìš°ë©´ ê¸°ë³¸ í”„ë¦°í„°ë¡œ OS print ì‚¬ìš©)")]
     [SerializeField] private string _printerName = "DS-RX1";
+    // Windows "printto" ë™ì‚¬ì— ì‚¬ìš©í•  í”„ë¦°í„° ì´ë¦„
+    // ë¹„ì›Œë‘ë©´ OS ì—°ê´€ ì•±ì˜ ê¸°ë³¸ ì¸ì‡„(ì‚¬ì§„ ì¸ì‡„ ì°½) ë£¨íŠ¸ë¡œ ì§„í–‰
 
     [Header("Progress UI (Optional)")]
     [SerializeField] private GameObject _progressRoot;
+    // ì¸ì‡„ ì§„í–‰ì„ í‘œì‹œí•  ë£¨íŠ¸ ì˜¤ë¸Œì íŠ¸ (ì˜ˆ: ì „ì²´ íŒ¨ë„)
+
     [SerializeField] private Image _progressFill;
+    // ì§„í–‰ë„(0~1)ë¥¼ í‘œì‹œí•  fill ì´ë¯¸ì§€
 
     //[Header("Progress Timing")]
-    //[Tooltip("½ºÇ® Àü¼Û Áß Ã¤¿ï ÃÖ´ëÄ¡ (0~1 »çÀÌ, Ãâ·Â Àü¹İºÎ ´À³¦)")]
+    //[Tooltip("ìŠ¤í’€ ì „ì†¡ ì¤‘ ì±„ìš¸ ìµœëŒ€ì¹˜ (0~1 ì‚¬ì´, ì¶œë ¥ ì „ë°˜ë¶€ ëŠë‚Œ)")]
     ////[SerializeField, Range(0.1f, 0.99f)] private float _preSpoolMaxFill = 0.4f;
-
-    //[Tooltip("ÀÎ¼â ¸í·É(»çÁø ÀÎ¼â Ã¢ È®ÀÎ Æ÷ÇÔ) ÈÄ, ½ÇÁ¦ ¿ëÁö ³ª¿Ã ¶§±îÁö ¿¹»ó ½Ã°£(ÃÊ)")]
+    //
+    //[Tooltip("ì¸ì‡„ ëª…ë ¹(ì‚¬ì§„ ì¸ì‡„ ì°½ í™•ì¸ í¬í•¨) í›„, ì‹¤ì œ ìš©ì§€ ë‚˜ì˜¬ ë•Œê¹Œì§€ ì˜ˆìƒ ì‹œê°„(ì´ˆ)")]
     //[SerializeField] private float _postSpoolSeconds = 10.0f;
 
-    [Header("Cover ¿É¼Ç")]
+    [Header("Cover ì˜µì…˜")]
     [SerializeField, Range(1f, 1.1f)] private float _coverBleed = 1.02f;
+    // Cover ì‹œ ì‚´ì§ í™•ëŒ€í•´ì„œ ë°”ê¹¥ì„ ì˜ë¼ë‚¼ ë¹„ìœ¨ (1ë³´ë‹¤ í¬ë©´ ì‚´ì§ ë” í™•ëŒ€)
+
     [SerializeField, Range(-1f, 1f)] private float _coverBiasX = 0f;
     [SerializeField, Range(-1f, 1f)] private float _coverBiasY = 0.08f;
+    // Cover ì‹œ ì¤‘ì‹¬ì„ ì•½ê°„ ìœ„/ì•„ë˜, ì¢Œ/ìš°ë¡œ ì¹˜ìš°ì¹˜ê²Œ í•˜ê¸° ìœ„í•œ ë¹„ìœ¨ (-1 ~ 1)
+
     [SerializeField, Min(0)] private int _postCropInsetPx = 0;
+    // Cover í›„ ê°€ì¥ìë¦¬ì—ì„œ ì¶”ê°€ë¡œ ì˜ë¼ë‚¼ í”½ì…€ ìˆ˜ (ì—¬ë°± ì œê±°ìš© ë“±)
 
-
-    [Header("Init - ÃÊ±âÈ­ : ¹é¾÷ ÇÊµå Ãß°¡")]
+    [Header("Init - ì´ˆê¸°í™” : ë°±ì—… í•„ë“œ ì¶”ê°€")]
     // ===== Init State Backup =====
+    // ì¸ìŠ¤í™í„°ì—ì„œ ë³€ê²½ëœ ëŸ°íƒ€ì„ ì„¤ì •ì„ ì´ˆê¸° ìƒíƒœë¡œ ë˜ëŒë¦¬ê¸° ìœ„í•´
+    // ì‹œì‘ ì‹œì ì˜ ê°’ì„ ë°±ì—…í•´ ë‘”ë‹¤.
     private bool _initCaptureFromSourceTexture;
     private bool _initIncludeChildrenInCapture;
     private RotationMode _initRotation;
@@ -75,10 +102,11 @@ public class PrintController : MonoBehaviour
     private float _initCoverBleed;
     private float _initCoverBiasX;
     private float _initCoverBiasY;
-    private int _initPostCropInsetPx;    
+    private int _initPostCropInsetPx;
 
     private void Awake()
     {
+        // ì´ˆê¸°ê°’ ë°±ì—…
         _initCaptureFromSourceTexture = _captureFromSourceTexture;
         _initIncludeChildrenInCapture = _includeChildrenInCapture;
         _initRotation = _rotation;
@@ -94,16 +122,19 @@ public class PrintController : MonoBehaviour
     }
 
     /// <summary>
-    /// Ãâ·Â °ü·Ã »óÅÂ/¿É¼Ç/ÀÓ½Ã ÆÄÀÏÀ» ÃÊ±âÈ­.
-    /// ±âº» È­¸é ÀüÈ¯(ÆĞ³Î Åä±Û, ¾À ÀüÈ¯ µî)Àº ÀÌ ÇÔ¼ö È£Ãâ ÈÄ ¹Û¿¡¼­ Ã³¸®.
+    /// ì¶œë ¥ ê´€ë ¨ ìƒíƒœ/ì˜µì…˜/ì„ì‹œ íŒŒì¼ì„ ì´ˆê¸°í™”.
+    /// - ì§„í–‰ ì½”ë£¨í‹´ ì¤‘ë‹¨, Progress UI ì •ë¦¬
+    /// - ì¸ìŠ¤í™í„°ì—ì„œ ë³€ê²½ë˜ì—ˆì„ ìˆ˜ ìˆëŠ” ì˜µì…˜ë“¤ ì´ˆê¸° ìƒíƒœë¡œ ë³µêµ¬
+    /// - (ì„ íƒ) ì €ì¥ëœ photo_raw_*.jpg ì‚­ì œ
+    /// ê¸°ë³¸ í™”ë©´ ì „í™˜(íŒ¨ë„ í† ê¸€, ì”¬ ì „í™˜ ë“±)ì€ ì´ í•¨ìˆ˜ í˜¸ì¶œ í›„ ë°–ì—ì„œ ì²˜ë¦¬.
     /// </summary>
     public void ResetPrintState(bool deleteSavedPhotos = true)
     {
-        // 1) ÄÚ·çÆ¾ / ÁøÇà UI Á¤¸®
+        // 1) ì½”ë£¨í‹´ / ì§„í–‰ UI ì •ë¦¬
         StopAllCoroutines();
         StopProgressUI();
 
-        // 2) ÀÎ½ºÆåÅÍ¿¡¼­ ¹Ù²î¾úÀ» ¼ö ÀÖ´Â ·±Å¸ÀÓ ¿É¼ÇÀ» ÃÊ±â°ªÀ¸·Î º¹±¸
+        // 2) ì¸ìŠ¤í™í„°ì—ì„œ ë°”ë€Œì—ˆì„ ìˆ˜ ìˆëŠ” ëŸ°íƒ€ì„ ì˜µì…˜ì„ ì´ˆê¸°ê°’ìœ¼ë¡œ ë³µêµ¬
         _captureFromSourceTexture = _initCaptureFromSourceTexture;
         _includeChildrenInCapture = _initIncludeChildrenInCapture;
         _rotation = _initRotation;
@@ -117,7 +148,7 @@ public class PrintController : MonoBehaviour
         _coverBiasY = _initCoverBiasY;
         _postCropInsetPx = _initPostCropInsetPx;
 
-        // 3) Âï¾îµĞ »çÁø ÆÄÀÏ »èÁ¦ (¼±ÅÃ)
+        // 3) ì°ì–´ë‘” ì‚¬ì§„ íŒŒì¼ ì‚­ì œ (ì„ íƒ)
         if (deleteSavedPhotos)
         {
             try
@@ -142,22 +173,22 @@ public class PrintController : MonoBehaviour
             }
         }
 
-        UnityEngine.Debug.Log("[Print] ResetPrintState: ÃÊ±âÈ­ ¿Ï·á");
+        UnityEngine.Debug.Log("[Print] ResetPrintState: ì´ˆê¸°í™” ì™„ë£Œ");
     }
 
-    // ===== ¿ÜºÎ API =====
+    // ===== ì™¸ë¶€ API =====
+
     /// <summary>
-    /// PrintButtonHandler ¿¡¼­ È£ÃâÇÔ
+    /// ì¸ì‡„ ìš”ì²­ ì§„ì…ì  (PrintButtonHandler ë“±ì—ì„œ í˜¸ì¶œ)
+    /// - í˜„ì¬ëŠ” ì¹´ë©”ë¼ ë¯¸ì—°ë™ ìƒíƒœë¼ í…ŒìŠ¤íŠ¸ìš© ì½”ë£¨í‹´ë§Œ ì‹¤í–‰
+    /// - ì‹¤ì œ í™˜ê²½ì—ì„œëŠ” í•˜ë‹¨ ì£¼ì„ ì²˜ë¦¬ëœ PrintUIArea ê²½ë¡œë¥¼ ì‚¬ìš©
     /// </summary>
-    /// <param name="rawImage"></param>
-    /// <param name="onDone"></param>
-    /// <param name="toHideTemporarily"></param>
     public void PrintRawImage(RawImage rawImage, Action onDone, params GameObject[] toHideTemporarily)
     {
-        // Ä«¸Ş¶ó°¡ ¾ø¾î¼­ ÀÓ½Ã·Î ¸¸µç ·ÎÁ÷
+        // ì¹´ë©”ë¼ê°€ ì—†ì–´ì„œ ì„ì‹œë¡œ ë§Œë“  ë¡œì§
         StartCoroutine(TestCorutine());
 
-        // ½ÇÁ¦ È¯°æ¿¡¼± ÀÌ°É ½á¾ßÇÔ
+        // ì‹¤ì œ í™˜ê²½ì—ì„  ì´ê±¸ ì¨ì•¼í•¨
         //if (!rawImage)
         //{
         //    UnityEngine.Debug.LogError("[Print] RawImage is null");
@@ -168,18 +199,22 @@ public class PrintController : MonoBehaviour
     }
 
     /// <summary>
-    /// Ä«¸Ş¶ó°¡ ¾ø¾î¼­ ÀÓ½Ã·Î ¸¸µç ÄÚ·çÆ¾ÀÓ
+    /// ì¹´ë©”ë¼ê°€ ì—†ì„ ë•Œ í…ŒìŠ¤íŠ¸ìš©ìœ¼ë¡œ ì‚¬ìš©í•˜ëŠ” ë”ë¯¸ ì½”ë£¨í‹´
+    /// - 2ì´ˆ ëŒ€ê¸° í›„ "ì¶œë ¥ ì™„ë£Œ!" ë¡œê·¸ + OutputSuccess í™”ë©´ ì „í™˜
     /// </summary>
-    /// <returns></returns>
     IEnumerator TestCorutine()
     {
-        yield return new WaitForSeconds(2f); // ´ë±â ½Ã°£
-        UnityEngine.Debug.Log("Ãâ·Â ¿Ï·á!");
-        _outputSuccessCtrl.OutputSuccessObjChange();        
+        yield return new WaitForSeconds(2f); // ëŒ€ê¸° ì‹œê°„
+        UnityEngine.Debug.Log("ì¶œë ¥ ì™„ë£Œ!");
+        _outputSuccessCtrl.OutputSuccessObjChange();
     }
 
-    // ¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+    /// <summary>
+    /// íŠ¹ì • RectTransform ì˜ì—­ì„ ì¸ì‡„ ëŒ€ìƒìœ¼ë¡œ ì‚¬ìš©
+    /// - ìº¡ì²˜ â†’ ë³€í™˜ â†’ íŒŒì¼ ì €ì¥ â†’ ì¸ì‡„ê¹Œì§€ ì „ì²´ íë¦„ ì²˜ë¦¬
+    /// </summary>
     public void PrintUIArea(RectTransform target, Action onDone, params GameObject[] toHideTemporarily)
     {
         if (!target)
@@ -193,21 +228,25 @@ public class PrintController : MonoBehaviour
 
     // ===== Main =====
 
+    /// <summary>
+    /// ìº¡ì²˜ë¶€í„° ì¸ì‡„ ì™„ë£Œê¹Œì§€ í•œ ë²ˆì— ì²˜ë¦¬í•˜ëŠ” ë©”ì¸ ì½”ë£¨í‹´
+    /// </summary>
     private IEnumerator CaptureAndPrintRoutine(RectTransform target, Action onDone, GameObject[] toHide)
     {
+        // ì¸ì‡„ ëŒ€ìƒì—ì„œ ì ì‹œ ìˆ¨ê¸°ê³  ì‹¶ì€ ì˜¤ë¸Œì íŠ¸ ë¹„í™œì„±í™”
         ToggleObjects(toHide, false);
         yield return new WaitForEndOfFrame();
 
-        // 1) ¼Ò½º ÅØ½ºÃ³ ¿ì¼±
+        // 1) ì†ŒìŠ¤ í…ìŠ¤ì²˜ ìš°ì„  (RawImage.texture ê¸°ë°˜)
         Texture2D tex = null;
         if (_captureFromSourceTexture && !_includeChildrenInCapture)
         {
             var raw = target.GetComponent<RawImage>();
             if (raw && raw.texture)
-                tex = CopyRawImageAsSeen(raw); // uvRect ¹İ¿µ
+                tex = CopyRawImageAsSeen(raw); // uvRect ë°˜ì˜í•˜ì—¬ RawImageì— ì‹¤ì œ ë³´ì´ëŠ”ëŒ€ë¡œ ë³µì‚¬
         }
 
-        // 2) Æú¹é: È­¸é Ä¸Ã³
+        // 2) í´ë°±: í™”ë©´ ìº¡ì²˜
         if (tex == null)
         {
             tex = _includeChildrenInCapture
@@ -223,7 +262,7 @@ public class PrintController : MonoBehaviour
             yield break;
         }
 
-        // 3) ¹Ì·¯/È¸Àü/Ä¿¹ö
+        // 3) ë¯¸ëŸ¬/íšŒì „/ì»¤ë²„ ì²˜ë¦¬
         if (_mirrorHorizontally) tex = MirrorX(tex);
 
         switch (_rotation)
@@ -241,19 +280,20 @@ public class PrintController : MonoBehaviour
             tex = portrait;
         }
 
-        // 4) ÀúÀå
+        // 4) íŒŒì¼ ì €ì¥
         string folderPath = Application.persistentDataPath;
         Directory.CreateDirectory(folderPath);
         string filename = $"photo_raw_{DateTime.Now:yyyyMMdd_HHmmss}.jpg";
         string savePath = Path.Combine(folderPath, filename);
 
-        File.WriteAllBytes(savePath, tex.EncodeToJPG(95)); // ÇÊ¿äÇÏ¸é PNG·Î ¹Ù²ãµµ µÊ
-        UnityEngine.Debug.Log($"[Print] ÀúÀå ¿Ï·á: {savePath} ({tex.width}x{tex.height})");
+        File.WriteAllBytes(savePath, tex.EncodeToJPG(95)); // í•„ìš”í•˜ë©´ PNGë¡œ ë³€ê²½ ê°€ëŠ¥
+        UnityEngine.Debug.Log($"[Print] ì €ì¥ ì™„ë£Œ: {savePath} ({tex.width}x{tex.height})");
         UnityEngine.Object.Destroy(tex);
 
+        // ìˆ¨ê²¼ë˜ ì˜¤ë¸Œì íŠ¸ ë³µì›
         ToggleObjects(toHide, true);
 
-        // 5) ÀÎ¼â + ÁøÇà UI
+        // 5) ì¸ì‡„ + ì§„í–‰ UI
         StartProgressUI();
         yield return StartCoroutine(PrintAndNotify(savePath));
         StopProgressUI();
@@ -261,7 +301,12 @@ public class PrintController : MonoBehaviour
         onDone?.Invoke();
     }
 
-    // ===== RawImage¸¦ 'È­¸éÃ³·³'(uvRect ¹İ¿µ) º¹»ç =====
+    // ===== RawImageë¥¼ 'í™”ë©´ì²˜ëŸ¼'(uvRect ë°˜ì˜) ë³µì‚¬ =====
+
+    /// <summary>
+    /// RawImage ì— ë³´ì´ëŠ” ê·¸ëŒ€ë¡œ í…ìŠ¤ì²˜ë¡œ ë³µì‚¬í•˜ëŠ” í•¨ìˆ˜
+    /// - uvRect ë¥¼ ë°˜ì˜í•´ì„œ ì˜ë ¤ ë³´ì´ëŠ” ì˜ì—­ê¹Œì§€ í¬í•¨
+    /// </summary>
     private Texture2D CopyRawImageAsSeen(RawImage ri)
     {
         var src = ri.texture;
@@ -289,7 +334,11 @@ public class PrintController : MonoBehaviour
         return outTex;
     }
 
-    // ===== È­¸é Ä¸Ã³(´ÜÀÏ ¿µ¿ª) =====
+    // ===== í™”ë©´ ìº¡ì²˜(ë‹¨ì¼ ì˜ì—­) =====
+
+    /// <summary>
+    /// íŠ¹ì • RectTransform ì‚¬ê°í˜• ì˜ì—­ë§Œ í™”ë©´ì—ì„œ ìº¡ì²˜
+    /// </summary>
     private Texture2D CaptureRectTransformArea(RectTransform target)
     {
         var canvas = target.GetComponentInParent<Canvas>();
@@ -323,7 +372,11 @@ public class PrintController : MonoBehaviour
         return tex;
     }
 
-    // ===== È­¸é Ä¸Ã³(ÀÚ½Ä Æ÷ÇÔ) =====
+    // ===== í™”ë©´ ìº¡ì²˜(ìì‹ í¬í•¨) =====
+
+    /// <summary>
+    /// RectTransform ê¸°ì¤€ìœ¼ë¡œ ìì‹ê¹Œì§€ í¬í•¨í•œ ì „ì²´ ë°”ìš´ë”© ë°•ìŠ¤ë¥¼ í™”ë©´ì—ì„œ ìº¡ì²˜
+    /// </summary>
     private Texture2D CaptureRectTransformAreaIncludingChildren(RectTransform target)
     {
         var canvas = target.GetComponentInParent<Canvas>();
@@ -331,10 +384,12 @@ public class PrintController : MonoBehaviour
             ? (canvas.worldCamera ? canvas.worldCamera : Camera.main)
             : null;
 
+        // ìì‹ê¹Œì§€ í¬í•¨í•œ ìƒëŒ€ Bounds ê³„ì‚°
         var bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(target);
         Vector3 worldMin = target.TransformPoint(bounds.min);
         Vector3 worldMax = target.TransformPoint(bounds.max);
 
+        // ê¼­ì§“ì  4ê°œë¥¼ ìŠ¤í¬ë¦° ì¢Œí‘œë¡œ ë³€í™˜
         Vector2 s0 = RectTransformUtility.WorldToScreenPoint(cam, worldMin);
         Vector2 s1 = RectTransformUtility.WorldToScreenPoint(cam, new Vector3(worldMin.x, worldMax.y, worldMin.z));
         Vector2 s2 = RectTransformUtility.WorldToScreenPoint(cam, worldMax);
@@ -356,7 +411,11 @@ public class PrintController : MonoBehaviour
         return tex;
     }
 
-    // ===== ¹Ì·¯/È¸Àü =====
+    // ===== ë¯¸ëŸ¬/íšŒì „ =====
+
+    /// <summary>
+    /// í…ìŠ¤ì²˜ë¥¼ ì¢Œìš° ë°˜ì „(ê±°ìš¸)í•œ ìƒˆ í…ìŠ¤ì²˜ë¥¼ ë°˜í™˜ (ì›ë³¸ì€ Destroy)
+    /// </summary>
     private Texture2D MirrorX(Texture2D src)
     {
         int w = src.width;
@@ -379,6 +438,9 @@ public class PrintController : MonoBehaviour
         return dst;
     }
 
+    /// <summary>
+    /// í…ìŠ¤ì²˜ë¥¼ ì‹œê³„ ë°©í–¥ 90ë„ íšŒì „í•œ ìƒˆ í…ìŠ¤ì²˜ ë°˜í™˜ (ì›ë³¸ Destroy)
+    /// </summary>
     private Texture2D Rotate90CW(Texture2D src)
     {
         int w = src.width;
@@ -405,6 +467,9 @@ public class PrintController : MonoBehaviour
         return dst;
     }
 
+    /// <summary>
+    /// í…ìŠ¤ì²˜ë¥¼ ë°˜ì‹œê³„ ë°©í–¥ 90ë„ íšŒì „í•œ ìƒˆ í…ìŠ¤ì²˜ ë°˜í™˜ (ì›ë³¸ Destroy)
+    /// </summary>
     private Texture2D Rotate90CCW(Texture2D src)
     {
         int w = src.width;
@@ -431,14 +496,21 @@ public class PrintController : MonoBehaviour
         return dst;
     }
 
-    // ===== ÀÎ¼â =====
+    // ===== ì¸ì‡„ =====
+
+    /// <summary>
+    /// ì €ì¥ëœ ì´ë¯¸ì§€ íŒŒì¼ ê²½ë¡œë¥¼ ë°›ì•„ Windows ì¸ì‡„ë¥¼ ìˆ˜í–‰í•˜ëŠ” ì½”ë£¨í‹´
+    /// - printto (í”„ë¦°í„° ì§€ì •) ì‹œë„ í›„ ì‹¤íŒ¨ ì‹œ OS ê¸°ë³¸ printë¡œ í´ë°±
+    /// - ì‚¬ì§„ ì¸ì‡„ ì°½ì´ ë–´ë‹¤ë©´ Enter ìë™ ì „ì†¡ ì‹œë„
+    /// - ProgressBar ì• ë‹ˆë©”ì´ì…˜ ë™ì•ˆ ëŒ€ê¸° í›„ OutputSuccess ì²˜ë¦¬
+    /// </summary>
     private IEnumerator PrintAndNotify(string imagePath)
     {
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
         bool started = false;
         bool needAutoConfirm = false;
 
-        // 1) printto ¿ì¼± ½Ãµµ (¿¡·¯´Â Çã¿ë, ½ÇÆĞÇÏ¸é OS print·Î)
+        // 1) printto ìš°ì„  ì‹œë„ (ì—ëŸ¬ëŠ” í—ˆìš©, ì‹¤íŒ¨í•˜ë©´ OS printë¡œ)
         if (!string.IsNullOrWhiteSpace(_printerName))
         {
             try
@@ -457,11 +529,11 @@ public class PrintController : MonoBehaviour
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.LogError($"[Print] printto failed: {e.Message} ¡æ OS print fallback");
+                UnityEngine.Debug.LogError($"[Print] printto failed: {e.Message} â†’ OS print fallback");
             }
         }
 
-        // 2) ½ÇÆĞ ½Ã OS print (»çÁø ÀÎ¼â Ã¢ ¶ß´Â ·çÆ®)
+        // 2) ì‹¤íŒ¨ ì‹œ OS print (ì‚¬ì§„ ì¸ì‡„ ì°½ ëœ¨ëŠ” ë£¨íŠ¸)
         if (!started)
         {
             try
@@ -477,7 +549,7 @@ public class PrintController : MonoBehaviour
                 var proc = Process.Start(psi);
                 started = (proc != null);
 
-                // ¿©±â¼­´Â ±×³É "ÀÚµ¿ È®ÀÎ ÇØº¸ÀÚ" ÇÃ·¡±×¸¸ ¼¼ÆÃ
+                // ì—¬ê¸°ì„œëŠ” ê·¸ëƒ¥ "ìë™ í™•ì¸ í•´ë³´ì" í”Œë˜ê·¸ë§Œ ì„¸íŒ…
                 if (started)
                 {
                     needAutoConfirm = true;
@@ -495,18 +567,18 @@ public class PrintController : MonoBehaviour
             yield break;
         }
 
-        // 3) ÀÎ¼âÃ¢ ÀÚµ¿ Enter (¡Ø try/catch ¹Û, yield Çã¿ë ¿µ¿ª)
+        // 3) ì¸ì‡„ì°½ ìë™ Enter
         if (needAutoConfirm)
         {
-            // ½ÇÆĞÇØµµ ±×³É ³Ñ¾î°¨ (·Î±×¸¸ ÂïÈ÷°í ÀÎ¼â´Â °è¼Ó)
+            // ì‹¤íŒ¨í•´ë„ ê·¸ëƒ¥ ë„˜ì–´ê° (ë¡œê·¸ë§Œ ì°íˆê³  ì¸ì‡„ëŠ” ê³„ì†)
             yield return StartCoroutine(AutoConfirmPrintDialog(8f));
         }
 
-        // 4) ProgressBar
+        // 4) ProgressBar (ëŒ€ëµì ì¸ ì˜ˆìƒ ì‹œê°„)
         const float totalDuration = 22.0f;
         float t = 0f;
 
-        // StartProgressUI()¿¡¼­ ÀÌ¹Ì 0À¸·Î ÃÊ±âÈ­µÆ´Ù°í °¡Á¤
+        // StartProgressUI()ì—ì„œ ì´ë¯¸ 0ìœ¼ë¡œ ì´ˆê¸°í™”ëë‹¤ê³  ê°€ì •
         while (t < totalDuration)
         {
             float normalized = Mathf.Clamp01(t / totalDuration); // 0 ~ 1
@@ -515,21 +587,19 @@ public class PrintController : MonoBehaviour
             yield return null;
         }
 
-        // È¤½Ã ´ú Ã¡À¸¸é È®½ÇÈ÷ 1·Î
+        // í˜¹ì‹œ ëœ ì°¼ìœ¼ë©´ í™•ì‹¤íˆ 1ë¡œ
         TickProgressUITo(1f);
 
-        UnityEngine.Debug.Log("Ãâ·Â ¿Ï·á!");
+        UnityEngine.Debug.Log("ì¶œë ¥ ì™„ë£Œ!");
         _outputSuccessCtrl.OutputSuccessObjChange();
 
 #else
-    UnityEngine.Debug.Log("[Print] Non-Windows: saved only (no auto print)");
-    yield return null;
+        UnityEngine.Debug.Log("[Print] Non-Windows: saved only (no auto print)");
+        yield return null;
 #endif
     }
 
-
-
-    // ===== ÀÎ¼âÃ¢ ÀÚµ¿ È®ÀÎ (Æí¹ı) =====
+    // ===== ì¸ì‡„ì°½ ìë™ í™•ì¸ (í¸ë²•) =====
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
 
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
@@ -544,9 +614,13 @@ public class PrintController : MonoBehaviour
     private const uint KEYEVENTF_KEYUP = 0x0002;
     private const byte VK_RETURN = 0x0D;
 
+    /// <summary>
+    /// "ì‚¬ì§„ ì¸ì‡„" ìœˆë„ìš°ë¥¼ ì°¾ì€ ë’¤ Enter í‚¤ë¥¼ ìë™ìœ¼ë¡œ ë³´ë‚´
+    /// ì‚¬ìš©ì ê°œì… ì—†ì´ ì¸ì‡„ë¥¼ ì§„í–‰í•˜ë ¤ëŠ” ì‹œë„ ì½”ë£¨í‹´
+    /// </summary>
     private IEnumerator AutoConfirmPrintDialog(float timeout)
     {
-        const string targetTitle = "»çÁø ÀÎ¼â";
+        const string targetTitle = "ì‚¬ì§„ ì¸ì‡„";
 
         float t = 0f;
         while (t < timeout)
@@ -554,7 +628,7 @@ public class PrintController : MonoBehaviour
             IntPtr hwnd = FindWindow(null, targetTitle);
             if (hwnd != IntPtr.Zero)
             {
-                UnityEngine.Debug.Log("[Print] AutoConfirmPrintDialog: \"»çÁø ÀÎ¼â\" Ã¢ ¹ß°ß ¡æ Enter Àü¼Û");
+                UnityEngine.Debug.Log("[Print] AutoConfirmPrintDialog: \"ì‚¬ì§„ ì¸ì‡„\" ì°½ ë°œê²¬ â†’ Enter ì „ì†¡");
                 SetForegroundWindow(hwnd);
 
                 keybd_event(VK_RETURN, 0, 0, 0);
@@ -567,19 +641,26 @@ public class PrintController : MonoBehaviour
             yield return new WaitForSeconds(0.2f);
         }
 
-        UnityEngine.Debug.LogWarning("[Print] AutoConfirmPrintDialog: \"»çÁø ÀÎ¼â\" Ã¢À» Ã£Áö ¸øÇÔ (timeout)");
+        UnityEngine.Debug.LogWarning("[Print] AutoConfirmPrintDialog: \"ì‚¬ì§„ ì¸ì‡„\" ì°½ì„ ì°¾ì§€ ëª»í•¨ (timeout)");
     }
 
 #endif
 
     // ===== Progress UI =====
 
+    /// <summary>
+    /// ì§„í–‰ UI ì‹œì‘ (ë£¨íŠ¸ í™œì„±í™” ë° fill ì´ˆê¸°í™”)
+    /// </summary>
     private void StartProgressUI()
     {
         if (_progressRoot) _progressRoot.SetActive(true);
         if (_progressFill) _progressFill.fillAmount = 0f;
     }
 
+    /// <summary>
+    /// ì§„í–‰ UIë¥¼ targetCap ê¹Œì§€ ì ì§„ì ìœ¼ë¡œ ì±„ìš°ê¸°
+    /// - ì§€ìˆ˜ ê°ì‡ ë¥¼ ì‚¬ìš©í•´ì„œ ë¶€ë“œëŸ½ê²Œ ì±„ì›Œì§
+    /// </summary>
     private void TickProgressUITo(float targetCap)
     {
         if (!_progressFill) return;
@@ -589,6 +670,9 @@ public class PrintController : MonoBehaviour
         _progressFill.fillAmount = Mathf.Min(next, targetCap);
     }
 
+    /// <summary>
+    /// ì§„í–‰ UI ì •ë¦¬ (fill 1ë¡œ ë§ì¶”ê³  ë£¨íŠ¸ ë¹„í™œì„±í™”)
+    /// </summary>
     private void StopProgressUI()
     {
         if (_progressFill) _progressFill.fillAmount = 1f;
@@ -597,6 +681,9 @@ public class PrintController : MonoBehaviour
 
     // ===== Util / Resample =====
 
+    /// <summary>
+    /// ì „ë‹¬ëœ GameObject ë°°ì—´ì„ í•œ ë²ˆì— í™œì„±/ë¹„í™œì„± ì „í™˜
+    /// </summary>
     private void ToggleObjects(GameObject[] objs, bool active)
     {
         if (objs == null) return;
@@ -604,25 +691,34 @@ public class PrintController : MonoBehaviour
             if (go) go.SetActive(active);
     }
 
+    /// <summary>
+    /// ì›ë³¸ ì´ë¯¸ì§€ë¥¼ Cover ë°©ì‹ìœ¼ë¡œ ì„¸ë¡œ ë¹„ìœ¨ì— ë§ê²Œ ë¦¬ìƒ˜í”Œë§í•˜ì—¬
+    /// targetW x targetH í¬ê¸°ì˜ í…ìŠ¤ì²˜ë¥¼ ìƒì„±
+    /// - coverBleed, bias, postCropInsetPx ì˜µì…˜ì„ ì ìš©
+    /// </summary>
     private Texture2D MakePortraitCover(Texture2D src, int targetW, int targetH,
         float biasX, float biasY, int postCropInsetPx)
     {
         float srcW = src.width;
         float srcH = src.height;
 
+        // íƒ€ê²Ÿì„ ì—¬ë°± ì—†ì´ ì±„ìš°ê¸° ìœ„í•œ ìŠ¤ì¼€ì¼ ê³„ì‚° (ê°€ë¡œ/ì„¸ë¡œ ì¤‘ í° ë¹„ìœ¨ ì„ íƒ)
         float scale = Mathf.Max(targetW / srcW, targetH / srcH) * Mathf.Max(1f, _coverBleed);
         float newW = srcW * scale;
         float newH = srcH * scale;
 
+        // ì¤‘ì‹¬ ê¸°ì¤€ ë°°ì¹˜
         float offsetX = (targetW - newW) * 0.5f;
         float offsetY = (targetH - newH) * 0.5f;
 
+        // biasë¥¼ ì´ìš©í•´ ì¢Œìš°/ìƒí•˜ ì´ë™ ê°€ëŠ¥í•œ ë²”ìœ„ ê³„ì‚°
         float moveRangeX = Mathf.Min(0f, targetW - newW);
         float moveRangeY = Mathf.Min(0f, targetH - newH);
 
         offsetX += moveRangeX * (biasX * 0.5f + 0.5f) - moveRangeX * 0.5f;
         offsetY += moveRangeY * (biasY * 0.5f + 0.5f) - moveRangeY * 0.5f;
 
+        // RenderTextureì— ê·¸ë¦¬ê¸°
         var rt = RenderTexture.GetTemporary(targetW, targetH, 0,
             RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
         var prevRT = RenderTexture.active;
@@ -637,12 +733,14 @@ public class PrintController : MonoBehaviour
 
         Graphics.DrawTexture(new Rect(offsetX, offsetY, newW, newH), src);
 
+        // ê°€ì¥ìë¦¬ ì¶”ê°€ í¬ë¡­(inset) ì ìš©
         int crop = Mathf.Clamp(postCropInsetPx, 0, Mathf.Min(targetW, targetH) / 3);
         int cropL = crop, cropR = crop, cropT = crop, cropB = crop;
 
         int outW = targetW - (cropL + cropR);
         int outH = targetH - (cropT + cropB);
 
+        // ë„ˆë¬´ ì‘ì•„ì§€ë©´ í¬ë¡­ ì—†ì´ ì „ì²´ ì‚¬ìš©
         if (outW < 4 || outH < 4)
         {
             cropL = cropR = cropT = cropB = 0;
@@ -662,20 +760,27 @@ public class PrintController : MonoBehaviour
         return outTex;
     }
 
-    // ¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡ Test Print (°ü¸®ÀÚ ¸ğµå·Î Å×½ºÆ® ÁøÇàÁß ¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Test Print (ê´€ë¦¬ì ëª¨ë“œë¡œ í…ŒìŠ¤íŠ¸ ì§„í–‰ì¤‘ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+    /// <summary>
+    /// ì™„ì „ í°ìƒ‰ ë¹ˆ ì´ë¯¸ì§€ë¥¼ ë§Œë“¤ì–´ ì¸ì‡„ í…ŒìŠ¤íŠ¸ë¥¼ ìˆ˜í–‰í•˜ëŠ” í•¨ìˆ˜
+    /// - ê´€ë¦¬ì ëª¨ë“œìš© í…ŒìŠ¤íŠ¸ í•¨ìˆ˜
+    /// </summary>
     public void PrintTestBlank(Action onDone = null)
     {
         StartCoroutine(PrintTestBlankRoutine(onDone));
     }
 
+    /// <summary>
+    /// ë¹ˆ(í™”ì´íŠ¸) ì´ë¯¸ì§€ë¥¼ ìƒì„±í•˜ê³  ì¸ì‡„ê¹Œì§€ í…ŒìŠ¤íŠ¸í•˜ëŠ” ì½”ë£¨í‹´
+    /// </summary>
     private IEnumerator PrintTestBlankRoutine(Action onDone)
     {
-        // Ãâ·Â ÇØ»óµµ °áÁ¤
+        // ì¶œë ¥ í•´ìƒë„ ê²°ì •
         int w = Mathf.Max(8, _outputWidth);
         int h = Mathf.Max(8, _outputHeight);
 
-        // Èò»ö ÀÌ¹ÌÁö »ı¼º
+        // í°ìƒ‰ ì´ë¯¸ì§€ ìƒì„±
         var tex = new Texture2D(w, h, TextureFormat.RGB24, false);
         var fill = new Color32(255, 255, 255, 255);
         var buf = new Color32[w * h];
@@ -683,7 +788,7 @@ public class PrintController : MonoBehaviour
         tex.SetPixels32(buf);
         tex.Apply(false);
 
-        // ÀúÀå
+        // ì €ì¥
         string folderPath = Application.persistentDataPath;
         Directory.CreateDirectory(folderPath);
         string filename = $"photo_testblank_{DateTime.Now:yyyyMMdd_HHmmss}.jpg";
@@ -692,13 +797,13 @@ public class PrintController : MonoBehaviour
         UnityEngine.Object.Destroy(tex);
         UnityEngine.Debug.Log($"[Print] test blank saved: {savePath} ({w}x{h})");
 
-        // ÁøÇà UI ½ÃÀÛ
+        // ì§„í–‰ UI ì‹œì‘
         StartProgressUI();
 
-        // ÀÎ¼â
+        // ì¸ì‡„
         yield return StartCoroutine(PrintAndNotify(savePath));
 
-        // ÁøÇà UI Á¾·á
+        // ì§„í–‰ UI ì¢…ë£Œ
         StopProgressUI();
 
         onDone?.Invoke();

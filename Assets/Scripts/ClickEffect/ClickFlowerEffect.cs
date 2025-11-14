@@ -5,93 +5,109 @@ using UnityEngine.InputSystem;
 using System.Collections;
 using System.Collections.Generic;
 
+/// <summary>
+/// í´ë¦­ / í„°ì¹˜í•œ ì§€ì  ìœ„ë¡œ UI í­ì£½(ê½ƒê°€ë£¨) íš¨ê³¼ë¥¼ ë„ì›Œì£¼ëŠ” ìŠ¤í¬ë¦½íŠ¸
+/// - íŠ¹ì • íŒ¨ë„ ìœ„ì—ì„œë§Œ ì‘ë™ ê°€ëŠ¥(ì˜µì…˜)
+/// - íŒŒí¸ ì´ë¯¸ì§€ëŠ” í’€ë§ìœ¼ë¡œ ê´€ë¦¬í•˜ì—¬ GC ìµœì†Œí™”
+/// - ë§ˆìš°ìŠ¤ / í„°ì¹˜(Input System) ëª¨ë‘ ì§€ì›
+/// </summary>
 public class ClickFlowerEffect : MonoBehaviour
 {
-    [Header("Effect Canvas (¾À¿¡ ÀÖ´Â ÃÖ»ó´Ü UI Canvas)")]
-    [Tooltip("ÆøÁ× ÀÌ¹ÌÁö¸¦ ºÙÀÏ Äµ¹ö½º. ¹İµå½Ã Hierarchy¿¡ ÀÖ´Â CanvasÀÇ RectTransform ÇÒ´ç")]
+    [Header("Effect Canvas (ì”¬ì— ìˆëŠ” ìµœìƒë‹¨ UI Canvas)")]
+    [Tooltip("í­ì£½ ì´ë¯¸ì§€ë¥¼ ë¶™ì¼ ìº”ë²„ìŠ¤. ë°˜ë“œì‹œ Hierarchyì— ìˆëŠ” Canvasì˜ RectTransform í• ë‹¹")]
     [SerializeField] private RectTransform _effectCanvas;
 
-    [Header("ÆøÁ× ÆÄÆí ½ºÅ¸ÀÏ ÇÁ¸®ÆÕµé (Template ¿ëµµ)")]
-    [Tooltip("°¢±â ´Ù¸¥ ½ºÇÁ¶óÀÌÆ®/»ö/»çÀÌÁî¸¦ °¡Áø Image ÇÁ¸®ÆÕµé. ¿©±â °ª¸¸ º¹»çÇØ¼­ »ç¿ëÇÔ.")]
+    [Header("í­ì£½ íŒŒí¸ ìŠ¤íƒ€ì¼ í”„ë¦¬íŒ¹ë“¤ (Template ìš©ë„)")]
+    [Tooltip("ê°ê¸° ë‹¤ë¥¸ ìŠ¤í”„ë¼ì´íŠ¸/ìƒ‰/ì‚¬ì´ì¦ˆë¥¼ ê°€ì§„ Image í”„ë¦¬íŒ¹ë“¤. ì—¬ê¸° ê°’ë§Œ ë³µì‚¬í•´ì„œ ì‚¬ìš©í•¨.")]
     [SerializeField] private Image[] _sparkPrefabs;
 
-    [Header("ÆøÁ× Çã¿ë ÆĞ³Îµé")]
-    [Tooltip("¿©±â¿¡ ³ÖÀº ÆĞ³Î(¹× ÀÚ½Ä) À§¸¦ Å¬¸¯ÇÒ ¶§¸¸ ÆøÁ× »ı¼º. ºñ¿öµÎ¸é '¾î¶² UI À§'µç Çã¿ë.")]
+    [Header("í­ì£½ í—ˆìš© íŒ¨ë„ë“¤")]
+    [Tooltip("ì—¬ê¸°ì— ë„£ì€ íŒ¨ë„(ë° ìì‹) ìœ„ë¥¼ í´ë¦­í•  ë•Œë§Œ í­ì£½ ìƒì„±. ë¹„ì›Œë‘ë©´ 'ì–´ë–¤ UI ìœ„'ë“  í—ˆìš©.")]
     [SerializeField] private RectTransform[] _clickPanels;
 
     [Header("Firework Settings")]
-    [Tooltip("Å¬¸¯ ÇÑ ¹ø´ç ÆÄÆí °³¼ö")]
+    [Tooltip("í´ë¦­ í•œ ë²ˆë‹¹ ìƒì„±í•  íŒŒí¸ ê°œìˆ˜")]
     [SerializeField] private int _sparksPerClick = 14;
 
-    [Tooltip("¹ß»ç °¢µµ ¹üÀ§ (µµ ´ÜÀ§, À§ÂÊ ¹İ±¸)")]
+    [Tooltip("ë°œì‚¬ ê°ë„ ë²”ìœ„ (ë„ ë‹¨ìœ„, ìœ„ìª½ ë°˜êµ¬ ê¸°ì¤€)")]
     [SerializeField] private float _minAngleDeg = 60f;
     [SerializeField] private float _maxAngleDeg = 120f;
 
-    [Tooltip("ÃÊ±â ¼Óµµ ¹üÀ§ (ÇÈ¼¿/ÃÊ ´À³¦)")]
+    [Tooltip("ì´ˆê¸° ì†ë„ ë²”ìœ„ (í”½ì…€/ì´ˆ ëŠë‚Œ)")]
     [SerializeField] private float _minSpeed = 220f;
     [SerializeField] private float _maxSpeed = 380f;
 
-    [Tooltip("Áß·Â (À½¼ö·Î ¾Æ·¡·Î ²ø¾î´ç±è)")]
+    [Tooltip("ì¤‘ë ¥ ê°€ì†ë„ (ìŒìˆ˜ì¼ ë•Œ ì•„ë˜ ë°©í–¥ìœ¼ë¡œ ë–¨ì–´ì§)")]
     [SerializeField] private float _gravity = -900f;
 
-    [Tooltip("ÆÄÆí »ıÁ¸ ½Ã°£ (ÃÊ)")]
+    [Tooltip("íŒŒí¸ ìƒì¡´ ì‹œê°„ (ì´ˆ)")]
     [SerializeField] private float _sparkLifetime = 0.7f;
 
-    [Tooltip("ÃÊ±â À§Ä¡ ·£´ı ¿ÀÇÁ¼Â ¹İ°æ")]
+    [Tooltip("í´ë¦­ ì§€ì  ê¸°ì¤€, íŒŒí¸ ìŠ¤í° ìœ„ì¹˜ ëœë¤ ì˜¤í”„ì…‹ ë°˜ê²½")]
     [SerializeField] private float _spawnRadius = 10f;
 
-    [Tooltip("ÆÄÆí »ı¼º µô·¹ÀÌ ·£´ı (0 ~ max)")]
+    [Tooltip("ê° íŒŒí¸ ìƒì„± ì‚¬ì´ì˜ ëœë¤ ë”œë ˆì´ ìµœëŒ€ê°’")]
     [SerializeField] private float _maxSpawnDelay = 0.06f;
 
     [Header("Rotation Settings")]
-    [Tooltip("ÆÄÆí ½ÃÀÛ È¸Àü ·£´ı ¹üÀ§ (µµ). ¿¹: 180ÀÌ¸é -180 ~ 180 »çÀÌ")]
+    [Tooltip("íŒŒí¸ ì‹œì‘ íšŒì „ ëœë¤ ë²”ìœ„ (ë„). ì˜ˆ: 180ì´ë©´ -180 ~ 180 ì‚¬ì´")]
     [SerializeField] private float _startRotationRange = 180f;
 
-    [Tooltip("ÆÄÆí È¸Àü ¼Óµµ ¹üÀ§ (µµ/ÃÊ). ¾ç¼ö·Î ³ÖÀ¸¸é ¹æÇâÀº ·£´ı")]
+    [Tooltip("íŒŒí¸ íšŒì „ ì†ë„ ë²”ìœ„ (ë„/ì´ˆ). ì–‘ìˆ˜ ë²”ìœ„ ë‚´ì—ì„œ ë°©í–¥ì€ ëœë¤ Â±")]
     [SerializeField] private float _minAngularSpeed = 90f;
     [SerializeField] private float _maxAngularSpeed = 360f;
 
     [Header("Pool Settings")]
-    [Tooltip("¹Ì¸® ¸¸µé¾î µÑ ÆÄÆí Image °³¼ö (ÃÖ´ë µ¿½Ã ÆÄÆí ¼ö ¿©À¯ ÀÖ°Ô)")]
+    [Tooltip("ë¯¸ë¦¬ ë§Œë“¤ì–´ ë‘˜ íŒŒí¸ Image ê°œìˆ˜ (ìµœëŒ€ ë™ì‹œ íŒŒí¸ ìˆ˜ë¥¼ ê³ ë ¤í•´ì„œ ì—¬ìœ  ìˆê²Œ ì„¤ì •)")]
     [SerializeField] private int _poolSize = 120;
 
-    [Tooltip("Ç® °¡µæ Ã¡À» ¶§ »õ·Î »ı¼ºÇØ¼­ È®ÀåÇÒÁö ¿©ºÎ")]
+    [Tooltip("í’€ì— ì—¬ìœ ê°€ ì—†ì„ ë•Œ ìƒˆë¡œ ìƒì„±í•´ì„œ í™•ì¥í• ì§€ ì—¬ë¶€")]
     [SerializeField] private bool _allowPoolExpand = true;
 
-    private Camera _uiCamera;
-    private bool _validCanvas;
+    private Camera _uiCamera;          // ScreenPoint â†’ Canvas LocalPoint ë³€í™˜ì— ì‚¬ìš©
+    private bool _validCanvas;         // Canvas ìœ íš¨ ì—¬ë¶€
 
-    private readonly List<Image> _pool = new List<Image>();
+    private readonly List<Image> _pool = new List<Image>();   // íŒŒí¸ í’€
 
     private void Awake()
     {
+        // ìº”ë²„ìŠ¤ ìœ íš¨ì„± ì²´í¬ ë° ì¹´ë©”ë¼ ìºì‹±
         ValidateEffectCanvas();
+        // íŒŒí¸ í’€ ì´ˆê¸°í™”
         InitPool();
     }
 
+    /// <summary>
+    /// íš¨ê³¼ë¥¼ ë¶™ì¼ Canvasê°€ ì •ìƒì ìœ¼ë¡œ ì„¸íŒ…ë˜ì—ˆëŠ”ì§€ ê²€ì‚¬  
+    /// - null ì—¬ë¶€  
+    /// - ì”¬ì— ì‹¤ì œë¡œ ì¡´ì¬í•˜ëŠ”ì§€(Hierarchy ìƒì— ìˆëŠ”ì§€)  
+    /// - ìƒìœ„ì— Canvas ì»´í¬ë„ŒíŠ¸ê°€ ìˆëŠ”ì§€  
+    /// - Canvas ëª¨ë“œì— ë”°ë¼ worldCamera ìºì‹±
+    /// </summary>
     private void ValidateEffectCanvas()
     {
         _validCanvas = false;
 
         if (_effectCanvas == null)
         {
-            Debug.LogError("[ClickFlowerEffect] _effectCanvas is null. ¾ÀÀÇ Canvas¸¦ µå·¡±×ÇØ¼­ ³Ö¾îÁÖ¼¼¿ä.");
+            Debug.LogError("[ClickFlowerEffect] _effectCanvas is null. ì”¬ì˜ Canvasë¥¼ ë“œë˜ê·¸í•´ì„œ ë„£ì–´ì£¼ì„¸ìš”.");
             return;
         }
 
         if (!_effectCanvas.gameObject.scene.IsValid())
         {
-            Debug.LogError("[ClickFlowerEffect] _effectCanvas°¡ Prefab/AssetÀÔ´Ï´Ù. Hierarchy¿¡ ÀÖ´Â Canvas¸¦ ³Ö¾îÁÖ¼¼¿ä.");
+            Debug.LogError("[ClickFlowerEffect] _effectCanvasê°€ Prefab/Assetì…ë‹ˆë‹¤. Hierarchyì— ìˆëŠ” Canvasë¥¼ ë„£ì–´ì£¼ì„¸ìš”.");
             return;
         }
 
         var canvas = _effectCanvas.GetComponentInParent<Canvas>();
         if (canvas == null)
         {
-            Debug.LogError("[ClickFlowerEffect] _effectCanvas »óÀ§¿¡¼­ Canvas¸¦ Ã£Áö ¸øÇß½À´Ï´Ù.");
+            Debug.LogError("[ClickFlowerEffect] _effectCanvas ìƒìœ„ì—ì„œ Canvasë¥¼ ì°¾ì§€ ëª»í–ˆìŠµë‹ˆë‹¤.");
             return;
         }
 
+        // ScreenSpaceOverlayëŠ” ì¹´ë©”ë¼ í•„ìš” ì—†ìŒ, ë‚˜ë¨¸ì§€ëŠ” Canvasì˜ worldCamera ì‚¬ìš©
         _uiCamera = (canvas.renderMode == RenderMode.ScreenSpaceOverlay)
             ? null
             : canvas.worldCamera;
@@ -99,30 +115,33 @@ public class ClickFlowerEffect : MonoBehaviour
         _validCanvas = true;
     }
 
+    /// <summary>
+    /// íŒŒí¸ Image í’€ ì´ˆê¸°í™”  
+    /// - _sparkPrefabs[0]ì„ ê¸°ì¤€ í”„ë¦¬íŒ¹ìœ¼ë¡œ ì‚¬ìš©  
+    /// - poolSize ê°œìˆ˜ë§Œí¼ ë¯¸ë¦¬ ìƒì„± í›„ ë¹„í™œì„±í™”
+    /// </summary>
     private void InitPool()
     {
         if (!_validCanvas) return;
 
         if (_sparkPrefabs == null || _sparkPrefabs.Length == 0)
         {
-            Debug.LogError("[ClickFlowerEffect] _sparkPrefabs ºñ¾îÀÖÀ½. ÃÖ¼Ò 1°³´Â ½ºÅ¸ÀÏ ÇÁ¸®ÆÕÀ» ³Ö¾îÁÖ¼¼¿ä.");
+            Debug.LogError("[ClickFlowerEffect] _sparkPrefabs ë¹„ì–´ìˆìŒ. ìµœì†Œ 1ê°œëŠ” ìŠ¤íƒ€ì¼ í”„ë¦¬íŒ¹ì„ ë„£ì–´ì£¼ì„¸ìš”.");
             return;
         }
 
         _pool.Clear();
 
-        // ±âÁØ ÇÁ¸®ÆÕ ÇÏ³ª¸¦ »ç¿ëÇØ µ¿ÀÏÇÑ ±¸Á¶ÀÇ Image¸¦ ¹Ì¸® »ı¼º
+        // ê¸°ì¤€ í”„ë¦¬íŒ¹ í•˜ë‚˜ë¥¼ ì‚¬ìš©í•´ ë™ì¼í•œ êµ¬ì¡°ì˜ Imageë¥¼ ë¯¸ë¦¬ ìƒì„±
         var basePrefab = _sparkPrefabs[0];
 
         for (int i = 0; i < _poolSize; i++)
         {
             var img = Instantiate(basePrefab, _effectCanvas);
             img.name = $"SparkPoolItem_{i}";
-            img.raycastTarget = false;
-            img.gameObject.SetActive(false);
+            img.raycastTarget = false;         // í´ë¦­ ë§‰ì§€ ì•Šë„ë¡
+            img.gameObject.SetActive(false);   // í’€ì—ë§Œ ë³´ê´€
             _pool.Add(img);
-
-
         }
     }
 
@@ -132,14 +151,14 @@ public class ClickFlowerEffect : MonoBehaviour
         if (_sparkPrefabs == null || _sparkPrefabs.Length == 0) return;
         if (EventSystem.current == null) return;
 
-        // ¸¶¿ì½º Å¬¸¯
+        // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ ë§ˆìš°ìŠ¤ í´ë¦­ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
         {
             Vector2 pos = Mouse.current.position.ReadValue();
             TrySpawnFirework(pos);
         }
 
-        // ÅÍÄ¡ ÀÔ·Â
+        // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ í„°ì¹˜ ì…ë ¥ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if (Touchscreen.current != null)
         {
             foreach (var touch in Touchscreen.current.touches)
@@ -153,6 +172,12 @@ public class ClickFlowerEffect : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// ì‹¤ì œ í´ë¦­/í„°ì¹˜ê°€ ë°œìƒí–ˆì„ ë•Œ í­ì£½ì„ ìƒì„±í• ì§€ ì—¬ë¶€ íŒë‹¨  
+    /// - UI Raycastë¡œ ì–´ë–¤ UI ìœ„ì¸ì§€ í™•ì¸  
+    /// - _clickPanelsì— ì§€ì •ëœ íŒ¨ë„ ì•ˆì—ì„œë§Œ í—ˆìš©(ì˜µì…˜)  
+    /// - ì¡°ê±´ì´ ë§ìœ¼ë©´ SpawnFirework í˜¸ì¶œ
+    /// </summary>
     private void TrySpawnFirework(Vector2 screenPos)
     {
         var eventData = new PointerEventData(EventSystem.current)
@@ -163,16 +188,21 @@ public class ClickFlowerEffect : MonoBehaviour
         var results = new List<RaycastResult>();
         EventSystem.current.RaycastAll(eventData, results);
 
+        // ì•„ë¬´ UIì—ë„ ë‹¿ì§€ ì•Šìœ¼ë©´ í­ì£½ ìƒì„± ì•ˆ í•¨
         if (results.Count == 0)
             return;
 
-        // ÆĞ³Î Á¦ÇÑÀÌ ÀÖ´Ù¸é °Ë»ç
+        // íŒ¨ë„ ì œí•œì´ ì„¤ì •ëœ ê²½ìš°, í•´ë‹¹ íŒ¨ë„/ìì‹ ìœ„ì—ì„œë§Œ í—ˆìš©
         if (_clickPanels != null && _clickPanels.Length > 0 && !IsOnTargetPanels(results))
             return;
 
         SpawnFirework(screenPos);
     }
 
+    /// <summary>
+    /// Raycast ê²°ê³¼ê°€ í—ˆìš©ëœ íŒ¨ë„(_clickPanels) ìœ„ì¸ì§€ ì²´í¬  
+    /// - _clickPanelsê°€ ë¹„ì–´ ìˆìœ¼ë©´ í•­ìƒ true ë°˜í™˜
+    /// </summary>
     private bool IsOnTargetPanels(List<RaycastResult> results)
     {
         if (_clickPanels == null || _clickPanels.Length == 0)
@@ -195,6 +225,11 @@ public class ClickFlowerEffect : MonoBehaviour
         return false;
     }
 
+    /// <summary>
+    /// ì‹¤ì œ í­ì£½ íŒŒí¸ ë¬¶ìŒì„ ìƒì„±í•˜ëŠ” í•¨ìˆ˜  
+    /// - í´ë¦­ ì§€ì ì„ Canvas ë¡œì»¬ ì¢Œí‘œë¡œ ë³€í™˜  
+    /// - sparksPerClickë§Œí¼ í’€ì—ì„œ êº¼ë‚´ì–´ ê°ì¢… ëœë¤ ê°’ ì„¤ì • í›„ ì½”ë£¨í‹´ ì¬ìƒ
+    /// </summary>
     private void SpawnFirework(Vector2 screenPos)
     {
         if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
@@ -214,36 +249,36 @@ public class ClickFlowerEffect : MonoBehaviour
 
             var rt = img.rectTransform;
 
-            // ½ºÅ¸ÀÏ ÅÛÇÃ¸´ ·£´ı Àû¿ë
+            // ê° íŒŒí¸ë§ˆë‹¤ ìŠ¤íƒ€ì¼ í…œí”Œë¦¿ ëœë¤ ì ìš© (ìƒ‰, ìŠ¤í”„ë¼ì´íŠ¸, ì‚¬ì´ì¦ˆ ë“±)
             ApplyRandomStyle(img);
 
-            // ½ÃÀÛ À§Ä¡: Å¬¸¯ ÁöÁ¡ ÁÖº¯ (·ÎÄÃ ÁÂÇ¥)
+            // ì‹œì‘ ìœ„ì¹˜: í´ë¦­ ì§€ì  ì£¼ë³€ ëœë¤ ì˜¤í”„ì…‹
             Vector2 startPos = centerLocalPos + Random.insideUnitCircle * _spawnRadius;
             rt.anchoredPosition = startPos;
 
-            // ¹ß»ç °¢µµ (À§ÂÊ ¹İ¿ø)
+            // ë°œì‚¬ ê°ë„ (ìœ„ìª½ ë°˜êµ¬) ì„¤ì •
             float angleDeg = Random.Range(_minAngleDeg, _maxAngleDeg);
             float angleRad = angleDeg * Mathf.Deg2Rad;
 
-            // ¼Óµµ
+            // ì´ˆê¸° ì†ë„ ë²¡í„°
             float speed = Random.Range(_minSpeed, _maxSpeed);
             Vector2 velocity = new Vector2(
                 Mathf.Cos(angleRad) * speed,
                 Mathf.Sin(angleRad) * speed
             );
 
-            // »ı¼º µô·¹ÀÌ
+            // ìƒì„± ë”œë ˆì´ (0 ~ _maxSpawnDelay)
             float delay = (_maxSpawnDelay > 0f)
                 ? Random.Range(0f, _maxSpawnDelay)
                 : 0f;
 
-            // ½ÃÀÛ È¸Àü ·£´ı
+            // ì‹œì‘ íšŒì „ ê°ë„ (Z)
             float startRot =
                 (_startRotationRange > 0f)
                 ? Random.Range(-_startRotationRange, _startRotationRange)
                 : 0f;
 
-            // È¸Àü ¼Óµµ ·£´ı (¹æÇâ Æ÷ÇÔ)
+            // íšŒì „ ì†ë„ (ë„/ì´ˆ) â€“ ë°©í–¥ì€ Â± ëœë¤
             float angularSpeed = 0f;
             if (_maxAngularSpeed > 0f)
             {
@@ -254,10 +289,16 @@ public class ClickFlowerEffect : MonoBehaviour
 
             img.gameObject.SetActive(true);
 
+            // ê°œë³„ íŒŒí¸ ì• ë‹ˆë©”ì´ì…˜ ì½”ë£¨í‹´ ì‹œì‘
             StartCoroutine(SparkRoutine(img, startPos, velocity, delay, startRot, angularSpeed));
         }
     }
 
+    /// <summary>
+    /// í’€ì—ì„œ ë¹„í™œì„±í™”ëœ Image í•˜ë‚˜ êº¼ë‚´ì˜¤ê¸°  
+    /// - ì—†ìœ¼ë©´ allowPoolExpand ì˜µì…˜ì— ë”°ë¼ ìƒˆë¡œ ìƒì„±í•  ìˆ˜ ìˆìŒ  
+    /// - ê·¸ë˜ë„ ì—†ìœ¼ë©´ null ë°˜í™˜
+    /// </summary>
     private Image GetPooledImage()
     {
         for (int i = 0; i < _pool.Count; i++)
@@ -268,7 +309,7 @@ public class ClickFlowerEffect : MonoBehaviour
 
         if (_allowPoolExpand && _sparkPrefabs != null && _sparkPrefabs.Length > 0)
         {
-            // ºÎÁ·ÇÏ¸é ÇÏ³ª ´õ ¸¸µç´Ù (¿É¼Ç)
+            // ë¶€ì¡±í•˜ë©´ í•˜ë‚˜ ë” ë§Œë“ ë‹¤ (ì˜µì…˜)
             var basePrefab = _sparkPrefabs[0];
             var img = Instantiate(basePrefab, _effectCanvas);
             img.name = $"SparkPoolItem_Extra_{_pool.Count}";
@@ -278,9 +319,13 @@ public class ClickFlowerEffect : MonoBehaviour
             return img;
         }
 
-        return null; // »ç¿ë °¡´ÉÇÑ ÆÄÆí ¾øÀ½
+        return null; // ì‚¬ìš© ê°€ëŠ¥í•œ íŒŒí¸ ì—†ìŒ
     }
 
+    /// <summary>
+    /// í’€ì—ì„œ êº¼ë‚¸ Imageì˜ ìŠ¤íƒ€ì¼ì„ í…œí”Œë¦¿ í”„ë¦¬íŒ¹ ì¤‘ í•˜ë‚˜ë¡œ ëœë¤ ë³µì‚¬  
+    /// - sprite, color, size, pivot, anchor ë“±ì„ í…œí”Œë¦¿ê³¼ ë™ì¼í•˜ê²Œ ë§ì¶¤
+    /// </summary>
     private void ApplyRandomStyle(Image img)
     {
         if (_sparkPrefabs == null || _sparkPrefabs.Length == 0)
@@ -295,13 +340,17 @@ public class ClickFlowerEffect : MonoBehaviour
         img.sprite = template.sprite;
         img.color = template.color;
 
-        // »çÀÌÁî & ÇÇ¹ş & ¾ŞÄ¿ µ¿±âÈ­(ÇÊ¿ä¿¡ µû¶ó)
+        // ì‚¬ì´ì¦ˆ & í”¼ë²— & ì•µì»¤ ë™ê¸°í™”(í•„ìš”ì— ë”°ë¼)
         rt.sizeDelta = trt.sizeDelta;
         rt.pivot = trt.pivot;
         rt.anchorMin = trt.anchorMin;
         rt.anchorMax = trt.anchorMax;
     }
 
+    /// <summary>
+    /// ê°œë³„ í­ì£½ íŒŒí¸ í•˜ë‚˜ì˜ ìƒì• ë¥¼ ë‹´ë‹¹í•˜ëŠ” ì½”ë£¨í‹´  
+    /// - ë”œë ˆì´ â†’ í¬ë¬¼ì„  ì´ë™(ì¤‘ë ¥ ì ìš©) â†’ íšŒì „ â†’ ì ì  ì‘ì•„ì§ + íˆ¬ëª…í•´ì§ â†’ í’€ë¡œ ë°˜í™˜
+    /// </summary>
     private IEnumerator SparkRoutine(
         Image img,
         Vector2 startPos,
@@ -312,6 +361,7 @@ public class ClickFlowerEffect : MonoBehaviour
     {
         RectTransform rt = img.rectTransform;
 
+        // ìŠ¤í° ë”œë ˆì´ê°€ ìˆì„ ê²½ìš° ì ì‹œ ëŒ€ê¸°
         if (delay > 0f)
             yield return new WaitForSeconds(delay);
 
@@ -322,10 +372,12 @@ public class ClickFlowerEffect : MonoBehaviour
         Vector2 velocity = initialVelocity;
 
         Color startColor = img.color;
+
+        // ì‹œì‘ ì‹œ ìŠ¤ì¼€ì¼ ì•½ê°„ ëœë¤ (ê½ƒ í¬ê¸° ë‹¤ì–‘í•˜ê²Œ)
         float startScale = Random.Range(0.1f, 0.5f);
         rt.localScale = Vector3.one * startScale;
 
-        // ½ÃÀÛ È¸Àü (ZÃà¸¸)
+        // ì‹œì‘ íšŒì „ (Zì¶•ë§Œ ì‚¬ìš©)
         float currentRot = startRotation;
         rt.localRotation = Quaternion.Euler(0f, 0f, currentRot);
 
@@ -334,21 +386,27 @@ public class ClickFlowerEffect : MonoBehaviour
             float dt = Time.deltaTime;
             t += dt;
 
-            // Áß·Â
+            // ì¤‘ë ¥ ì ìš©
             velocity.y += _gravity * dt;
+
+            // ìœ„ì¹˜ ì—…ë°ì´íŠ¸ (ë‹¨ìˆœ í¬ë¬¼ì„ )
             pos += velocity * dt;
             rt.anchoredPosition = pos;
 
-            // È¸Àü
+            // íšŒì „ ì—…ë°ì´íŠ¸
             currentRot += angularSpeedDegPerSec * dt;
             rt.localRotation = Quaternion.Euler(currentRot, currentRot, currentRot);
-            //rt.localRotation = Quaternion.Euler(0f, 0f, currentRot); Test
+            // ìˆœìˆ˜ Z íšŒì „ë§Œ ì“°ê³  ì‹¶ìœ¼ë©´ ì•„ë˜ ë¼ì¸ ì‚¬ìš©
+            // rt.localRotation = Quaternion.Euler(0f, 0f, currentRot);
 
-            // Á¡Á¡ ÀÛ¾ÆÁö°í Åõ¸íÇØÁü
+            // 0 ~ 1 ì§„í–‰ë¥ 
             float n = t / lifetime;
+
+            // ìŠ¤ì¼€ì¼ ì ì  ì¤„ì–´ë“¤ê¸°
             float scale = Mathf.Lerp(startScale, 0f, n);
             rt.localScale = Vector3.one * scale;
 
+            // ì•ŒíŒŒ ì ì  ê°ì†Œ
             var c = startColor;
             c.a = Mathf.Lerp(1f, 0f, n);
             img.color = c;
@@ -356,7 +414,7 @@ public class ClickFlowerEffect : MonoBehaviour
             yield return null;
         }
 
-        // ¸®¼Â & Ç®·Î ¹İÈ¯
+        // ìƒëª… ë â†’ í’€ë¡œ ë°˜í™˜ (ë¹„í™œì„±í™”)
         img.gameObject.SetActive(false);
     }
 }

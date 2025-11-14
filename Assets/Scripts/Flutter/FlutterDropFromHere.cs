@@ -1,63 +1,72 @@
 using System.Collections;
 using UnityEngine;
 
+/// <summary>
+/// íŠ¹ì • UI(RectTransform)ë¥¼ ê¸°ì¤€ìœ¼ë¡œ
+/// - ëœë¤ X ìœ„ì¹˜ / ëœë¤ ìŠ¤ì¼€ì¼ë¡œ ìœ„ìª½ì—ì„œ ë“±ì¥í•´ì„œ
+/// - ì•„ë˜ë¡œ ë–¨ì–´ì§€ë©´ì„œ ì¢Œìš°ë¡œ í”ë“¤ë¦¬ê³  íšŒì „(ë‚˜í’€ë‚˜í’€)í•˜ëŠ” íš¨ê³¼ë¥¼ ì£¼ëŠ” ìŠ¤í¬ë¦½íŠ¸
+/// - í•œ ì‚¬ì´í´ì´ ëë‚˜ë©´ ì˜µì…˜ì— ë”°ë¼ ìë™ìœ¼ë¡œ ë‹¤ì‹œ ë°˜ë³µ
+/// </summary>
 public class FlutterDropFromHere : MonoBehaviour
 {
     [Header("Target UI")]
     [SerializeField] private RectTransform _rect;
 
     [Header("Spawn Range (X)")]
-    [Tooltip("ÇöÀç À§Ä¡¿¡¼­ XÃà ÃÖ¼Ò ¿ÀÇÁ¼Â")]
+    [Tooltip("í˜„ì¬ ê¸°ì¤€ ìœ„ì¹˜ì—ì„œ Xì¶• ìµœì†Œ ì˜¤í”„ì…‹")]
     [SerializeField] private float _minXOffset = -200f;
 
-    [Tooltip("ÇöÀç À§Ä¡¿¡¼­ XÃà ÃÖ´ë ¿ÀÇÁ¼Â")]
+    [Tooltip("í˜„ì¬ ê¸°ì¤€ ìœ„ì¹˜ì—ì„œ Xì¶• ìµœëŒ€ ì˜¤í”„ì…‹")]
     [SerializeField] private float _maxXOffset = 200f;
 
-    [Tooltip("ÇöÀç Y¿¡¼­ ¾ó¸¶³ª ´õ À§¿¡¼­ ½ÃÀÛÇÒÁö (º¸Åë 0ÀÌ¸é ÇöÀç Y ±×´ë·Î)")]
+    [Tooltip("í˜„ì¬ Yì—ì„œ ì–¼ë§ˆë‚˜ ë” ìœ„ì—ì„œ ì‹œì‘í• ì§€ (0ì´ë©´ í˜„ì¬ Y ê·¸ëŒ€ë¡œ)")]
     [SerializeField] private float _startYOffset = 0f;
 
     [Header("Fall")]
-    [Tooltip("±âº» ¶³¾îÁö´Â ¼Óµµ (px/sec)")]
+    [Tooltip("ê¸°ë³¸ ë–¨ì–´ì§€ëŠ” ì†ë„ (px/sec)")]
     [SerializeField] private float _baseFallSpeed = 250f;
+
+    [Tooltip("ë–¨ì–´ì§€ëŠ” ì†ë„ ëœë¤ ê°€ê° ê°’ (Â±ê°’ìœ¼ë¡œ ì‚¬ìš©)")]
     [SerializeField] private float _deducted = 100f;
+
     private float _originFallSpeed = 0f;
 
-    [Tooltip("È­¸é ¾Æ·¡·Î ¾ó¸¶³ª ´õ ³ª°¬À» ¶§ 'ÇÑ ¹ø ¶³¾îÁö±â'¸¦ Á¾·áÇÒÁö ¿©À¯ ¸¶Áø")]
+    [Tooltip("ë¶€ëª¨ Rect ì•„ë˜ì—ì„œ ì–¼ë§ˆë‚˜ ë” ë‚´ë ¤ê°€ë©´ í•œ ë²ˆì˜ ë–¨ì–´ì§€ê¸°ë¥¼ ëë‚¼ì§€(ì—¬ë¶„ ë§ˆì§„)")]
     [SerializeField] private float _extraBottomMargin = 200f;
 
-    [Header("Flutter Range (·£´ı ¹üÀ§)")]
-    [Tooltip("ÁÂ¿ì Èçµé¸² ¹İ°æ ¹üÀ§ (px)")]
+    [Header("Flutter Range (ëœë¤ ë²”ìœ„)")]
+    [Tooltip("ì¢Œìš° í”ë“¤ë¦¼ ë°˜ê²½ ë²”ìœ„ (px)")]
     [SerializeField] private Vector2 _horizontalAmplitudeRange = new Vector2(30f, 80f);
 
-    [Tooltip("ÁÂ¿ì Èçµé¸² ¼Óµµ ¹üÀ§")]
+    [Tooltip("ì¢Œìš° í”ë“¤ë¦¼ ì†ë„(ì£¼íŒŒìˆ˜) ë²”ìœ„")]
     [SerializeField] private Vector2 _horizontalFrequencyRange = new Vector2(0.8f, 2.0f);
 
-    [Tooltip("È¸Àü(ÆŞ·°ÀÓ) °¢µµ ¹üÀ§(µµ ´ÜÀ§)")]
+    [Tooltip("íšŒì „(í„ëŸ­ì„) ê°ë„ ë²”ìœ„(ë„ ë‹¨ìœ„)")]
     [SerializeField] private Vector2 _rotationAmplitudeRange = new Vector2(10f, 25f);
 
-    [Tooltip("È¸Àü ¼Óµµ ¹üÀ§")]
+    [Tooltip("íšŒì „ ì†ë„(ì£¼íŒŒìˆ˜) ë²”ìœ„")]
     [SerializeField] private Vector2 _rotationFrequencyRange = new Vector2(1.0f, 3.0f);
 
     [Header("Loop Options")]
-    [Tooltip("ÀÚµ¿À¸·Î °è¼Ó ¹İº¹ÇÒÁö ¿©ºÎ")]
+    [Tooltip("ìë™ìœ¼ë¡œ ê³„ì† ë°˜ë³µí• ì§€ ì—¬ë¶€ (trueë©´ ë¬´í•œ ë£¨í”„)")]
     [SerializeField] private bool _autoLoop = true;
 
-    [Tooltip("°¢ »çÀÌÅ¬ ½ÃÀÛ Àü ´ë±â ½Ã°£ ¹üÀ§(ÃÊ)")]
+    [Tooltip("ê° ì‚¬ì´í´ ì‹œì‘ ì „ ëœë¤ ëŒ€ê¸° ì‹œê°„ ë²”ìœ„(ì´ˆ)")]
     [SerializeField] private Vector2 _delayBeforeDropRange = new Vector2(0f, 5f);
 
-    [Tooltip("ÇÑ »çÀÌÅ¬ ³¡³ª°í(¾Æ·¡·Î ºüÁø ÈÄ) ´ÙÀ½ »çÀÌÅ¬±îÁö Ãß°¡ ´ë±â ½Ã°£(ÃÊ)")]
+    [Tooltip("í•œ ì‚¬ì´í´ ëë‚˜ê³ (ë°”ë‹¥ ì•„ë˜ë¡œ ë¹ ì§„ í›„) ë‹¤ìŒ ì‚¬ì´í´ê¹Œì§€ ëœë¤ ëŒ€ê¸° ì‹œê°„ ë²”ìœ„(ì´ˆ)")]
     [SerializeField] private Vector2 _delayAfterDropRange = new Vector2(0.5f, 2f);
 
-    [Tooltip("Ã³À½ Enable µÉ ¶§ ¹Ù·Î ·çÇÁ ½ÃÀÛÇÒÁö ¿©ºÎ")]
+    [Tooltip("OnEnable ì‹œì ì— ìë™ìœ¼ë¡œ ë£¨í”„ ì‹œì‘í• ì§€ ì—¬ë¶€")]
     [SerializeField] private bool _startOnEnable = true;
 
     [Header("Visual Hide")]
-    [Tooltip("¶³¾îÁöÁö ¾ÊÀ» ¶§ ÀÌ¹ÌÁö¸¦ ¼û±æÁö ¿©ºÎ")]
+    [Tooltip("ë–¨ì–´ì§€ì§€ ì•Šì„ ë•Œ ì´ë¯¸ì§€ë¥¼ ìˆ¨ê¸¸ì§€ ì—¬ë¶€(í˜„ì¬ëŠ” ë¯¸ì‚¬ìš©, í•„ìš”ì‹œ CanvasGroupê³¼ í•¨ê»˜ ì‚¬ìš©í•  ìˆ˜ ìˆìŒ)")]
     //[SerializeField] private bool _hideWhenIdle = true;
 
     private RectTransform _parentRect;
 
-    // ·±Å¸ÀÓ¿ë º¯¼öµé
+    // ëŸ°íƒ€ì„ìš© ë³€ìˆ˜ë“¤
     private float _time;
     private float _startX;
     private float _startY;
@@ -71,18 +80,27 @@ public class FlutterDropFromHere : MonoBehaviour
 
     private bool _isPlaying;
 
-    // Ã³À½(µğÀÚÀÎ ½ÃÁ¡) À§Ä¡ ±â¾ï¿ë
+    // ì²˜ìŒ(ë””ìì¸ ì‹œì ) ìœ„ì¹˜ ì €ì¥ìš©
     private Vector2 _originAnchoredPos;
     private bool _originSaved;
 
     private Coroutine _loopRoutine;
     //private CanvasGroup _canvasGroup;
 
+    /// <summary>
+    /// ì»´í¬ë„ŒíŠ¸ê°€ ì¶”ê°€ë  ë•Œ ê¸°ë³¸ RectTransform ìë™ í• ë‹¹ìš©
+    /// </summary>
     private void Reset()
     {
         _rect = GetComponent<RectTransform>();
     }
 
+    /// <summary>
+    /// ì´ˆê¸° ì„¤ì •:
+    /// - íƒ€ê²Ÿ RectTransform í™•ë³´
+    /// - ë¶€ëª¨ RectTransform ì €ì¥
+    /// - ì‹œì‘ íšŒì „ê°, ì²˜ìŒ ìœ„ì¹˜, ê¸°ë³¸ ë‚™í•˜ ì†ë„ ì €ì¥
+    /// </summary>
     private void Awake()
     {
         if (_rect == null)
@@ -91,16 +109,19 @@ public class FlutterDropFromHere : MonoBehaviour
         _parentRect = _rect.parent as RectTransform;
         _baseRotZ = _rect.localEulerAngles.z;
 
-        // Ã³À½ À§Ä¡¸¦ ±âÁØ À§Ä¡·Î ÀúÀå
+        // ì²˜ìŒ ìœ„ì¹˜ë¥¼ ê¸°ì¤€ ìœ„ì¹˜ë¡œ ì €ì¥
         _originAnchoredPos = _rect.anchoredPosition;
         _originSaved = true;
 
-        // ½Ã°¢Àû ¼û±è¿¡ »ç¿ëÇÒ CanvasGroup
+        // ì‹œê°ì  ìˆ¨ê¹€ì— ì‚¬ìš©í•  CanvasGroup (í•„ìš”ì‹œ ì£¼ì„ í•´ì œí•´ì„œ ì‚¬ìš©)
         //_canvasGroup = GetComponent<CanvasGroup>();
 
         _originFallSpeed = _baseFallSpeed;
     }
 
+    /// <summary>
+    /// í™œì„±í™” ì‹œ ìë™ ì‹œì‘ ì˜µì…˜ì´ ì¼œì ¸ ìˆìœ¼ë©´ ë£¨í”„ ì‹œì‘
+    /// </summary>
     private void OnEnable()
     {
         if (_startOnEnable)
@@ -109,18 +130,22 @@ public class FlutterDropFromHere : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// ë¹„í™œì„±í™” ì‹œ ë£¨í”„ ì¢…ë£Œ ë° ìƒíƒœ ì´ˆê¸°í™”
+    /// </summary>
     private void OnDisable()
     {
         StopLoop();
         _isPlaying = false;
         _time = 0f;
         _rect.localEulerAngles = new Vector3(0f, 0f, _baseRotZ);
+
         //if (_hideWhenIdle && _canvasGroup != null)
         //    _canvasGroup.alpha = 0f;
     }
 
     /// <summary>
-    /// ¿ÜºÎ¿¡¼­ ·çÇÁ ½ÃÀÛ
+    /// ì™¸ë¶€ì—ì„œ í˜¸ì¶œí•˜ì—¬ ìë™ ë£¨í”„ ì‹œì‘
     /// </summary>
     public void StartLoop()
     {
@@ -131,7 +156,7 @@ public class FlutterDropFromHere : MonoBehaviour
     }
 
     /// <summary>
-    /// ¿ÜºÎ¿¡¼­ ·çÇÁ Á¤Áö
+    /// ì™¸ë¶€ì—ì„œ í˜¸ì¶œí•˜ì—¬ ìë™ ë£¨í”„ ì •ì§€
     /// </summary>
     public void StopLoop()
     {
@@ -143,35 +168,36 @@ public class FlutterDropFromHere : MonoBehaviour
     }
 
     /// <summary>
-    /// ÀÚµ¿ ¹İº¹ ·çÆ¾
+    /// ìë™ ë°˜ë³µ ë£¨í‹´:
+    /// - ëœë¤ ëŒ€ê¸° â†’ í•œ ë²ˆ ë–¨ì–´ì§€ê¸° â†’ ì™„ë£Œ ê¸°ë‹¤ë¦¼ â†’ ëœë¤ ëŒ€ê¸° â†’ (autoLoopë©´ ë°˜ë³µ)
     /// </summary>
     private IEnumerator LoopRoutine()
     {
-        // ¹«ÇÑ ·çÇÁ(²ô°í ½ÍÀ¸¸é StopLoop È£Ãâ)
+        // ë¬´í•œ ë£¨í”„(StopLoop()ê°€ í˜¸ì¶œë  ë•Œê¹Œì§€)
         while (true)
         {
-            // 1) ¶³¾îÁö±â Àü¿¡ ·£´ı ´ë±â
+            // 1) ë–¨ì–´ì§€ê¸° ì „ì— ëœë¤ ëŒ€ê¸°
             float preDelay = Random.Range(_delayBeforeDropRange.x, _delayBeforeDropRange.y);
             if (preDelay > 0f)
                 yield return new WaitForSeconds(preDelay);
 
-            // 2) ÇÑ ¹ø ¶³¾îÁö´Â °úÁ¤ ½ÇÇà
+            // 2) í•œ ë²ˆ ë–¨ì–´ì§€ëŠ” ê³¼ì • ì„¤ì • ì‹œì‘
             PlayOnce();
 
-            // 3) ¶³¾îÁö´Â µ¿¾È ±â´Ù¸®±â
+            // 3) ë–¨ì–´ì§€ëŠ” ë™ì•ˆ Updateì—ì„œ _isPlayingì´ falseê°€ ë  ë•Œê¹Œì§€ ëŒ€ê¸°
             while (_isPlaying)
             {
                 yield return null;
             }
 
-            // 4) ÇÑ »çÀÌÅ¬ ³¡³ª°í Ãß°¡ ´ë±â
+            // 4) í•œ ì‚¬ì´í´ ëë‚˜ê³  ëœë¤ ì¶”ê°€ ëŒ€ê¸°
             float postDelay = Random.Range(_delayAfterDropRange.x, _delayAfterDropRange.y);
             if (postDelay > 0f)
                 yield return new WaitForSeconds(postDelay);
 
             if (!_autoLoop)
             {
-                // autoLoop°¡ ²¨Á® ÀÖÀ¸¸é ÇÑ ¹ø¸¸ ÇÏ°í Á¾·á
+                // autoLoopê°€ êº¼ì ¸ ìˆìœ¼ë©´ í•œ ë²ˆë§Œ ì‹¤í–‰í•˜ê³  ì¢…ë£Œ
                 _loopRoutine = null;
                 yield break;
             }
@@ -179,7 +205,7 @@ public class FlutterDropFromHere : MonoBehaviour
     }
 
     /// <summary>
-    /// ÇÑ ¹ø¸¸ ¶³¾îÁö´Â ¼³Á¤ (³»ºÎ¿ë)
+    /// í•œ ë²ˆë§Œ ë–¨ì–´ì§€ëŠ” ì• ë‹ˆë©”ì´ì…˜ì„ ìœ„í•œ ì´ˆê¸°ê°’ ì…‹ì—… (ìœ„ì¹˜/ì†ë„/ëœë¤ íŒŒë¼ë¯¸í„°)
     /// </summary>
     private void PlayOnce()
     {
@@ -189,59 +215,65 @@ public class FlutterDropFromHere : MonoBehaviour
         if (_parentRect == null)
             _parentRect = _rect.parent as RectTransform;
 
+        // ìŠ¤ì¼€ì¼ ëœë¤(ë‚™ì—½/ì¢…ì´ í¬ê¸° ëŠë‚Œ)
         float randomScale = Random.Range(0.4f, 0.7f);
         transform.localScale = Vector3.one * randomScale;
-        // ±âÁØ À§Ä¡: ÀúÀåÇØµĞ "Ã³À½ À§Ä¡"
+
+        // ê¸°ì¤€ ìœ„ì¹˜: ì €ì¥í•´ë‘” "ì²˜ìŒ ìœ„ì¹˜" ì‚¬ìš©
         Vector2 basePos = _originSaved ? _originAnchoredPos : _rect.anchoredPosition;
 
-        // X´Â ±âÁØ À§Ä¡¿¡¼­ min~max ¿ÀÇÁ¼Â ·£´ı
+        // XëŠ” ê¸°ì¤€ ìœ„ì¹˜ì—ì„œ min~max ì˜¤í”„ì…‹ ëœë¤
         float randomXOffset = Random.Range(_minXOffset, _maxXOffset);
         _startX = basePos.x + randomXOffset;
 
-        // Y´Â ±âÁØ À§Ä¡ + ¿É¼Ç ¿ÀÇÁ¼Â
+        // YëŠ” ê¸°ì¤€ ìœ„ì¹˜ + ì˜µì…˜ ì˜¤í”„ì…‹
         _startY = basePos.y + _startYOffset;
 
         _rect.anchoredPosition = new Vector2(_startX, _startY);
 
-        // ¼Óµµ ·£´ı (±âº»°ª ¡¾ ¾à°£)
+        // ì†ë„ ëœë¤ (ê¸°ë³¸ê°’ ê¸°ì¤€ìœ¼ë¡œ Â±_deducted ë²”ìœ„ ë‚´ì—ì„œ ëœë¤)
         _baseFallSpeed = _originFallSpeed;
         _fallSpeed = Random.Range(_baseFallSpeed - _deducted, _baseFallSpeed + _deducted);
 
-        // ½Ã°£/»óÅÂ ÃÊ±âÈ­
+        // ì‹œê°„/ìƒíƒœ ì´ˆê¸°í™”
         _time = 0f;
         _isPlaying = true;
 
-        // °¢ ÀÎ½ºÅÏ½º¸¶´Ù ÆŞ·°ÀÓ ¼¼ÆÃ ·£´ı
+        // ê° ì¸ìŠ¤í„´ìŠ¤ë§ˆë‹¤ í„ëŸ­ì„ ì„¸íŒ… ëœë¤
         _hAmp = Random.Range(_horizontalAmplitudeRange.x, _horizontalAmplitudeRange.y);
         _hFreq = Random.Range(_horizontalFrequencyRange.x, _horizontalFrequencyRange.y);
 
         _rAmp = Random.Range(_rotationAmplitudeRange.x, _rotationAmplitudeRange.y);
         _rFreq = Random.Range(_rotationFrequencyRange.x, _rotationFrequencyRange.y);
 
-        // º¸ÀÌ°Ô
+        // ë³´ì´ê²Œ ë§Œë“¤ê³  ì‹¶ë‹¤ë©´ CanvasGroup í™œìš©
         //if (_hideWhenIdle && _canvasGroup != null)
         //    _canvasGroup.alpha = 1f;
     }
 
+    /// <summary>
+    /// í”„ë ˆì„ë§ˆë‹¤ ë‚™í•˜/ì¢Œìš° í”ë“¤ë¦¼/íšŒì „ì„ ì ìš©í•˜ê³ ,
+    /// í™”ë©´ ì•„ë˜ìª½ ë²”ìœ„ë¥¼ ë²—ì–´ë‚˜ë©´ í•œ ì‚¬ì´í´ì„ ì¢…ë£Œ
+    /// </summary>
     private void Update()
     {
         if (!_isPlaying) return;
 
         _time += Time.deltaTime;
 
-        // Y: À§¿¡¼­ ¾Æ·¡·Î ¶³¾îÁü
+        // Y: ìœ„ì—ì„œ ì•„ë˜ë¡œ ë–¨ì–´ì§
         float y = _startY - _fallSpeed * _time;
 
-        // X: ÁÂ¿ì·Î ÆŞ·° (sin ÆÄ)
+        // X: ì¢Œìš°ë¡œ í„ëŸ­ (sin íŒŒí˜•)
         float x = _startX + Mathf.Sin(_time * _hFreq) * _hAmp;
 
         _rect.anchoredPosition = new Vector2(x, y);
 
-        // È¸Àü: ÈŞÁö ÆŞ·°ÀÌ´Â ´À³¦
+        // íšŒì „: íœ´ì§€/ì¢…ì´ í„ëŸ­ì´ëŠ” ëŠë‚Œ
         float rotZ = _baseRotZ + Mathf.Sin(_time * _rFreq) * _rAmp;
         _rect.localEulerAngles = new Vector3(0f, 0f, rotZ);
 
-        // È­¸é ¾Æ·¡·Î ³ª°¬´ÂÁö Ã¼Å©
+        // í™”ë©´ ì•„ë˜ë¡œ ì¶©ë¶„íˆ ë‚˜ê°”ëŠ”ì§€ ì²´í¬
         if (_parentRect != null)
         {
             float bottomLimit = -_parentRect.rect.height * 0.5f - _extraBottomMargin;
@@ -253,16 +285,16 @@ public class FlutterDropFromHere : MonoBehaviour
     }
 
     /// <summary>
-    /// ÇÑ ¹ø ¶³¾îÁö´Â »çÀÌÅ¬ ³¡ Ã³¸® (ºñÈ°¼ºÈ­ ´ë½Å ¿©±â¼­ ¼û±è)
+    /// í•œ ë²ˆ ë–¨ì–´ì§€ëŠ” ì‚¬ì´í´ ë ì²˜ë¦¬
+    /// - í˜„ì¬ëŠ” ì¬ì‚¬ìš©ì„ ìœ„í•´ ìƒíƒœ í”Œë˜ê·¸ë§Œ ë³€ê²½
+    /// - ì‹¤ì œ ìœ„ì¹˜/ê°ë„ ë¦¬ì…‹ì€ ë‹¤ìŒ PlayOnce()ì—ì„œ ë‹¤ì‹œ ì„¤ì •
     /// </summary>
     private void FinishOneDrop()
     {
         _isPlaying = false;
 
-        // ¼û±â°í ½ÍÀ¸¸é ¾ËÆÄ 0
+        // ì—¬ê¸°ì„œ ì¦‰ì‹œ ìˆ¨ê¸°ê³  ì‹¶ìœ¼ë©´ CanvasGroup ë“±ì„ ì´ìš©í•´ ì²˜ë¦¬ ê°€ëŠ¥
         //if (_hideWhenIdle && _canvasGroup != null)
         //    _canvasGroup.alpha = 0f;
-
-        // À§Ä¡/°¢µµ ¸®¼ÂÀº ´ÙÀ½ »çÀÌÅ¬ PlayOnce()¿¡¼­ ´Ù½Ã ¼³Á¤
     }
 }

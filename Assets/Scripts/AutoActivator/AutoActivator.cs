@@ -1,13 +1,12 @@
-//using UnityEngine;
+// using UnityEngine;
 
-///// <summary>
-///// ÇöÀç ¹Ì»ç¿ë
-///// Fade¿¡ ³ÖÀ¸·Á°í Çß´Âµ¥ ³Ê¹« °úÇÑ ´À³¦ÀÌ ¾øÁö¾Ê¾Æ ÀÖ´Âµí
-///// </summary>
-//public class AutoActivator : MonoBehaviour
-//{
+// /// <summary>
+// /// í˜„ì¬ ì‚¬ìš©í•˜ì§€ì•ŠìŒ
+// /// </summary>
+// public class AutoActivator : MonoBehaviour
+// {
 //    public void Activator(GameObject flutter)
 //    {
 //        flutter.SetActive(true);
 //    }
-//}
+// }

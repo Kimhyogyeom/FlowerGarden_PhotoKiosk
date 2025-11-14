@@ -1,79 +1,87 @@
-// ´ë±â
+// ëŒ€ê¸°(Init) ì»¨íŠ¸ë¡¤ëŸ¬
 
 using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// ì´ˆê¸°í™”/ê·€í™˜(ëŒì•„ê°€ê¸°) ì´ ê´€ë¦¬ì
+/// - ì¸ì‡„ ì™„ë£Œ í›„ ì¼ì • ì‹œê°„ ë™ì•ˆ ì•„ë¬´ ì…ë ¥ì´ ì—†ìœ¼ë©´ ìë™ìœ¼ë¡œ ì´ˆê¸° í™”ë©´ìœ¼ë¡œ ë³µê·€
+/// - 'ëŒì•„ê°€ê¸°' ë²„íŠ¼ í´ë¦­ ì‹œ ì „ì²´ íë¦„/ìƒíƒœë¥¼ ì´ˆê¸°í™”
+/// - ì´¬ì˜, í”„ë ˆì„ ì„ íƒ, í”„ë¦°íŠ¸, ë²„íŠ¼ ìƒíƒœ ë“±ì„ í•œ ë²ˆì— ë¦¬ì…‹
+/// </summary>
 public class InitCtrl : MonoBehaviour
 {
     [Header("Add")]
-    [SerializeField] private Button _initButton;
-    [SerializeField] private TextMeshProUGUI _initText;
-    private Coroutine _resetCallbackRoutine = null;
-    [SerializeField] private int _successToBackTime = 10;
+    [SerializeField] private Button _initButton;             // ëŒì•„ê°€ê¸°(ì´ˆê¸°í™”) ë²„íŠ¼
+    [SerializeField] private TextMeshProUGUI _initText;      // ë²„íŠ¼ ì˜†/ìœ„ì— ì¹´ìš´íŠ¸ë‹¤ìš´ í‘œì‹œìš© í…ìŠ¤íŠ¸
+    private Coroutine _resetCallbackRoutine = null;          // ìë™ ë¦¬ì…‹ ì½”ë£¨í‹´
+    [SerializeField] private int _successToBackTime = 10;    // ì¸ì‡„ í›„ ì´ˆê¸° í™”ë©´ìœ¼ë¡œ ëŒì•„ê°€ê¸°ê¹Œì§€ ëŒ€ê¸° ì‹œê°„(ì´ˆ)
 
     [Header("Setting Component")]
-    [SerializeField] private PhotoFrameSelectCtrl _photoFrameSelectCtrl;
-    [SerializeField] private PrintController _printController;
-    [SerializeField] private FadeAnimationCtrl _fadeAnimationCtrl;
-    [SerializeField] private PrintButtonHandler _printButtonHandler;
-    [SerializeField] private StepCountdownUI _stepCountdownUI;
-    [SerializeField] private FilmingToSelectCtrl _filmingToSelectCtrl;
-    [SerializeField] private FilmingEndCtrl _filmingEndCtrl;
+    [SerializeField] private PhotoFrameSelectCtrl _photoFrameSelectCtrl; // í”„ë ˆì„ ì„ íƒ ì»¨íŠ¸ë¡¤ëŸ¬
+    [SerializeField] private PrintController _printController;           // í”„ë¦°íŠ¸ ì»¨íŠ¸ë¡¤ëŸ¬
+    [SerializeField] private FadeAnimationCtrl _fadeAnimationCtrl;       // í˜ì´ë“œ ì—°ì¶œ ì»¨íŠ¸ë¡¤ëŸ¬
+    [SerializeField] private PrintButtonHandler _printButtonHandler;     // ì¶œë ¥ ë²„íŠ¼ í•¸ë“¤ëŸ¬
+    [SerializeField] private StepCountdownUI _stepCountdownUI;           // ì´¬ì˜ ì¹´ìš´íŠ¸ë‹¤ìš´ ì»¨íŠ¸ë¡¤ëŸ¬
+    [SerializeField] private FilmingToSelectCtrl _filmingToSelectCtrl;   // ì´¬ì˜ â†’ ì„ íƒ í™”ë©´ ì „í™˜ ì»¨íŠ¸ë¡¤ëŸ¬
+    [SerializeField] private FilmingEndCtrl _filmingEndCtrl;             // ì´¬ì˜ ì¢…ë£Œ í›„ ì²˜ë¦¬ ì»¨íŠ¸ë¡¤ëŸ¬ (í•„ìš”ì‹œ í™•ì¥ìš©)
 
     [Header("Setting Object")]
-    [SerializeField] private Button _photoButton;
-    [SerializeField] private GameObject _photoButtonFake;
-    [SerializeField] private Image _photoImage;
-    [SerializeField] private TextMeshProUGUI _buttonText;
-    private ColorBlock _originColor;
+    [SerializeField] private Button _photoButton;             // ì´¬ì˜ ë²„íŠ¼
+    [SerializeField] private GameObject _photoButtonFake;     // ì´¬ì˜ ì¤‘ ëŒ€ì²´/ê°€ì§œ ë²„íŠ¼
+    [SerializeField] private Image _photoImage;               // í•„ìš” ì‹œ ì‚¬ìš©í•˜ëŠ” ì´ë¯¸ì§€(ì˜ˆ: í”„ë¦¬ë·° ë“±)
+    [SerializeField] private TextMeshProUGUI _buttonText;     // ì´¬ì˜ ë²„íŠ¼ í…ìŠ¤íŠ¸
+    private ColorBlock _originColor;                          // ì´¬ì˜ ë²„íŠ¼ ì›ë˜ ìƒ‰ìƒ ì €ì¥ìš©
+
     [Space(10)]
-    [SerializeField] private GameObject _currentPanel;  // ÇöÀç ÀÎ¼â ¿Ï·á ÈÄ ÆĞ³Î
-    [SerializeField] private GameObject _changePanel;   // Ã¼ÀÎÁö µÉ ÆĞ³Î (ÇöÀç °áÁ¦ ÆĞ³ÎÀÓ)
-    [SerializeField] private GameObject _cameraFocus;   // Ä«¸Ş¶ó Á¶ÁØÁ¡
+    [SerializeField] private GameObject _currentPanel;  // í˜„ì¬ ì¸ì‡„ ì™„ë£Œ í›„ ë³´ì—¬ì§€ëŠ” íŒ¨ë„
+    [SerializeField] private GameObject _changePanel;   // ë‹¤ì‹œ ëŒì•„ê°ˆ íŒ¨ë„(í˜„ì¬ëŠ” ê²°ì œ/ëŒ€ê¸° íŒ¨ë„)
+    [SerializeField] private GameObject _cameraFocus;   // ì¹´ë©”ë¼ ì¡°ì¤€ì (ì´¬ì˜ ê°€ì´ë“œìš©)
 
     [Header("Filming")]
-    [SerializeField] private GameObject _stepsObject;   // 1~5 ½ºÅÜ 
-    [SerializeField] private string _takePictureString = "»çÁøÂï±â";
-    [SerializeField] private TextMeshProUGUI _exitMessageText;
+    [SerializeField] private GameObject _stepsObject;   // 1~4(5) ìŠ¤í… í‘œì‹œ UI
+    [SerializeField] private string _takePictureString = "ì‚¬ì§„ì°ê¸°";  // ì´¬ì˜ ë²„íŠ¼ ê¸°ë³¸ ë¬¸êµ¬
+    [SerializeField] private TextMeshProUGUI _exitMessageText;        // ì´¬ì˜ ì¢…ë£Œ ì•ˆë‚´ í…ìŠ¤íŠ¸
     [SerializeField, TextArea(4, 5)]
-    private string _exitMessageString = "»çÁø ÃÔ¿µÀÌ Á¾·áµÇ¾ú½À´Ï´Ù.\n»çÁøÀ» Ãâ·ÂÇÏ¼¼¿ä.";
+    private string _exitMessageString = "ì‚¬ì§„ ì´¬ì˜ì´ ì¢…ë£Œë˜ì—ˆìŠµë‹ˆë‹¤.\nì‚¬ì§„ì„ ì¶œë ¥í•˜ì„¸ìš”."; // ì¢…ë£Œ ì•ˆë‚´ ê¸°ë³¸ ë¬¸êµ¬
 
-    [SerializeField] private GameObject _exitMessage;
+    [SerializeField] private GameObject _exitMessage;   // ì¢…ë£Œ ì•ˆë‚´ ë©”ì‹œì§€ ì˜¤ë¸Œì íŠ¸
 
-    [SerializeField] private GameObject[] _photoNumberObjs;
-    [SerializeField] private TextMeshProUGUI _missionText;
+    [SerializeField] private GameObject[] _photoNumberObjs; // ê° ì»· ë²ˆí˜¸ ì•„ì´ì½˜/í…ìŠ¤íŠ¸ ì˜¤ë¸Œì íŠ¸
+    [SerializeField] private TextMeshProUGUI _missionText;  // ë¯¸ì…˜ í…ìŠ¤íŠ¸ ì¶œë ¥ìš©
 
     [Header("Test")]
-    [SerializeField] private GameObject _startFilming;
-    [SerializeField] private GameObject _endFilming;
-    [SerializeField] private Button _endFilimgButton;       
+    [SerializeField] private GameObject _startFilming;       // (í…ŒìŠ¤íŠ¸ìš©) ì´¬ì˜ ì‹œì‘ UI
+    [SerializeField] private GameObject _endFilming;         // (í…ŒìŠ¤íŠ¸ìš©) ì´¬ì˜ ì¢…ë£Œ UI
+    [SerializeField] private Button _endFilimgButton;        // (í…ŒìŠ¤íŠ¸ìš©) ì´¬ì˜ ì¢…ë£Œ ë²„íŠ¼
 
-    [SerializeField] private GameObject _filimgObject;           // ÃÔ¿µ Áß ¹öÆ° ¿ÀºêÁ§Æ®
-    [SerializeField] private GameObject _finishedFilimgObject;   // ÃÔ¿µ ³¡ ¹öÆ° ¿ÀºêÁ§Æ®
-    [SerializeField] private Image _progressFillImage;
+    [SerializeField] private GameObject _filimgObject;           // ì´¬ì˜ ì¤‘ ë²„íŠ¼ ì˜¤ë¸Œì íŠ¸
+    [SerializeField] private GameObject _finishedFilimgObject;   // ì´¬ì˜ ì™„ë£Œ í›„ ë²„íŠ¼ ì˜¤ë¸Œì íŠ¸
+    [SerializeField] private Image _progressFillImage;           // ì§„í–‰ ë°”(í”„ë¡œê·¸ë ˆìŠ¤ ë°”) ì´ë¯¸ì§€
 
 #pragma warning disable CS0414
     [Range(1f, 10f)]
     [Header("TimeScale Value")]
-    [Tooltip("±âº» : 1, ¸ß½º : 10")]
+    [Tooltip("ê¸°ë³¸ : 1, ìµœëŒ€ : 10 (í…ŒìŠ¤íŠ¸ìš© íƒ€ì„ìŠ¤ì¼€ì¼ ì¡°ì ˆ)")]
     [SerializeField] private float _timeScale = 1.0f;
-#pragma warning disable CS0414
+#pragma warning restore CS0414
 
     private void Awake()
     {
-        // ¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡
-        // Test ¼Óµµ Áõ°¡
+        // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // í…ŒìŠ¤íŠ¸ìš©: ê²Œì„ ì „ì²´ íƒ€ì„ìŠ¤ì¼€ì¼ ì´ˆê¸°í™”
         Time.timeScale = 1f;
-        // ¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡
+        // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+        // ì´ˆê¸°í™”(ëŒì•„ê°€ê¸°) ë²„íŠ¼ í´ë¦­ ë¦¬ìŠ¤ë„ˆ ë“±ë¡
         _initButton.onClick.AddListener(ResetManager);
         _originColor = _photoButton.colors;
     }
-    
+
     /// <summary>
-    /// ºñÈ°¼ºÈ­ µÉ ¶§ È¤½Ã ¸ğ¸¦ ÄÚ·çÆ¾ ½ÇÇà ¹æÁö
+    /// ë¹„í™œì„±í™” ë  ë•Œ ì½”ë£¨í‹´ì´ ë‚¨ì•„ ìˆì§€ ì•Šë„ë¡ ë°©ì§€
     /// </summary>
     private void OnDisable()
     {
@@ -85,7 +93,8 @@ public class InitCtrl : MonoBehaviour
     }
 
     /// <summary>
-    /// ÆÄ±«µÉ ¶§ È¤½Ã ¸ğ¸¦ ÄÚ·çÆ¾ ½ÇÇà ¹æÁö? ¹æ¾î¿ëÀÎµ¥ ÆÄ±«µÉ ÀÏÀº ¾øÀ»µí
+    /// íŒŒê´´ë  ë•Œë„ ë°©ì–´ì ìœ¼ë¡œ ì½”ë£¨í‹´ ì •ì§€
+    /// (ì‹¤ì œ ìš´ìš©ì—ì„œëŠ” íŒŒê´´ë  ì¼ì€ ê±°ì˜ ì—†ê² ì§€ë§Œ ì˜ˆì™¸ ìƒí™© ëŒ€ë¹„)
     /// </summary>
     private void OnDestroy()
     {
@@ -96,72 +105,87 @@ public class InitCtrl : MonoBehaviour
         }
     }
 
-    // ¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡ ¹öÆ° Å¬¸¯ ¾ÈÇßÀ»¶§ È£Ãâ ¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡
-    // ÇöÀç 180ÃÊ µ¿¾È "µ¹¾Æ°¡±â" ¹öÆ°À» Å¬¸¯ÇÏÁö ¾ÊÀ¸¸é, ÀÚµ¿À¸·Î ÃÊ±â È­¸éÀ¸·Î µÇµ¹¾Æ°¨
-    public void ResetCallBack()
-    {        
-        //print("111");
-        if (_resetCallbackRoutine != null)
-        {
-            //print("222");
-            StopCoroutine(_resetCallbackRoutine);
-            _resetCallbackRoutine = null;
-            // ÅØ½ºÆ®µµ ÃÊ±âÈ­            
-        }        
-        _resetCallbackRoutine = StartCoroutine(ResetCallBackCoroutine());
-    }
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ì¸ì‡„ ì™„ë£Œ í›„, ì‚¬ìš©ìê°€ 'ëŒì•„ê°€ê¸°' ë²„íŠ¼ì„ ëˆ„ë¥´ì§€ ì•Šì•˜ì„ ë•Œ ìë™ìœ¼ë¡œ ì´ˆê¸°í™”
+    // í˜„ì¬  _successToBackTime ì´ˆ ë™ì•ˆ ì•„ë¬´ ì…ë ¥ì´ ì—†ìœ¼ë©´ ìë™ìœ¼ë¡œ ResetManager() í˜¸ì¶œ
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    private IEnumerator ResetCallBackCoroutine()
-    {        
-        for (int i = _successToBackTime; i >= 1; i--)
-        {
-            if (_initText != null)
-                _initText.text = $"{i}\nµ¹¾Æ°¡±â";
-
-            yield return new WaitForSeconds(1f);
-        }
-
-        //print("¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡");
-        //print("¹öÆ° Å¬¸¯ ¾ÈÇÏ¸é Àı´ë ½ÇÇà ¾ÈµÅ¾ßÇÔ ...");
-        //print("¹İ´ë·Î ¹öÆ° Å¬¸¯ ¾ÈÇÏ¸é ½ÇÇàµÅ¾ßÇÏÁö ÇÏÇÏÇÏÇÏÇÏÇÏÇÏÇÏÇãÇÏ¤ÃÇÏ¤ÃÇÏ¤ÃÇÏ¤ÃÇÏÇãÇÏ");
-        //print("¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡");
-
-        ResetManager();        
-    }
-    // ¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡  
-    // ¤·¤·
     /// <summary>
-    /// ¸®¼Â ÃÑ °ü¸®ÀÚ
+    /// ìë™ ì´ˆê¸°í™”(ì½œë°±) ì‹œì‘ìš© í•¨ìˆ˜
+    /// - ì¸ì‡„ ì™„ë£Œ ì‹œì  ë“±ì—ì„œ í˜¸ì¶œ
+    /// - ê¸°ì¡´ ì½”ë£¨í‹´ì´ ìˆìœ¼ë©´ ì •ì§€ í›„ ë‹¤ì‹œ ì‹œì‘
     /// </summary>
-    private void ResetManager()
+    public void ResetCallBack()
     {
         if (_resetCallbackRoutine != null)
         {
             StopCoroutine(_resetCallbackRoutine);
             _resetCallbackRoutine = null;
         }
-
-        // ÄÚ·çÆ¾Àº ÃÊ±âÈ­
-        _resetCallbackRoutine = null;
-
-        // ÅØ½ºÆ®µµ ÃÊ±âÈ­
-        if (_initText != null)
-            _initText.text = "5\nµ¹¾Æ°¡±â";
-
-        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._outputSuccess);
-        _fadeAnimationCtrl.StartFade();
-        // ¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡
-        FrameSelectReset();     // ÇÁ·¹ÀÓ °ü·Ã ¸®¼Â
-        FilmingPanelReset();    // ÃÔ¿µ ÆĞ³Î °ü·Ã ¸®¼Â
-        CaptureReset();         // Ä¸Ã³ °ü·Ã ¸®¼Â
-        PrintHandlerReset();    // ÇÚµé·¯ °ü·Ã ¸®¼Â
-        PrintReset();           // ÇÁ¸°Æ® °ü·Ã ¸®¼Â        
-        // ¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡
-        ButtonReset();          // ¹öÆ° °ü·Ã ¸®¼Â : °ËÅä ÇÊ¿ä
+        _resetCallbackRoutine = StartCoroutine(ResetCallBackCoroutine());
     }
 
     /// <summary>
-    /// ÇÁ·¹ÀÓ ¼±ÅÃ °ü·Ã ¸®¼Â
+    /// ì¼ì • ì‹œê°„ ì¹´ìš´íŠ¸ë‹¤ìš´ í›„ ìë™ìœ¼ë¡œ ResetManager í˜¸ì¶œ
+    /// </summary>
+    private IEnumerator ResetCallBackCoroutine()
+    {
+        for (int i = _successToBackTime; i >= 1; i--)
+        {
+            if (_initText != null)
+                _initText.text = $"{i}\nëŒì•„ê°€ê¸°";
+
+            yield return new WaitForSeconds(1f);
+        }
+
+        // ì§€ì • ì‹œê°„ì´ ëª¨ë‘ ì§€ë‚˜ë©´ ìë™ ì´ˆê¸°í™”
+        ResetManager();
+    }
+
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ë¦¬ì…‹ ì´ ê´€ë¦¬ì
+    // - ê°ì¢… ì„œë¸Œ ì‹œìŠ¤í…œ ë¦¬ì…‹ í•¨ìˆ˜ë“¤ì„ ìˆœì„œëŒ€ë¡œ í˜¸ì¶œ
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    /// <summary>
+    /// ì „ì²´ ë¦¬ì…‹ ì´ê´„ í•¨ìˆ˜
+    /// - ìë™ ì½œë°± ì½”ë£¨í‹´ ì •ì§€
+    /// - í…ìŠ¤íŠ¸/ë²„íŠ¼/í”„ë ˆì„/ì´¬ì˜/í”„ë¦°íŠ¸/í•¸ë“¤ëŸ¬ ë“± ì¼ê´„ ì´ˆê¸°í™”
+    /// - í˜ì´ë“œ ì—°ì¶œê³¼ í•¨ê»˜ ì´ˆê¸° ìƒíƒœë¡œ ë³µê·€
+    /// </summary>
+    private void ResetManager()
+    {
+        // ìë™ ì½œë°± ì½”ë£¨í‹´ ì •ë¦¬
+        if (_resetCallbackRoutine != null)
+        {
+            StopCoroutine(_resetCallbackRoutine);
+            _resetCallbackRoutine = null;
+        }
+
+        // ì½”ë£¨í‹´ ì°¸ì¡° ì´ˆê¸°í™”
+        _resetCallbackRoutine = null;
+
+        // 'ëŒì•„ê°€ê¸°' ì¹´ìš´íŠ¸ í…ìŠ¤íŠ¸ ì´ˆê¸°í™”
+        if (_initText != null)
+            _initText.text = "5\nëŒì•„ê°€ê¸°";
+
+        // íš¨ê³¼ìŒ + í˜ì´ë“œ ì‹œì‘
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._outputSuccess);
+        _fadeAnimationCtrl.StartFade();
+
+        // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        FrameSelectReset();     // í”„ë ˆì„ ê´€ë ¨ ë¦¬ì…‹
+        FilmingPanelReset();    // ì´¬ì˜ íŒ¨ë„ ê´€ë ¨ ë¦¬ì…‹
+        CaptureReset();         // ìº¡ì²˜ ê´€ë ¨ ë¦¬ì…‹
+        PrintHandlerReset();    // ì¶œë ¥ í•¸ë“¤ëŸ¬ ê´€ë ¨ ë¦¬ì…‹
+        PrintReset();           // í”„ë¦°íŠ¸ ê´€ë ¨ ë¦¬ì…‹        
+        // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        ButtonReset();          // ê¸°íƒ€ ë²„íŠ¼/í…ŒìŠ¤íŠ¸ ê´€ë ¨ ë¦¬ì…‹
+    }
+
+    /// <summary>
+    /// í”„ë ˆì„ ì„ íƒ ê´€ë ¨ ë¦¬ì…‹
+    /// - PhotoFrameSelectCtrl ì˜ AllReset í˜¸ì¶œ
     /// </summary>
     private void FrameSelectReset()
     {
@@ -169,7 +193,8 @@ public class InitCtrl : MonoBehaviour
     }
 
     /// <summary>
-    /// ÃÔ¿µ ÆĞ³Î °ü·Ã ¸®¼Â
+    /// ì´¬ì˜ íŒ¨ë„ ê´€ë ¨ ë¦¬ì…‹
+    /// - ìŠ¤í… UI, ì´¬ì˜ ë²„íŠ¼ ìƒ‰/í…ìŠ¤íŠ¸, ê°€ì§œ ë²„íŠ¼, ë©”ì‹œì§€, ë¯¸ì…˜, ë²ˆí˜¸ UI ë“± ì´ˆê¸°í™”
     /// </summary>
     private void FilmingPanelReset()
     {
@@ -186,12 +211,12 @@ public class InitCtrl : MonoBehaviour
 
         _cameraFocus.SetActive(true);
 
-        // ¹Ì¼Ç ÅØ½ºÆ® Ä«¿îÆ® ÃÊ±âÈ­
+        // ë¯¸ì…˜ í…ìŠ¤íŠ¸ ì¹´ìš´íŠ¸ ì´ˆê¸°í™”
         _stepCountdownUI._missionCount = 0;
-        // ¹Ì¼Ç ÅØ½ºÆ® ÃÊ±âÈ­
+        // ë¯¸ì…˜ í…ìŠ¤íŠ¸ ì´ˆê¸°í™”
         _missionText.text = "";
 
-        // Æ÷Åä > (ºñÈ°¼ºÈ­ µÇ´ø ·ÎÁ÷ ³Ñ¹ö ÀÌ¹ÌÁö ´Ù½Ã È°¼ºÈ­)
+        // ê° ì»· ë²ˆí˜¸ ì•„ì´ì½˜ ë‹¤ì‹œ í™œì„±í™”
         foreach (var item in _photoNumberObjs)
         {
             item.SetActive(true);
@@ -199,7 +224,8 @@ public class InitCtrl : MonoBehaviour
     }
 
     /// <summary>
-    /// Ä¸Ã³ °ü·Ã ¸®¼Â
+    /// ìº¡ì²˜ ê´€ë ¨ ë¦¬ì…‹
+    /// - StepCountdownUI ì˜ ìº¡ì²˜/ìŠ¬ë¡¯/ìƒíƒœ ì´ˆê¸°í™”
     /// </summary>
     private void CaptureReset()
     {
@@ -207,8 +233,8 @@ public class InitCtrl : MonoBehaviour
     }
 
     /// <summary>
-    /// ÇÁ¸°Æ® ÇÚµé·¯ °ü·Ã ¸®¼Â
-    /// ÇöÀç) Ãâ·ÂÁß -> Ãâ·ÂÇÏ±â ¹öÆ°À» Å¬¸¯ÇÏÁö ¾Ê¾ÒÀ» ¶§ ÀÚµ¿À¸·Î ³Ñ¾î°¡±â À§ÇÑ ¼¼ÆÃ ÃÊ±âÈ­
+    /// í”„ë¦°íŠ¸ í•¸ë“¤ëŸ¬ ê´€ë ¨ ë¦¬ì…‹
+    /// - ì¶œë ¥ ë²„íŠ¼ì— ê±¸ë ¤ ìˆëŠ” ì¹´ìš´íŠ¸ë‹¤ìš´ ë° ìƒíƒœ ì´ˆê¸°í™”
     /// </summary>
     private void PrintHandlerReset()
     {
@@ -216,7 +242,8 @@ public class InitCtrl : MonoBehaviour
     }
 
     /// <summary>
-    /// ÇÁ¸°Æ® ¸®¼Â °ü·Ã
+    /// í”„ë¦°íŠ¸ ê´€ë ¨ ë¦¬ì…‹
+    /// - PrintController ì˜ ë‚´ë¶€ ìƒíƒœ/ì˜µì…˜/ì„ì‹œ íŒŒì¼ ë“±ì„ ì´ˆê¸°í™”
     /// </summary>
     private void PrintReset()
     {
@@ -224,9 +251,10 @@ public class InitCtrl : MonoBehaviour
     }
 
     /// <summary>
-    /// ÃÊ±âÈ­ ÇÒ ¹öÆ° °ü·Ã
-    /// Ä«¸Ş¶ó ¾ø´Â °ü·ÃÀ¸·Î ÀÓ½Ã Å×½ºÆ® ÁøÇàÁßÀÎµ¥
-    /// ·ÎÁ÷À» ¿©±â¿¡ ÀÛ¼ºÇØµµ µÉÁö ÀÛ¼º ¹× °ËÅä ÇÊ¿ä
+    /// ë²„íŠ¼ ë° í…ŒìŠ¤íŠ¸ìš© ìƒíƒœ ë¦¬ì…‹
+    /// - ì´¬ì˜ ì‹œì‘/ì¢…ë£Œ í…ŒìŠ¤íŠ¸ ì˜¤ë¸Œì íŠ¸
+    /// - ì´¬ì˜ ì¤‘/ì™„ë£Œ ë²„íŠ¼ ê·¸ë£¹
+    /// - ì§„í–‰ë°”, ë’¤ë¡œê°€ê¸° ë²„íŠ¼ ìƒíƒœ ë“±
     /// </summary>
     private void ButtonReset()
     {
@@ -238,16 +266,16 @@ public class InitCtrl : MonoBehaviour
         _filimgObject.SetActive(true);
         _finishedFilimgObject.SetActive(false);
 
-        // ÇÁ·Î±×·¡½º¹Ù ÃÊ±âÈ­
+        // í”„ë¡œê·¸ë˜ìŠ¤ë°” ì´ˆê¸°í™”
         _progressFillImage.fillAmount = 0;
 
-        // µÚ·Î°¡±â ¹öÆ°
+        // ë’¤ë¡œê°€ê¸° ë²„íŠ¼ í™œì„±í™”
         _filmingToSelectCtrl.ButtonActive();
     }
 
     /// <summary>
-    /// ÃÔ¿µ Á¾·á -> ·¡µğ È­¸éÇÁ·¹ÀÓÀ¸·Î ÀüÈ¯
-    /// 1110 ÇöÀç ¼öÁ¤ÁßÀÓ
+    /// ì´¬ì˜ ì¢…ë£Œ í›„ â†’ ê²°ì œ/ëŒ€ê¸° í™”ë©´(Ready/ê²°ì œ ìª½ íŒ¨ë„)ìœ¼ë¡œ ì „í™˜
+    /// â€» í˜„ì¬(1110) ìˆ˜ì •/ì‹¤í—˜ ì¤‘ì¸ íë¦„
     /// </summary>
     public void PanaelActiveCtrl()
     {

@@ -3,38 +3,44 @@ using UnityEngine.UI;
 using System.Linq;
 
 /// <summary>
-/// À¥Ä· (½Ã°¢È­)
+/// ì›¹ìº  í”„ë¦¬ë·° ì»¨íŠ¸ë¡¤ëŸ¬
+/// - ì„ íƒí•œ WebCam ì¥ì¹˜ë¥¼ RawImage ì— ì‹¤ì‹œê°„ìœ¼ë¡œ ì¶œë ¥
 /// </summary>
 public class WebcamPreview : MonoBehaviour
 {
     [Header("UI")]
     [SerializeField] private RawImage webcamTarget;
+    // ì›¹ìº  í™”ë©´ì„ í‘œì‹œí•  RawImage
 
     [Header("Camera Selection")]
-    [SerializeField] private string preferredDeviceKeyword = "C922"; // µğ¹ÙÀÌ½º ÀÌ¸§¿¡ Æ÷ÇÔµÉ Å°¿öµå
-    [SerializeField] private int requestedWidth = 1920;   // 1080p
-    [SerializeField] private int requestedHeight = 1080;  // 1080p
-    [SerializeField] private int requestedFps = 30;
+    [SerializeField] private string preferredDeviceKeyword = "C922";
+    // ìš°ì„ ì ìœ¼ë¡œ ì‚¬ìš©í•  ì¹´ë©”ë¼ ì´ë¦„ì— í¬í•¨ë˜ì—ˆìœ¼ë©´ í•˜ëŠ” í‚¤ì›Œë“œ (ì˜ˆ: "C922")
+
+    [SerializeField] private int requestedWidth = 1920;   // ìš”ì²­ í•´ìƒë„ ê°€ë¡œ (ì˜ˆ: 1920 - 1080p)
+    [SerializeField] private int requestedHeight = 1080;  // ìš”ì²­ í•´ìƒë„ ì„¸ë¡œ (ì˜ˆ: 1080 - 1080p)
+    [SerializeField] private int requestedFps = 30;       // ìš”ì²­ í”„ë ˆì„ ìˆ˜
 
     private WebCamTexture _tex;
 
     private void Start()
     {
-        // »ç¿ë °¡´ÉÇÑ Ä«¸Ş¶ó ³ª¿­
+        // í˜„ì¬ ì—°ê²°ëœ ì›¹ìº  ì¥ì¹˜ ëª©ë¡ ê°€ì ¸ì˜¤ê¸°
         var devices = WebCamTexture.devices;
         if (devices == null || devices.Length == 0)
         {
-            Debug.LogError("WebCam ÀåÄ¡¸¦ Ã£À» ¼ö ¾ø½À´Ï´Ù.");
+            Debug.LogError("WebCam ì¥ì¹˜ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
             return;
         }
 
-        // C922°¡ ÀÖÀ¸¸é ¿ì¼± ¼±ÅÃ, ¾øÀ¸¸é Ã¹ ¹øÂ°
+        // preferredDeviceKeyword ë¥¼ í¬í•¨í•˜ëŠ” ì¥ì¹˜ë¥¼ ìš°ì„  ì„ íƒ, ì—†ìœ¼ë©´ ì²« ë²ˆì§¸ ì¥ì¹˜ ì‚¬ìš©
         var dev = devices.FirstOrDefault(d => d.name.Contains(preferredDeviceKeyword));
         if (string.IsNullOrEmpty(dev.name))
             dev = devices[0];
 
-        // ½ºÆ®¸² ½ÃÀÛ (¿äÃ» ÇØ»óµµ/ÇÁ·¹ÀÓ)
+        // WebCamTexture ìƒì„± (ìš”ì²­ í•´ìƒë„ / FPS)
         _tex = new WebCamTexture(dev.name, requestedWidth, requestedHeight, requestedFps);
+
+        // RawImage ì— í…ìŠ¤ì²˜ ì—°ê²° í›„ ì¬ìƒ
         webcamTarget.texture = _tex;
         _tex.Play();
     }
@@ -43,26 +49,27 @@ public class WebcamPreview : MonoBehaviour
     {
         if (_tex == null || !_tex.isPlaying) return;
 
-        // Ä«¸Ş¶óÀÇ È¸Àü/¹Ì·¯¸µ º¸Á¤
-        var rot = _tex.videoRotationAngle;      // 0/90/180/270
-        var vert = _tex.videoVerticallyMirrored; // ÀÏºÎ À¥Ä·¿¡¼­ true
+        // ì¹´ë©”ë¼ì˜ íšŒì „ ê°ë„ ë° ìƒí•˜ ë°˜ì „ ì—¬ë¶€ ì½ê¸°
+        var rot = _tex.videoRotationAngle;       // 0 / 90 / 180 / 270
+        var vert = _tex.videoVerticallyMirrored; // ìƒí•˜ ë°˜ì „ ì—¬ë¶€ (true ì´ë©´ ìœ„ì•„ë˜ê°€ ë’¤ì§‘í˜€ ìˆìŒ)
 
-        // RawImage UV º¸Á¤ (¼¼·Î µÚÁıÈû)
+        // RawImage UV ë³´ì • (ìƒí•˜ ë°˜ì „ ì²˜ë¦¬)
         var uv = webcamTarget.uvRect;
         uv.y = vert ? 1 : 0;
         uv.height = vert ? -1 : 1;
         webcamTarget.uvRect = uv;
 
-        // Äµ¹ö½º È¸Àü º¸Á¤
+        // RawImage(ìº”ë²„ìŠ¤) íšŒì „ ì ìš©
         webcamTarget.rectTransform.localEulerAngles = new Vector3(0, 0, -rot);
 
-        // (¼±ÅÃ) ·±Å¸ÀÓ¿¡ ½ÇÁ¦ ÇØ»óµµ°¡ ÀâÈ÷¸é ºñÀ² °»½Å
-        // ÀÏºÎ µå¶óÀÌ¹ö´Â ½ÇÁ¦ w/h¸¦ Ã¹ ÇÁ·¹ÀÓ ÈÄ¿¡ ¸®Æ÷Æ®ÇÔ
+        // (ì„ íƒ ì‚¬í•­) AspectRatioFitter ë“±ì„ ì‚¬ìš©í•´ í™”ë©´ ë¹„ìœ¨ì„ ì›¹ìº  í•´ìƒë„ì— ë§ì¶”ê³  ì‹¶ë‹¤ë©´ ì•„ë˜ ë¡œì§ ì‚¬ìš©
+        // í…ìŠ¤ì²˜ width/height ê°€ ìœ íš¨í•´ì¡Œì„ ë•Œ í•œ ë²ˆë§Œ ë¹„ìœ¨ì„ ê°±ì‹ í•´ì£¼ë©´ ëœë‹¤.
         // if (fitter != null && _tex.width > 16) fitter.aspectRatio = (float)_tex.width / _tex.height;
     }
 
     private void OnDisable()
     {
+        // ë¹„í™œì„±í™” ì‹œ WebCamTexture ì •ë¦¬
         if (_tex != null)
         {
             if (_tex.isPlaying) _tex.Stop();
