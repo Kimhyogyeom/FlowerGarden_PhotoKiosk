@@ -98,7 +98,7 @@ public class NetworkPingChecker : MonoBehaviour
         if (result.SuccessCount > 0)
         {
             SetLabel(
-                $"Ping [{result.Method}] - avg {result.AvgMs:F0} ms (min {result.MinMs:F0} / max {result.MaxMs:F0})"
+                $"Ping [{result.Method}] - avg {result.AvgMs:F0} ms\n(min {result.MinMs:F0} / max {result.MaxMs:F0})"
             );
         }
         else

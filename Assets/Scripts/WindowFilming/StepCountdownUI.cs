@@ -96,6 +96,7 @@ public class StepCountdownUI : MonoBehaviour
 
     [Header("Mission")]
     [SerializeField] private MissionApplicationCtrl _missionCtrl;
+    [SerializeField] private MissionTextAnimatorSlide _missionAnimator;
     // 미션 문구를 관리하는 컨트롤러
 
     [SerializeField] private TextMeshProUGUI _missionText;
@@ -232,7 +233,9 @@ public class StepCountdownUI : MonoBehaviour
         _isRunning = true;
 
         int steps = Mathf.Max(1, _totalSteps);
-        float secs = Mathf.Max(1, _intervalSeconds);
+        // float secs = Mathf.Max(1, _intervalSeconds);
+        float perDigit = Mathf.Max(0.1f, _intervalSeconds);   // 숫자 하나당 머무는 시간(초)
+        float stepDuration = perDigit * 3f;                   // 3,2,1 → 총 3개니까 
 
         // 슬라이더 초기값 세팅
         if (_stepProgressSlider)
@@ -262,22 +265,26 @@ public class StepCountdownUI : MonoBehaviour
             if (_missionCount == 1)
             {
                 string msg = _missionCtrl.GetRandomMissionMessage(_missionCount - 1);
-                _missionText.text = msg;
+                _missionAnimator.SetTextAndSlideIn(msg);
+                // _missionText.text = msg;
             }
             else if (_missionCount == 2)
             {
                 string msg = _missionCtrl.GetRandomMissionMessage(_missionCount - 1);
-                _missionText.text = msg;
+                _missionAnimator.SetTextAndSlideIn(msg);
+                // _missionText.text = msg;
             }
             else if (_missionCount == 3)
             {
                 string msg = _missionCtrl.GetRandomMissionMessage(_missionCount - 1);
-                _missionText.text = msg;
+                _missionAnimator.SetTextAndSlideIn(msg);
+                // _missionText.text = msg;
             }
             else if (_missionCount == 4)
             {
                 string msg = _missionCtrl.GetRandomMissionMessage(_missionCount - 1);
-                _missionText.text = msg;
+                _missionAnimator.SetTextAndSlideIn(msg);
+                // _missionText.text = msg;
             }
 
             //Debug.Log($"====================={_missionCount}");
@@ -291,12 +298,15 @@ public class StepCountdownUI : MonoBehaviour
 
             // 카운트다운 + 슬라이더 애니메이션 동시 진행
             float elapsed = 0f;
-            while (elapsed < secs)
+
+            int lastDisplay = -1;   // 사운드 중복 재생 방지용
+
+            while (elapsed < stepDuration)
             {
                 elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / secs);
+                float t = Mathf.Clamp01(elapsed / stepDuration);
 
-                // 슬라이더 진행도 업데이트
+                // 슬라이더 진행도 업데이트 (0 -> 1)
                 if (_stepProgressSlider)
                 {
                     _stepProgressSlider.value = Mathf.Lerp(startFill, endFill, t);
@@ -305,54 +315,41 @@ public class StepCountdownUI : MonoBehaviour
                 // 카운트다운 이미지(3,2,1) 표시
                 if (_countdownImagesPool)
                 {
-                    float timeLeft = Mathf.Max(0f, secs - elapsed);
-                    int display = Mathf.CeilToInt(timeLeft);
-                    if (display < 1) display = 1; // 0 대신 1까지만 보이도록 보정
+                    // 지금까지 몇 초 지났는지에 따라 0~2 단계로 나눔
+                    float phase = elapsed / perDigit;          // 0~3 사이
+                    int index = Mathf.FloorToInt(phase);      // 0,1,2,...
+                    index = Mathf.Clamp(index, 0, 2);         // 최대 2까지만
 
-                    if (display == 3)
+                    int display = 3 - index;                  // 0→3, 1→2, 2→1
+
+                    // 숫자가 바뀌는 순간에만 이미지/사운드 갱신
+                    if (display != lastDisplay)
                     {
-                        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._numberSfx3);
-                        _countdownImages[2].gameObject.SetActive(true);
-                        _countdownImages[1].gameObject.SetActive(false);
-                        _countdownImages[0].gameObject.SetActive(false);
-                    }
-                    else if (display == 2)
-                    {
-                        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._numberSfx2);
-                        _countdownImages[2].gameObject.SetActive(false);
-                        _countdownImages[1].gameObject.SetActive(true);
-                        _countdownImages[0].gameObject.SetActive(false);
-                    }
-                    else if (display == 1)
-                    {
-                        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._numberSfx1);
-                        _countdownImages[2].gameObject.SetActive(false);
-                        _countdownImages[1].gameObject.SetActive(false);
-                        _countdownImages[0].gameObject.SetActive(true);
+                        lastDisplay = display;
+
+                        if (display == 3)
+                        {
+                            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._numberSfx3);
+                            _countdownImages[2].gameObject.SetActive(true);
+                            _countdownImages[1].gameObject.SetActive(false);
+                            _countdownImages[0].gameObject.SetActive(false);
+                        }
+                        else if (display == 2)
+                        {
+                            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._numberSfx2);
+                            _countdownImages[2].gameObject.SetActive(false);
+                            _countdownImages[1].gameObject.SetActive(true);
+                            _countdownImages[0].gameObject.SetActive(false);
+                        }
+                        else if (display == 1)
+                        {
+                            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._numberSfx1);
+                            _countdownImages[2].gameObject.SetActive(false);
+                            _countdownImages[1].gameObject.SetActive(false);
+                            _countdownImages[0].gameObject.SetActive(true);
+                        }
                     }
                 }
-
-                //// 숫자 텍스트로 카운트다운을 쓸 때 사용 (현재 미사용)
-                //if (_countdownText)
-                //{
-                //    float timeLeft = Mathf.Max(0f, secs - elapsed);
-                //    int display = Mathf.CeilToInt(timeLeft);
-                //    if (display < 1) display = 1;
-                //    _countdownText.text = display.ToString();
-                //
-                //    if (display == 3)
-                //    {
-                //        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._numberSfx3);
-                //    }
-                //    else if (display == 2)
-                //    {
-                //        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._numberSfx2);
-                //    }
-                //    else if (display == 1)
-                //    {
-                //        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._numberSfx1);
-                //    }
-                //}
 
                 yield return null;
             }
