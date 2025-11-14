@@ -53,6 +53,9 @@ public class SubtleWiggleUI : MonoBehaviour
     [SerializeField] private GameObject _parentObject;
     // 필요 시 부모 오브젝트를 참조할 때 사용할 수 있는 필드 (현재 로직에서는 직접 사용하지 않음)
 
+    private float _time;
+    // 내부에서만 쓰는 타이머 (Time.time 대신 누적해서 사용)
+
     /// <summary>
     /// 에디터에서 컴포넌트를 추가했을 때 기본값을 셋업하는 콜백
     /// - _rect가 비어있으면 자신의 RectTransform을 자동으로 연결
@@ -78,20 +81,39 @@ public class SubtleWiggleUI : MonoBehaviour
 
         // 여러 개가 동시에 쓰일 때 서로 다른 타이밍으로 움직이게 하기 위한 위상
         _phaseOffset = _useRandomPhase ? Random.Range(0f, 100f) : 0f;
+
+        _time = 0f;
     }
 
     /// <summary>
     /// 오브젝트가 다시 활성화될 때,
-    /// 씬에서 위치/각도를 바꿨다면 그 값을 기준 위치로 다시 저장
+    /// 기준 위치/각도 복원 + 타이머 리셋
     /// </summary>
     private void OnEnable()
     {
-        // Enable 시점에 기준값 갱신 (씬에서 위치/각도 바꿨을 수 있으니까)
         if (_rect != null)
         {
-            _baseAnchoredPos = _rect.anchoredPosition;
-            _baseRotZ = _rect.localEulerAngles.z;
+            // 처음 기준 위치/각도로 되돌리기
+            _rect.anchoredPosition = _baseAnchoredPos;
+            _rect.localEulerAngles = new Vector3(0f, 0f, _baseRotZ);
         }
+
+        // 시간도 0부터 다시 시작 → 항상 처음 움직이는 것처럼
+        _time = 0f;
+    }
+
+    /// <summary>
+    /// 비활성화될 때도 위치/각도 리셋 (패널 토글 시 깔끔하게 초기화)
+    /// </summary>
+    private void OnDisable()
+    {
+        if (_rect != null)
+        {
+            _rect.anchoredPosition = _baseAnchoredPos;
+            _rect.localEulerAngles = new Vector3(0f, 0f, _baseRotZ);
+        }
+
+        _time = 0f;
     }
 
     /// <summary>
@@ -100,13 +122,13 @@ public class SubtleWiggleUI : MonoBehaviour
     /// </summary>
     private void Update()
     {
-        //print("2222222222");
-
         if (_rect == null) return;
 
-        // 사용할 시간값 선택 (타임스케일 영향을 받을지 여부에 따라)
-        float t = _useUnscaledTime ? Time.unscaledTime : Time.time;
-        t += _phaseOffset;
+        // 사용할 시간값: 타임스케일 영향을 받을지 여부에 따라 deltaTime 누적
+        float dt = _useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
+        _time += dt;
+
+        float t = _time + _phaseOffset;
 
         // 좌우 위치 흔들림 (X축)
         float offsetX = Mathf.Sin(t * _posFrequency) * _posAmplitude;

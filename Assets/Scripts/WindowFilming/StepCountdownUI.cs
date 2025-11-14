@@ -348,6 +348,10 @@ public class StepCountdownUI : MonoBehaviour
                             _countdownImages[1].gameObject.SetActive(false);
                             _countdownImages[0].gameObject.SetActive(true);
                         }
+                        else
+                        {
+                            // 빈 공간으로 나눠둠
+                        }
                     }
                 }
 

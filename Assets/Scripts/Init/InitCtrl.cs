@@ -61,20 +61,8 @@ public class InitCtrl : MonoBehaviour
     [SerializeField] private GameObject _finishedFilimgObject;   // 촬영 완료 후 버튼 오브젝트
     [SerializeField] private Image _progressFillImage;           // 진행 바(프로그레스 바) 이미지
 
-#pragma warning disable CS0414
-    [Range(1f, 10f)]
-    [Header("TimeScale Value")]
-    [Tooltip("기본 : 1, 최대 : 10 (테스트용 타임스케일 조절)")]
-    [SerializeField] private float _timeScale = 1.0f;
-#pragma warning restore CS0414
-
     private void Awake()
     {
-        // ─────────────────────────────────────────────────────────
-        // 테스트용: 게임 전체 타임스케일 초기화
-        Time.timeScale = 1f;
-        // ─────────────────────────────────────────────────────────
-
         // 초기화(돌아가기) 버튼 클릭 리스너 등록
         _initButton.onClick.AddListener(ResetManager);
         _originColor = _photoButton.colors;

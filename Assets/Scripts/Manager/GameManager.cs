@@ -34,6 +34,13 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public KioskState CurrentState => _currentState;
 
+#pragma warning disable CS0414
+    [Range(1f, 10f)]
+    [Header("TimeScale Value")]
+    [Tooltip("기본 : 1, 최대 : 10 (테스트용 타임스케일 조절)")]
+    [SerializeField] private float _timeScale = 1.0f;
+#pragma warning restore CS0414
+
     private void Awake()
     {
         // 싱글톤 보장: 이미 다른 인스턴스가 있으면 자신을 파괴
@@ -46,6 +53,12 @@ public class GameManager : MonoBehaviour
 
         // 여러 씬을 쓴다면 주석 해제해서 유지할 수도 있음
         // DontDestroyOnLoad(gameObject); 
+
+        // ─────────────────────────────────────────────────────────
+        // 테스트용: 게임 전체 타임스케일 초기화
+        Time.timeScale = _timeScale;
+        // Debug.Log($"TimeScale {Time.timeScale}");
+        // ─────────────────────────────────────────────────────────
     }
 
     /// <summary>

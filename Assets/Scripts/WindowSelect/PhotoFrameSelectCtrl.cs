@@ -1,6 +1,10 @@
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// 프레임 변경 버튼 클릭시 실행되는 스크립트
+/// 스케일 0 <-> 1 인/아웃 시각화
+/// </summary>
 public class PhotoFrameSelectCtrl : MonoBehaviour
 {
     [Header("Photo Frame Select Images")]

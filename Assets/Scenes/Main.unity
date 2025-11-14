@@ -3603,8 +3603,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278238733
-  m_fontColor: {r: 0.049396563, g: 0.745283, b: 0, a: 1}
+    rgba: 4294944512
+  m_fontColor: {r: 0, g: 0.6556065, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -6095,7 +6095,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_text: "Step 1\n<size=25>\"\uD654\uBA74\"\uC744 \uBCF4\uACE0 \uC790\uC138\uB97C
-    \uB9DE\uCDB0\uC8FC\uC138\uC694!"
+    \uC7A1\uC544\uBCF4\uC790!"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: a1c7aa03a7ab67940bba272ed05ceb5a, type: 2}
   m_sharedMaterial: {fileID: 1303654958184645443, guid: a1c7aa03a7ab67940bba272ed05ceb5a, type: 2}
@@ -7505,6 +7505,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _currentState: 0
+  _timeScale: 5
 --- !u!1 &738953751
 GameObject:
   m_ObjectHideFlags: 0
@@ -7761,7 +7762,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 171.9252, y: -258.39212}
+  m_AnchoredPosition: {x: 171.78165, y: -258.4728}
   m_SizeDelta: {x: 250, y: 400}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &763132483
@@ -8511,7 +8512,6 @@ MonoBehaviour:
   _filimgObject: {fileID: 1819441571}
   _finishedFilimgObject: {fileID: 771220229}
   _progressFillImage: {fileID: 246174730}
-  _timeScale: 1
 --- !u!1 &826052581
 GameObject:
   m_ObjectHideFlags: 0
@@ -8744,7 +8744,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_text: "Step 6\n<size=25>\"\uC778\uC1C4\uAC00 \uC644\uB8CC\uB41C \uC0AC\uC9C4
-    \uAC00\uC838\uAC00\uAE30!!\""
+    \uAC16\uACE0 \uD589\uBCF5\uD558\uAE30~\""
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: a1c7aa03a7ab67940bba272ed05ceb5a, type: 2}
   m_sharedMaterial: {fileID: 1303654958184645443, guid: a1c7aa03a7ab67940bba272ed05ceb5a, type: 2}
@@ -9016,8 +9016,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Step 3\n<size=25>\"3\uCD08\"\uB9C8\uB2E4 \uCD2C\uC601 \uC2DC\uC791! (\uCD1D
-    4\uBC88)"
+  m_text: "Step 3\n<size=25>3 -> 2 -> 1 -> \uCC30\uCE75!! (\uCD1D 4\uBC88)"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: a1c7aa03a7ab67940bba272ed05ceb5a, type: 2}
   m_sharedMaterial: {fileID: 1303654958184645443, guid: a1c7aa03a7ab67940bba272ed05ceb5a, type: 2}
@@ -9026,8 +9025,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278250751
-  m_fontColor: {r: 1, g: 0.9253036, b: 0, a: 1}
+    rgba: 4280670464
+  m_fontColor: {r: 0, g: 0.8490566, b: 0.143717, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -16919,6 +16918,7 @@ GameObject:
   - component: {fileID: 1651708598}
   - component: {fileID: 1651708600}
   - component: {fileID: 1651708599}
+  - component: {fileID: 1651708601}
   m_Layer: 5
   m_Name: Handle
   m_TagString: Untagged
@@ -16983,6 +16983,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1651708597}
   m_CullTransparentMesh: 1
+--- !u!114 &1651708601
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1651708597}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_EffectColor: {r: 1, g: 0.9009434, b: 0.9009434, a: 1}
+  m_EffectDistance: {x: 1, y: 1}
+  m_UseGraphicAlpha: 1
 --- !u!1 &1654541272
 GameObject:
   m_ObjectHideFlags: 0
@@ -18416,7 +18431,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 771.9252, y: -258.39212}
+  m_AnchoredPosition: {x: 771.7816, y: -258.4728}
   m_SizeDelta: {x: 250, y: 400}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1762192464
@@ -20274,7 +20289,7 @@ MonoBehaviour:
   - {fileID: 1223183733}
   - {fileID: 311271699}
   _totalSteps: 4
-  _intervalSeconds: 3
+  _intervalSeconds: 2
   _stepImages:
   - {fileID: 1742524877}
   - {fileID: 2145821615}
@@ -21573,8 +21588,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294009600
-  m_fontColor: {r: 0, g: 0.38869876, b: 0.9433962, a: 1}
+    rgba: 4293984282
+  m_fontColor: {r: 0.103508905, g: 0, b: 0.94509804, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -22468,7 +22483,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 471.9252, y: -258.39212}
+  m_AnchoredPosition: {x: 471.78165, y: -258.4728}
   m_SizeDelta: {x: 250, y: 400}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2069415204
