@@ -19,7 +19,12 @@ public class FadeAnimationCtrl : MonoBehaviour
     [SerializeField] private FilmingPanelCtrl _filmingPanelCtrl;    // 프레임 선택 → 촬영 패널 전환 담당
     [SerializeField] private FilmingToSelectCtrl _filmingToSelectCtrl; // 촬영 화면 → 선택 화면으로 돌아갈 때 사용
 
-    [SerializeField] private PaymentCtrl _paymentCtrl;  // 결제 완료 시스템
+    [SerializeField] private PaymentCtrl _paymentCtrl;      // 결제 완료 시스템
+    [SerializeField] private QuantityToPaymentCtrl _quantityToPaymentCtrl;  // 수량 -> 결제 컨트롤러
+    [SerializeField] private PaymentToNextStageCtrl _paymentToNextStageCtrl;    // 결제 -> 결제완료 자동 : (결제 완료 -> 필름 패널로 변경)
+    [SerializeField] private HomButtonCtrl _homeButtonCtrl; // 홈 버튼 누르면 실행될 제어 컨트롤러 
+
+    [SerializeField] private PaymentWaitingPanelTransitionCtrl _paymentWatingPanelTranstionCtrl;    // 이거 결제 -> 결제 대기 할 때 로직 컨트롤러
 
     [Header("Auto")]
     [SerializeField] private ReadyAutoTransitionCtrl _readyAutoTransitionCtrl;      // 페이드 아웃 됐을때 타이머 호출
@@ -87,7 +92,7 @@ public class FadeAnimationCtrl : MonoBehaviour
                     UnityEngine.Debug.LogWarning("_paymentCtrl reference is missing");
                 }
             }
-            // 0단계: Ready 화면에서 "시작하기" 버튼 클릭 후 → 카메라 패널로 전환
+            // 0단계: Ready 화면에서 "시작하기" 버튼 클릭 후 → 선택 화면으로 변경
             else if (_isStateStep == 0)
             {
                 _isStateStep = 1;
@@ -104,6 +109,8 @@ public class FadeAnimationCtrl : MonoBehaviour
                 }
             }
             // 1단계: 프레임 선택 화면에서 "사진 찍기" 버튼 클릭 후 → 촬영 패널로 전환
+            // 였는데 수량 화면 전환으로 바뀔 예정
+            // 프레임 선택  화면에서 수량 화면으로 전환
             else if (_isStateStep == 1)
             {
                 _isStateStep = 2;
@@ -118,26 +125,76 @@ public class FadeAnimationCtrl : MonoBehaviour
                     UnityEngine.Debug.LogWarning("_filmingPanelCtrl reference is missing");
                 }
             }
-            // 2단계: 촬영 및 출력 플로우가 끝난 뒤 → Ready(결제/대기) 화면으로 복귀
+            // 수량 화면에서 결제 화면으로 전환
             else if (_isStateStep == 2)
             {
-                // 현재 스텝 최대 값은 2  
-                // 2까지 처리 후에는 다시 0으로 초기화하여 다음 루프를 위한 준비
-                // 원래 결제 -> 시작했는데, 디자인 받아서 새로 적용해보려고 임시 주석처리 -1
-                // _isStateStep = -1;
-                _isStateStep = 0;
-                _initCtrl.PanaelActiveCtrl();
+                _isStateStep = 3;
+                _quantityToPaymentCtrl.ObjectActiveCtrl();
             }
+            // 2단계: 촬영 및 출력 플로우가 끝난 뒤 → Ready(결제/대기) 화면으로 복귀
+            // 였는데 결제 화면에서 촬영 시작 화면으로 바뀔 예정
+            // 결제화면에서 결제 진행중 화면으로 전환되어야함            
+            else if (_isStateStep == 3)
+            {
+                _isStateStep = 4;
+                _paymentWatingPanelTranstionCtrl.OnClickGoToPayment();
+            }
+            // 결제 완료 -> 사진 촬영 패널로 변경
+            else if (_isStateStep == 4)
+            {
+                _isStateStep = 5;
+                _paymentToNextStageCtrl.OnPaymentCompleted();
+            }
+            else if (_isStateStep == 5)
+            {
+                _initCtrl.PanaelActiveCtrl(); // 초기화하는녀석
+            }
+            // ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+            // 홈 버튼 클릭
+            // ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             // 100단계: 촬영 화면에서 Back 버튼 사용 시  
             // - _isStateStep를 100으로 설정해 진입  
             // - 여기서 1로 변경 후, FilmingToSelectCtrl을 통해 선택 화면으로 복귀
+            // [1117] 사라질 예정.
             else if (_isStateStep == 100)
             {
                 UnityEngine.Debug.Log("_isStateStep : greater than 100");
                 _isStateStep = 1;
                 _filmingToSelectCtrl.PanaelActiveCtrl();
             }
-            // 그 외 값: 특별 처리 없음 (디버그 용도)
+            // 101단계: 프레임 선택 화면에서 홈 화면을 클릭했을 때 실행될꺼임
+            else if (_isStateStep == 101)
+            {
+                _isStateStep = 0;
+                _homeButtonCtrl.ObjectsActiveCtrlSel();
+            }
+            // 102단계 프레임 -> 선택 화면 -> 수량 화면에서 홈 화면을 클릭했을 때 실행될꺼임
+            else if (_isStateStep == 102)
+            {
+                _isStateStep = 0;
+                _homeButtonCtrl.ObjectsActiveCtrlSel();
+            }
+            // 103단계 프레임 -수량 -> 결제 화면에서 홈 화면을 클릭했을 때 실행될꺼임
+            else if (_isStateStep == 103)
+            {
+                _isStateStep = 0;
+                _homeButtonCtrl.ObjectsActiveCtrlSel();
+            }
+            // ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+            // 뒤로가기 버튼 클릭
+            // ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+            // 201단계 수량 화면에서 뒤로가기 버튼을 클릭했을 때 실행될거임 (수량 -> 선택 화면)
+            else if (_isStateStep == 201)
+            {
+                _isStateStep = 1;
+                _homeButtonCtrl.ObjectsActiveCtrlQua();
+            }
+            // 202단계 수량 화면에서 뒤로가기 버튼을 클릭했을 때 실행될거임 (수량 -> 선택 화면)
+            else if (_isStateStep == 202)
+            {
+                _isStateStep = 2;
+                _homeButtonCtrl.ObjectsActiveCtrlQua();
+            }
             else
             {
                 UnityEngine.Debug.Log("_isStateStep : else");

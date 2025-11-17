@@ -16,17 +16,17 @@ public class FilmingPanelCtrl : MonoBehaviour
     [SerializeField] private FadeAnimationCtrl _fadeAnimationCtrl;
     // 패널 전환 시 사용하는 페이드 애니메이션 컨트롤러
 
-    [SerializeField] private FilmingToSelectCtrl _filmingToSelectCtrl;
+    // [SerializeField] private FilmingToSelectCtrl _filmingToSelectCtrl;
     // 촬영 이후 선택 화면으로 돌아가는 흐름 제어 컨트롤러
 
     [Header("Setting Object")]
     [SerializeField] private Button _selectPhotoButton;
     // "사진 촬영" 모드로 진입하는 버튼 (프레임 선택 화면에서 사용)
 
-    [SerializeField] private GameObject _currentPanel;
+    // [SerializeField] private GameObject _currentPanel;
     // 현재 보여지고 있는 패널 (프레임 선택 + 설명 등)
 
-    [SerializeField] private GameObject _changedPhotoPanel;
+    // [SerializeField] private GameObject _changedPhotoPanel;
     // 페이드 이후에 보여줄 촬영용 패널
 
     [SerializeField] private Button _photoButton;
@@ -38,13 +38,13 @@ public class FilmingPanelCtrl : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _buttonText;
     // 촬영 버튼 주변에 보여줄 텍스트 (예: "촬영중" 등 상태 표시)
 
-    [SerializeField] private GameObject _stepsObject;
+    // [SerializeField] private GameObject _stepsObject;
     // 촬영 전에 보여줄 단계 안내 UI 오브젝트
 
     [SerializeField] private GameObject _descriptionFingerObject;
     // 손가락 설명(가이드) UI 오브젝트 (촬영 버튼 안내용)
 
-    [SerializeField] private GameObject _cameraFocus;
+    // [SerializeField] private GameObject _cameraFocus;
     // 카메라 중앙 포커스 표시용 오브젝트
 
     [Header("Setting Color")]
@@ -98,7 +98,7 @@ public class FilmingPanelCtrl : MonoBehaviour
     public void OnSelectPhotoButtonClicked()
     {
         // 상태를 촬영 모드로 전환
-        GameManager.Instance.SetState(KioskState.Filming);
+        GameManager.Instance.SetState(KioskState.Quantity);
 
         // 촬영 시작 버튼 사운드 재생
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._filmingStartButton);
@@ -114,10 +114,10 @@ public class FilmingPanelCtrl : MonoBehaviour
     /// </summary>
     public void PanelChanger()
     {
-        _currentPanel.SetActive(false);
-        _changedPhotoPanel.SetActive(true);
+        // _currentPanel.SetActive(false);
+        // _changedPhotoPanel.SetActive(true);
     }
-
+    // 
     /// <summary>
     /// 카메라 윈도우에서 "사진 찍기" 버튼 클릭 시 호출
     /// - 버튼 색상 및 텍스트 변경
@@ -132,14 +132,14 @@ public class FilmingPanelCtrl : MonoBehaviour
             SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._filmingButton);
 
             // 촬영 후 선택 화면으로 가는 버튼/동작 비활성화
-            _filmingToSelectCtrl.ButtonInActive();
+            // _filmingToSelectCtrl.ButtonInActive();
 
             // 실제 버튼 대신 페이크 버튼을 활성화해 재입력 방지/연출
             _photoButtonFake.SetActive(true);
 
             // 촬영 단계 안내/카메라 포커스 등 숨기기
-            _stepsObject.SetActive(false);
-            _cameraFocus.SetActive(false);
+            // _stepsObject.SetActive(false);
+            // _cameraFocus.SetActive(false);
 
             // 버튼 컬러를 촬영 중 상태 색상으로 변경
             var cb = _photoButton.colors;
@@ -164,20 +164,20 @@ public class FilmingPanelCtrl : MonoBehaviour
             Debug.LogWarning("_photoButton reference is missing in OnPhotoButtonClicked");
         }
 
-        // 버튼 텍스트/설명 UI 업데이트
-        if (_buttonText != null)
-        {
-            // 손가락 가이드 숨기기
-            _descriptionFingerObject.SetActive(false);
+        // // 버튼 텍스트/설명 UI 업데이트
+        // if (_buttonText != null)
+        // {
+        //     // 손가락 가이드 숨기기
+        //     _descriptionFingerObject.SetActive(false);
 
-            // 텍스트 색상 및 내용 변경
-            _buttonText.color = _textColor;
-            _buttonText.text = "촬영중";
-        }
-        else
-        {
-            Debug.LogWarning("_buttonText reference is missing in OnPhotoButtonClicked");
-        }
+        //     // 텍스트 색상 및 내용 변경
+        //     _buttonText.color = _textColor;
+        //     _buttonText.text = "촬영중";
+        // }
+        // else
+        // {
+        //     Debug.LogWarning("_buttonText reference is missing in OnPhotoButtonClicked");
+        // }
 
         //Debug.Log("OnClick Filming Button");
     }

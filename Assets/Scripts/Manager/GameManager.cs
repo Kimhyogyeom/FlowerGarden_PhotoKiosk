@@ -6,11 +6,19 @@ using UnityEngine;
 /// </summary>
 public enum KioskState
 {
-    WaitingForPayment,  // 결제 대기 화면 (결제 진행 전 상태)
-    Ready,              // 대기 화면 (시작/촬영 준비 상태)
-    Select,             // 프레임/옵션 선택 화면
-    Frame,              // 프레임 상세 선택/편집 상태
+    Ready,              // 대기 화면 (시작/촬영 준비 상태) // 0-1
+
+    Select,             // 프레임/옵션 선택 화면          // 1-2
+
+    Quantity,           // 수량                         // 2-3
+
+    Payment,            // 결제                         // 3-4
+
+    WaitingForPayment,  // 결제 대기 화면 (결제 진행 전 상태) // 4-5
+
     Filming,            // 사진 촬영 진행 중 상태
+
+    CutWindow,          // 4컷 화면
     Printing            // 인쇄 진행 중 상태
 }
 

@@ -170,7 +170,6 @@ public class PaymentCtrl : MonoBehaviour
             if (_textMeshPro != null)
             {
                 _textMeshPro.text = "결제 성공";
-                _fadeAnimationCtrl.StartFade();
             }
 
             // 실제라면 OnPaymentApproved() 안에서 StopLoading() 을 호출할 수도 있지만
@@ -178,7 +177,8 @@ public class PaymentCtrl : MonoBehaviour
             StopLoading();
 
             yield return new WaitForSeconds(2f);
-
+            GameManager.Instance.SetState(KioskState.Filming);
+            _fadeAnimationCtrl.StartFade();
             OnPaymentApproved();
         }
         else
@@ -234,11 +234,14 @@ public class PaymentCtrl : MonoBehaviour
     public void OnCallbackEnd()
     {
         // 상태를 Ready 로 되돌림
-        GameManager.Instance.SetState(KioskState.Ready);
+        GameManager.Instance.SetState(KioskState.Filming);
 
+        _fadeAnimationCtrl._isStateStep = 3;
         // 결제 패널은 닫고, Ready 패널을 다시 표시
         if (_paymentPanel != null) _paymentPanel.SetActive(false);
+        else print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
         if (_readyPanel != null) _readyPanel.SetActive(true);
+        else print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
     }
 
     /// <summary>

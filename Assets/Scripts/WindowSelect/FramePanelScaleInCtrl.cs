@@ -18,14 +18,14 @@ public class FramePanelScaleInCtrl : MonoBehaviour
     // 순서대로 하나씩 등장(ScaleInSequence), 동시에 사라짐(ScaleOutAndClose)
 
     [Header("Setting Object")]
-    [SerializeField] private Button _triggerButton;
-    // 프레임 변경 패널을 여는 버튼 (예: "프레임 변경" 버튼)
+    // // [SerializeField] private Button _triggerButton;
+    // // 프레임 변경 패널을 여는 버튼 (예: "프레임 변경" 버튼)
 
-    [SerializeField] private GameObject _panelFrameCurrent;
-    // 현재 프레임을 보여주는 패널 (Frame 선택 전 상태)
+    // [SerializeField] private GameObject _panelFrameCurrent;
+    // // 현재 프레임을 보여주는 패널 (Frame 선택 전 상태)
 
-    [SerializeField] private GameObject _panelFrameChange;
-    // 프레임 선택 패널 (Frame 변경 시 활성화)
+    // [SerializeField] private GameObject _panelFrameChange;
+    // // 프레임 선택 패널 (Frame 변경 시 활성화)
 
     [SerializeField] private Button[] _optionButtons = new Button[5];
     // 프레임 선택 옵션 버튼들 (총 5개 가정, index 0~4)
@@ -58,14 +58,14 @@ public class FramePanelScaleInCtrl : MonoBehaviour
         }
 
         // 패널 열기(트리거) 버튼 리스너 등록
-        if (_triggerButton != null)
-        {
-            _triggerButton.onClick.AddListener(OnTriggerClicked);
-        }
-        else
-        {
-            Debug.LogWarning("_triggerButton reference is missing");
-        }
+        // if (_triggerButton != null)
+        // {
+        //     _triggerButton.onClick.AddListener(OnTriggerClicked);
+        // }
+        // else
+        // {
+        //     Debug.LogWarning("_triggerButton reference is missing");
+        // }
 
         // 옵션 버튼(0~4) 리스너 등록
         if (_optionButtons != null && _optionButtons.Length > 0)
@@ -92,15 +92,15 @@ public class FramePanelScaleInCtrl : MonoBehaviour
 
     private void OnDestroy()
     {
-        // 트리거 버튼 리스너 제거
-        if (_triggerButton != null)
-        {
-            _triggerButton.onClick.RemoveListener(OnTriggerClicked);
-        }
-        else
-        {
-            Debug.LogWarning("_triggerButton reference is missing on OnDestroy");
-        }
+        // // 트리거 버튼 리스너 제거
+        // if (_triggerButton != null)
+        // {
+        //     _triggerButton.onClick.RemoveListener(OnTriggerClicked);
+        // }
+        // else
+        // {
+        //     Debug.LogWarning("_triggerButton reference is missing on OnDestroy");
+        // }
 
         // 옵션 버튼들 리스너 제거
         if (_optionButtons != null && _optionButtons.Length > 0)
@@ -145,21 +145,21 @@ public class FramePanelScaleInCtrl : MonoBehaviour
         }
         else
         {
-            if (_panelFrameChange == null)
-            {
-                Debug.LogWarning("_panelFrameChange reference is missing");
-                return;
-            }
+            // if (_panelFrameChange == null)
+            // {
+            //     Debug.LogWarning("_panelFrameChange reference is missing");
+            //     return;
+            // }
 
             // 프레임 선택 상태로 전환
-            GameManager.Instance.SetState(KioskState.Frame);
+            GameManager.Instance.SetState(KioskState.Select);
 
             // 프레임 변경 버튼 사운드
             SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._frameChangeButton);
 
-            // 현재 프레임 패널 비활성화, 프레임 변경 패널 활성화
-            _panelFrameCurrent.SetActive(false);
-            _panelFrameChange.SetActive(true);
+            // // 현재 프레임 패널 비활성화, 프레임 변경 패널 활성화
+            // _panelFrameCurrent.SetActive(false);
+            // _panelFrameChange.SetActive(true);
 
             // 자식 UI 순차 스케일 인 시작
             StartCoroutine(ScaleInSequence());
@@ -268,10 +268,10 @@ public class FramePanelScaleInCtrl : MonoBehaviour
         yield return new WaitForSeconds(_duration);
 
         // 프레임 선택 패널 비활성화, 현재 프레임 패널 활성화
-        if (_panelFrameChange != null)
-            _panelFrameChange.SetActive(false);
-        if (_panelFrameCurrent != null)
-            _panelFrameCurrent.SetActive(true);
+        // if (_panelFrameChange != null)
+        //     _panelFrameChange.SetActive(false);
+        // if (_panelFrameCurrent != null)
+        //     _panelFrameCurrent.SetActive(true);
 
         // 적용 버튼 비활성화 (다음에 다시 열릴 때까지)
         if (_applicationButton != null)
@@ -340,11 +340,11 @@ public class FramePanelScaleInCtrl : MonoBehaviour
         _isAnimating = false;
         _selectedIndex = -1;
 
-        // 패널 상태: 현재 프레임 패널 ON, 프레임 변경 패널 OFF (기본 상태 가정)
-        if (_panelFrameCurrent != null)
-            _panelFrameCurrent.SetActive(true);
-        if (_panelFrameChange != null)
-            _panelFrameChange.SetActive(false);
+        // // 패널 상태: 현재 프레임 패널 ON, 프레임 변경 패널 OFF (기본 상태 가정)
+        // if (_panelFrameCurrent != null)
+        //     _panelFrameCurrent.SetActive(true);
+        // if (_panelFrameChange != null)
+        //     _panelFrameChange.SetActive(false);
 
         // 자식 스케일: 닫힌 상태 기준으로 0으로 맞춰두고,
         // 다음에 열릴 때 ScaleInSequence에서 0→1로 자연스럽게 등장

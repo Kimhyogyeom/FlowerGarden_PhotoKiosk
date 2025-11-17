@@ -17,7 +17,7 @@ public class InitCtrl : MonoBehaviour
     [SerializeField] private Button _initButton;            // 돌아가기(초기화) 버튼
     [SerializeField] private TextMeshProUGUI _initText;     // 버튼 옆/위에 카운트다운 표시용 텍스트
     private Coroutine _resetCallbackRoutine = null;         // 자동 리셋 코루틴
-    // [SerializeField] private int _successToBackTime = 10;   // 인쇄 후 초기 화면으로 돌아가기까지 대기 시간(초)
+    // [SerializeField] private int g_successToBackTime = 10;   // 인쇄 후 초기 화면으로 돌아가기까지 대기 시간(초)
 
     [Header("Setting Component")]
     [SerializeField] private PhotoFrameSelectCtrl _photoFrameSelectCtrl;    // 프레임 선택 컨트롤러
@@ -268,7 +268,7 @@ public class InitCtrl : MonoBehaviour
     /// </summary>
     public void PanaelActiveCtrl()
     {
-        GameManager.Instance.SetState(KioskState.WaitingForPayment);
+        GameManager.Instance.SetState(KioskState.Filming);
         _currentPanel.SetActive(false);
         _changePanel.SetActive(true);
     }

@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// 촬영 단계(컷) 카운트다운과 캡처, 미션, 인쇄까지 전체 시퀀스를 관리하는 컨트롤러
-/// - 각 스텝마다 카운트다운(3, 2, 1) 표시
+/// - 각 스텝마다 카운트다운(텍스트: 5,4,3,2,1) 표시
 /// - 지정된 영역을 캡처하여 이미지 슬롯에 표시 및 파일 저장
 /// - 모든 촬영 후 인쇄(선택) 및 대기화면으로 복귀
 /// </summary>
@@ -27,19 +27,16 @@ public class StepCountdownUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _stepText;
     // 현재 촬영 컷 표시 (예: 1 / 4)
 
-    //[SerializeField] private TextMeshProUGUI _countdownText;
-    [SerializeField] private GameObject _countdownImagesPool;
-    // 3,2,1 이미지를 담고 있는 부모 오브젝트
-
-    [SerializeField] private Image[] _countdownImages;
-    // 인덱스 0: 숫자 1, 1: 숫자 2, 2: 숫자 3 이미지
+    [SerializeField] private GameObject _countdownTextParent;
+    [SerializeField] private TextMeshProUGUI _countdownText;
+    // 5,4,3,2,1 카운트다운을 보여줄 TMP 텍스트
 
     [Header("Settings")]
     [SerializeField] private int _totalSteps = 4;
     // 전체 촬영 컷 수
 
-    [SerializeField] private int _intervalSeconds = 3;
-    // 각 촬영 전에 카운트다운에 사용할 시간(초)
+    [SerializeField] private int _countdownSeconds = 5;
+    // 각 촬영 전에 카운트다운을 몇 초부터 시작할지 (예: 5 → 5,4,3,2,1)
 
     [Header("Step Visuals")]
     [SerializeField] private Image[] _stepImages = new Image[4];
@@ -52,9 +49,6 @@ public class StepCountdownUI : MonoBehaviour
     [Header("On Complete")]
     [SerializeField] private GameObject _messageObject;
     // 모든 촬영이 끝났을 때 보여줄 완료 메시지 오브젝트
-
-    [SerializeField] private GameObject _lookCameraMessage;
-    // "카메라를 봐 주세요" 같은 안내 문구 오브젝트
 
     [Header("Capture Target")]
     [Tooltip("캡처 기준이 되는 RawImage (이 RectTransform 영역을 캡처)")]
@@ -70,7 +64,6 @@ public class StepCountdownUI : MonoBehaviour
     [SerializeField] private Slider _stepProgressSlider;
     // 전체 촬영 과정의 진행 상황(0~1)을 보여주는 슬라이더
 
-    //[SerializeField] private Image[] _stepProgressImages;
     private Coroutine _routine;
     // 현재 실행 중인 촬영 시퀀스 코루틴
 
@@ -148,27 +141,16 @@ public class StepCountdownUI : MonoBehaviour
             _stepText.gameObject.SetActive(false);
         }
 
-        // 카운트다운 이미지 초기화
-        if (_countdownImagesPool)
+        // 카운트다운 텍스트 초기화
+        if (_countdownText)
         {
-            _countdownImagesPool.SetActive(false);
-            _countdownImages[2].gameObject.SetActive(false);
-            _countdownImages[1].gameObject.SetActive(false);
-            _countdownImages[0].gameObject.SetActive(false);
+            _countdownText.text = string.Empty;
+            _countdownText.gameObject.SetActive(false);
+            _countdownTextParent.gameObject.SetActive(false);
         }
-        //if (_countdownText)
-        //{
-        //    _countdownText.text = string.Empty;
-        //    _countdownText.gameObject.SetActive(false);
-        //}
 
         // 메시지 오브젝트 숨김
         if (_messageObject) _messageObject.SetActive(false);
-        if (_lookCameraMessage) _lookCameraMessage.SetActive(false);
-
-        // 단계 인디케이터 / 캡처 슬롯 초기화
-        SetAllStepImageAlpha(0f);
-        ClearCapturedSlots();
 
         // 슬라이더 초기화
         if (_stepProgressSlider)
@@ -177,6 +159,12 @@ public class StepCountdownUI : MonoBehaviour
             _stepProgressSlider.maxValue = 1f;
             _stepProgressSlider.value = 0f;
         }
+
+        // 캡처 슬롯 정리
+        ClearCapturedSlots();
+
+        // 스텝 인디케이터 초기화
+        SetAllStepImageAlpha(0f);
 
         // 저장된 사진 삭제 (선택)
         if (deleteSavedPhotos)
@@ -221,21 +209,21 @@ public class StepCountdownUI : MonoBehaviour
             yield break;
         }
 
-        // 스텝 텍스트, 카운트다운 UI 활성화
+        // 스텝 텍스트, 카운트다운 텍스트 활성화
         if (_stepText) _stepText.gameObject.SetActive(true);
         else Debug.LogWarning("_stepText reference is missing");
 
-        if (_countdownImagesPool) _countdownImagesPool.SetActive(true);
-        else Debug.LogWarning("_countdownImagesPool reference is missing");
-        //if (_countdownText) _countdownText.gameObject.SetActive(true);
-        //else Debug.LogWarning("_countdownText reference is missing");        
+        if (_countdownText)
+        {
+            _countdownText.gameObject.SetActive(true);
+            _countdownTextParent.gameObject.SetActive(true);
+        }
+        else Debug.LogWarning("_countdownText reference is missing");
 
         _isRunning = true;
 
         int steps = Mathf.Max(1, _totalSteps);
-        // float secs = Mathf.Max(1, _intervalSeconds);
-        float perDigit = Mathf.Max(0.1f, _intervalSeconds);   // 숫자 하나당 머무는 시간(초)
-        float stepDuration = perDigit * 3f;                   // 3,2,1 → 총 3개니까 
+        int countdownStart = Mathf.Max(1, _countdownSeconds); // 예: 5 → 5,4,3,2,1
 
         // 슬라이더 초기값 세팅
         if (_stepProgressSlider)
@@ -243,14 +231,6 @@ public class StepCountdownUI : MonoBehaviour
             _stepProgressSlider.minValue = 0f;
             _stepProgressSlider.maxValue = 1f;
             _stepProgressSlider.value = 0f;
-        }
-
-        // 촬영 시작 전 "카메라를 봐 주세요" 안내
-        if (_lookCameraMessage)
-        {
-            _lookCameraMessage.SetActive(true);
-            yield return new WaitForSeconds(3f);
-            _lookCameraMessage.SetActive(false);
         }
 
         // 각 스텝 반복
@@ -262,32 +242,12 @@ public class StepCountdownUI : MonoBehaviour
 
             // 미션 카운트 증가 및 미션 텍스트 설정
             ++_missionCount;
-            if (_missionCount == 1)
             {
-                string msg = _missionCtrl.GetRandomMissionMessage(_missionCount - 1);
+                int missionIndex = Mathf.Clamp(_missionCount - 1, 0, 3);
+                string msg = _missionCtrl.GetRandomMissionMessage(missionIndex);
                 _missionAnimator.SetTextAndSlideIn(msg);
-                // _missionText.text = msg;
+                // _missionText.text = msg;  // 애니메이터에서 처리 중
             }
-            else if (_missionCount == 2)
-            {
-                string msg = _missionCtrl.GetRandomMissionMessage(_missionCount - 1);
-                _missionAnimator.SetTextAndSlideIn(msg);
-                // _missionText.text = msg;
-            }
-            else if (_missionCount == 3)
-            {
-                string msg = _missionCtrl.GetRandomMissionMessage(_missionCount - 1);
-                _missionAnimator.SetTextAndSlideIn(msg);
-                // _missionText.text = msg;
-            }
-            else if (_missionCount == 4)
-            {
-                string msg = _missionCtrl.GetRandomMissionMessage(_missionCount - 1);
-                _missionAnimator.SetTextAndSlideIn(msg);
-                // _missionText.text = msg;
-            }
-
-            //Debug.Log($"====================={_missionCount}");
 
             // 스텝 인디케이터 알파 갱신
             UpdateStepImageAlpha(step - 1);
@@ -296,73 +256,42 @@ public class StepCountdownUI : MonoBehaviour
             float startFill = (step - 1) / (float)steps;
             float endFill = step / (float)steps;
 
-            // 카운트다운 + 슬라이더 애니메이션 동시 진행
-            float elapsed = 0f;
-
-            int lastDisplay = -1;   // 사운드 중복 재생 방지용
-
-            while (elapsed < stepDuration)
+            // 카운트다운 (텍스트 5 → 4 → 3 → 2 → 1)
+            int current = countdownStart;
+            while (current > 0)
             {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / stepDuration);
+                if (_countdownText)
+                    _countdownText.text = current.ToString();
 
-                // 슬라이더 진행도 업데이트 (0 -> 1)
+                // 마지막 3,2,1 구간에서만 음성/효과음 사용 (원래 로직 유지)
+                if (current == 3)
+                {
+                    SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._numberSfx3);
+                }
+                else if (current == 2)
+                {
+                    SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._numberSfx2);
+                }
+                else if (current == 1)
+                {
+                    SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._numberSfx1);
+                }
+
+                // 슬라이더 업데이트 (초 단위로 계단식 증가)
                 if (_stepProgressSlider)
                 {
-                    _stepProgressSlider.value = Mathf.Lerp(startFill, endFill, t);
+                    float normalized = (countdownStart - current + 1) / (float)countdownStart;
+                    _stepProgressSlider.value = Mathf.Lerp(startFill, endFill, normalized);
                 }
 
-                // 카운트다운 이미지(3,2,1) 표시
-                if (_countdownImagesPool)
-                {
-                    // 지금까지 몇 초 지났는지에 따라 0~2 단계로 나눔
-                    float phase = elapsed / perDigit;          // 0~3 사이
-                    int index = Mathf.FloorToInt(phase);      // 0,1,2,...
-                    index = Mathf.Clamp(index, 0, 2);         // 최대 2까지만
-
-                    int display = 3 - index;                  // 0→3, 1→2, 2→1
-
-                    // 숫자가 바뀌는 순간에만 이미지/사운드 갱신
-                    if (display != lastDisplay)
-                    {
-                        lastDisplay = display;
-
-                        if (display == 3)
-                        {
-                            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._numberSfx3);
-                            _countdownImages[2].gameObject.SetActive(true);
-                            _countdownImages[1].gameObject.SetActive(false);
-                            _countdownImages[0].gameObject.SetActive(false);
-                        }
-                        else if (display == 2)
-                        {
-                            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._numberSfx2);
-                            _countdownImages[2].gameObject.SetActive(false);
-                            _countdownImages[1].gameObject.SetActive(true);
-                            _countdownImages[0].gameObject.SetActive(false);
-                        }
-                        else if (display == 1)
-                        {
-                            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._numberSfx1);
-                            _countdownImages[2].gameObject.SetActive(false);
-                            _countdownImages[1].gameObject.SetActive(false);
-                            _countdownImages[0].gameObject.SetActive(true);
-                        }
-                        else
-                        {
-                            // 빈 공간으로 나눠둠
-                        }
-                    }
-                }
-
-                yield return null;
+                yield return new WaitForSeconds(1f);
+                current--;
             }
 
             // 안전하게 최종 슬라이더 값 스냅
             if (_stepProgressSlider)
             {
                 _stepProgressSlider.value = endFill;
-                //_stepProgressImages[step - 1].color = Color.white;
             }
 
             // 여기서 "찰칵!" 실제 화면 캡처
@@ -384,18 +313,11 @@ public class StepCountdownUI : MonoBehaviour
         }
 
         // 완료 UI 처리
-        if (_countdownImagesPool)
+        if (_countdownText)
         {
-            _countdownImagesPool.SetActive(false);
-            _countdownImages[2].gameObject.SetActive(false);
-            _countdownImages[1].gameObject.SetActive(false);
-            _countdownImages[0].gameObject.SetActive(false);
+            _countdownText.text = string.Empty;
+            _countdownText.gameObject.SetActive(false);
         }
-        //if (_countdownText)
-        //{
-        //    _countdownText.text = string.Empty;
-        //    _countdownText.gameObject.SetActive(false);
-        //}
 
         if (_stepText)
             _stepText.gameObject.SetActive(false);
@@ -422,8 +344,6 @@ public class StepCountdownUI : MonoBehaviour
                 _photoImageForPrint,
                 OnPrintCompleted,
                 _stepText ? _stepText.gameObject : null,
-                _countdownImagesPool ? _countdownImagesPool.gameObject : null,
-                //_countdownText ? _countdownText.gameObject : null,
                 _messageObject
             );
         }
@@ -470,19 +390,17 @@ public class StepCountdownUI : MonoBehaviour
         // 캡처에 포함시키지 않을 UI들을 투명 처리
         foreach (var item in _ignoreForCapture)
         {
-            item.color = Color.clear;
+            if (item != null)
+                item.color = Color.clear;
         }
 
         // 텍스트/카운트다운도 캡처에 안 보이도록 잠시 숨김
         if (_stepText) _stepText.gameObject.SetActive(false);
-        if (_countdownImagesPool)
+        if (_countdownText)
         {
-            _countdownImagesPool.SetActive(false);
-            _countdownImages[2].gameObject.SetActive(false);
-            _countdownImages[1].gameObject.SetActive(false);
-            _countdownImages[0].gameObject.SetActive(false);
+            _countdownText.gameObject.SetActive(false);
+            _countdownTextParent.gameObject.SetActive(false);
         }
-        //if (_countdownText) _countdownText.gameObject.SetActive(false);
 
         // 렌더링이 모두 끝난 프레임 마지막 시점까지 대기
         yield return new WaitForEndOfFrame();
@@ -567,14 +485,21 @@ public class StepCountdownUI : MonoBehaviour
 
         // 숨겨놨던 텍스트/카운트다운 다시 보여주기
         if (_stepText) _stepText.gameObject.SetActive(true);
-        if (_countdownImagesPool) _countdownImagesPool.SetActive(true);
+        if (_countdownText)
+        {
+            _countdownText.gameObject.SetActive(true);
+            _countdownTextParent.gameObject.SetActive(true);
+        }
+
+
+
 
         // 캡처에서 제외했던 UI 색상 복원
         foreach (var item in _ignoreForCapture)
         {
-            item.color = Color.white;
+            if (item != null)
+                item.color = Color.white;
         }
-        //if (_countdownText) _countdownText.gameObject.SetActive(true);
     }
 
     // ================== Util ==================
