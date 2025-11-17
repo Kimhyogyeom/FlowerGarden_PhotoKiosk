@@ -11,7 +11,7 @@ public class SelectAutoTransitionCtrl : MonoBehaviour
 {
     [Header("Timer Settings")]
     [Tooltip("카운트다운 시작 초(기본값)")]
-    [SerializeField] private float _startSeconds = 10f;
+    // [SerializeField] private float _startSeconds = 10f;
 
     [Header("Runtime")]
     [SerializeField] private float _timer;                   // 현재 남은 시간
@@ -62,7 +62,7 @@ public class SelectAutoTransitionCtrl : MonoBehaviour
     {
         print("코루틴 실행됨");
 
-        _timer = _startSeconds;
+        _timer = GameManager.Instance._selectToFilmingTimer;
 
         while (_timer > 0f)
         {

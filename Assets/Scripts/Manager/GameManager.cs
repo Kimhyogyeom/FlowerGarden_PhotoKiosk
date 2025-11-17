@@ -42,7 +42,7 @@ public class GameManager : MonoBehaviour
 #pragma warning restore CS0414
 
     // ───────────────────────────────────────────── Test용 
-    public int _paymentToReadyTimer = 10;           // 결제 -> 래디 (현)
+    // public int _paymentToReadyTimer = 10;           // 결제 -> 래디 (현)
     public int _readyToSelectTimer = 10;            // 래디 -> 선택 (현)
     public int _selectToFilmingTimer = 10;          // 선택 -> 사진 (현)
     public int _filmingToPhotoTimer = 10;           // 사진 -> 촬영 (현)

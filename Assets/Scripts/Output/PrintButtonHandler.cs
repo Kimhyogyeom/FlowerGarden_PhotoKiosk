@@ -49,7 +49,7 @@ public class PrintButtonHandler : MonoBehaviour
     // 캡처 시 화면에 찍히지 않길 원하는 UI 오브젝트들
 
     [Header("Countdown")]
-    [SerializeField] private float _countTime = 60f; // 초
+    // [SerializeField] private float _countTime = 60f; // 초
     // 출력 대기 카운트다운 시간 (초 단위)
 
     //[SerializeField] private Text _countdownTextUGUI;           
@@ -183,7 +183,7 @@ public class PrintButtonHandler : MonoBehaviour
         //print("진입:::");
         _autoTriggered = false;
 
-        float remain = Mathf.Max(0f, _countTime);
+        float remain = Mathf.Max(0f, GameManager.Instance._photoToSuccessTimer);
         int lastShown = -1;
 
         // 최초 표기

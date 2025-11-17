@@ -123,7 +123,9 @@ public class FadeAnimationCtrl : MonoBehaviour
             {
                 // 현재 스텝 최대 값은 2  
                 // 2까지 처리 후에는 다시 0으로 초기화하여 다음 루프를 위한 준비
-                _isStateStep = -1;
+                // 원래 결제 -> 시작했는데, 디자인 받아서 새로 적용해보려고 임시 주석처리 -1
+                // _isStateStep = -1;
+                _isStateStep = 0;
                 _initCtrl.PanaelActiveCtrl();
             }
             // 100단계: 촬영 화면에서 Back 버튼 사용 시  

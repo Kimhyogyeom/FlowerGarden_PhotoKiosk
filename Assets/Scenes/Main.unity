@@ -2258,7 +2258,7 @@ MonoBehaviour:
   _readyAutoTransitionCtrl: {fileID: 937384633}
   _selectAutoTransitionCtrl: {fileID: 173945191}
   _autoShootStartCtrl: {fileID: 1019917341}
-  _isStateStep: -1
+  _isStateStep: 0
 --- !u!1 &271571540
 GameObject:
   m_ObjectHideFlags: 0
@@ -7696,6 +7696,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _currentState: 0
   _timeScale: 5
+  _readyToSelectTimer: 5
+  _selectToFilmingTimer: 5
+  _filmingToPhotoTimer: 5
+  _photoToSuccessTimer: 5
+  _successToPaymentTimer: 5
 --- !u!1 &738953751
 GameObject:
   m_ObjectHideFlags: 0
@@ -11125,7 +11130,7 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
-  m_hasFontAssetChanged: 1
+  m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!222 &1099888305
@@ -11366,7 +11371,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1113635796
 RectTransform:
   m_ObjectHideFlags: 0
@@ -14188,7 +14193,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1393010139
 RectTransform:
   m_ObjectHideFlags: 0

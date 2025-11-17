@@ -17,7 +17,7 @@ public class InitCtrl : MonoBehaviour
     [SerializeField] private Button _initButton;            // 돌아가기(초기화) 버튼
     [SerializeField] private TextMeshProUGUI _initText;     // 버튼 옆/위에 카운트다운 표시용 텍스트
     private Coroutine _resetCallbackRoutine = null;         // 자동 리셋 코루틴
-    [SerializeField] private int _successToBackTime = 10;   // 인쇄 후 초기 화면으로 돌아가기까지 대기 시간(초)
+    // [SerializeField] private int _successToBackTime = 10;   // 인쇄 후 초기 화면으로 돌아가기까지 대기 시간(초)
 
     [Header("Setting Component")]
     [SerializeField] private PhotoFrameSelectCtrl _photoFrameSelectCtrl;    // 프레임 선택 컨트롤러
@@ -37,6 +37,7 @@ public class InitCtrl : MonoBehaviour
 
     [Space(10)]
     [SerializeField] private GameObject _currentPanel;  // 현재 인쇄 완료 후 보여지는 패널
+    [Tooltip("바뀔 프레임")]
     [SerializeField] private GameObject _changePanel;   // 다시 돌아갈 패널(현재는 결제/대기 패널)
     [SerializeField] private GameObject _cameraFocus;   // 카메라 조준점(촬영 가이드용)
 
@@ -118,7 +119,7 @@ public class InitCtrl : MonoBehaviour
     /// </summary>
     private IEnumerator ResetCallBackCoroutine()
     {
-        for (int i = _successToBackTime; i >= 1; i--)
+        for (int i = GameManager.Instance._successToPaymentTimer; i >= 1; i--)
         {
             if (_initText != null)
                 _initText.text = $"{i}\n돌아가기";

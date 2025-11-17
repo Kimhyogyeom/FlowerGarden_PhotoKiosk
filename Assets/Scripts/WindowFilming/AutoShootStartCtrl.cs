@@ -58,7 +58,7 @@ public class AutoShootStartCtrl : MonoBehaviour
 
     private IEnumerator TimerRoutine()
     {
-        _timer = _startSeconds;
+        _timer = GameManager.Instance._filmingToPhotoTimer;
 
         while (_timer > 0f)
         {
