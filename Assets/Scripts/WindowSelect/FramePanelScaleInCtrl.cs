@@ -218,6 +218,20 @@ public class FramePanelScaleInCtrl : MonoBehaviour
     {
         _isAnimating = true;
 
+        // 패널 열릴 때 자식 스케일을 0으로 강제 초기화(안전장치)
+        if (_children != null)
+        {
+            foreach (var child in _children)
+            {
+                if (child != null)
+                    child.localScale = Vector3.zero;
+            }
+        }
+
+        // Apply 버튼은 애니메이션 끝나기 전까지 비활성화
+        if (_applicationButton != null)
+            _applicationButton.interactable = false;
+
         // 자식들을 순서대로 스케일 업 시작
         for (int i = 0; i < _children.Length; i++)
         {
@@ -229,7 +243,9 @@ public class FramePanelScaleInCtrl : MonoBehaviour
         yield return new WaitForSeconds(_duration);
 
         // 스케일 인이 모두 끝난 후에만 적용 버튼 활성화
-        _applicationButton.interactable = true;
+        if (_applicationButton != null)
+            _applicationButton.interactable = true;
+
         _isAnimating = false;
     }
 
@@ -258,7 +274,8 @@ public class FramePanelScaleInCtrl : MonoBehaviour
             _panelFrameCurrent.SetActive(true);
 
         // 적용 버튼 비활성화 (다음에 다시 열릴 때까지)
-        _applicationButton.interactable = false;
+        if (_applicationButton != null)
+            _applicationButton.interactable = false;
 
         _isAnimating = false;
     }
@@ -269,6 +286,8 @@ public class FramePanelScaleInCtrl : MonoBehaviour
     /// </summary>
     private IEnumerator ScaleUp(RectTransform rect)
     {
+        if (rect == null) yield break;
+
         float time = 0f;
         while (time < _duration)
         {
@@ -290,6 +309,8 @@ public class FramePanelScaleInCtrl : MonoBehaviour
     /// </summary>
     private IEnumerator ScaleDown(RectTransform rect)
     {
+        if (rect == null) yield break;
+
         float time = 0f;
         while (time < _duration)
         {
@@ -303,5 +324,50 @@ public class FramePanelScaleInCtrl : MonoBehaviour
             yield return null;
         }
         rect.localScale = Vector3.zero;
+    }
+
+    // ================== 초기화 함수 ==================
+
+    /// <summary>
+    /// 이 컨트롤러에서 돌고 있는 모든 코루틴을 멈추고,
+    /// 패널/자식 스케일/선택 상태를 "닫힌 상태" 기준으로 초기화.
+    /// </summary>
+    public void ResetFramePanel()
+    {
+        // 이 컴포넌트에서 돌고 있는 모든 코루틴 정지
+        StopAllCoroutines();
+
+        _isAnimating = false;
+        _selectedIndex = -1;
+
+        // 패널 상태: 현재 프레임 패널 ON, 프레임 변경 패널 OFF (기본 상태 가정)
+        if (_panelFrameCurrent != null)
+            _panelFrameCurrent.SetActive(true);
+        if (_panelFrameChange != null)
+            _panelFrameChange.SetActive(false);
+
+        // 자식 스케일: 닫힌 상태 기준으로 0으로 맞춰두고,
+        // 다음에 열릴 때 ScaleInSequence에서 0→1로 자연스럽게 등장
+        if (_children != null)
+        {
+            foreach (var child in _children)
+            {
+                if (child != null)
+                    child.localScale = Vector3.zero;
+            }
+        }
+
+        // 적용 버튼은 기본적으로 비활성화
+        if (_applicationButton != null)
+            _applicationButton.interactable = false;
+    }
+
+    /// <summary>
+    /// 이 컴포넌트가 비활성화될 때도
+    /// 중간 상태로 남지 않게 정리하고 싶으면 사용
+    /// </summary>
+    private void OnDisable()
+    {
+        ResetFramePanel();
     }
 }

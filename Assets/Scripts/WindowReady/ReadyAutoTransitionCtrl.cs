@@ -9,7 +9,8 @@ using UnityEngine;
 public class ReadyAutoTransitionCtrl : MonoBehaviour
 {
     [Header("Component")]
-    [SerializeField] ReadyPanelTransitionCtrl _readyPanelTransitionCtrl;    // 버튼을 클릭할 때 Ready -> Select 화면으로 전환하는 녀석
+    [SerializeField] private ReadyPanelTransitionCtrl _readyPanelTransitionCtrl;    // 버튼을 클릭할 때 Ready -> Select 화면으로 전환하는 컨트롤러
+
     [Header("Timer Settings")]
     [SerializeField] private float _startSeconds = 10f;      // 시작 카운트 값 (기본 10초)
 
@@ -34,6 +35,29 @@ public class ReadyAutoTransitionCtrl : MonoBehaviour
         _timerRoutine = StartCoroutine(TimerRoutine());
     }
 
+    /// <summary>
+    /// [외부/내부 공용] 타이머 코루틴을 즉시 멈추고
+    /// 숫자/상태를 초기화하는 함수
+    /// </summary>
+    public void StopAndResetTimer()
+    {
+        // 코루틴 정지
+        if (_timerRoutine != null)
+        {
+            StopCoroutine(_timerRoutine);
+            _timerRoutine = null;
+        }
+
+        // 타이머 값 초기화
+        _timer = 0f;
+
+        // 텍스트 초기화
+        if (_timerText != null)
+        {
+            _timerText.text = string.Empty;
+        }
+    }
+
     private IEnumerator TimerRoutine()
     {
         _timer = _startSeconds;
@@ -53,15 +77,29 @@ public class ReadyAutoTransitionCtrl : MonoBehaviour
         if (_timerText != null)
             _timerText.text = "0";
 
-        // Debug.Log("호출!");
-
         _timerRoutine = null;
 
+        // 타이머 텍스트 초기화
+        if (_timerText != null)
+            _timerText.text = string.Empty;
+
+        // 실제 패널 전환 호출
+        if (_readyPanelTransitionCtrl != null)
         {
-            // 타이머 텍스트 초기화
-            _timerText.text = "";
-            // 나중에 여기에서 실제 패널 전환 호출        
             _readyPanelTransitionCtrl.OnReadyClicked();
         }
+        else
+        {
+            Debug.LogWarning("_readyPanelTransitionCtrl reference is missing");
+        }
+    }
+
+    /// <summary>
+    /// 이 컴포넌트가 비활성화될 때도
+    /// 혹시 돌고 있던 타이머를 정리해주고 싶다면 사용
+    /// </summary>
+    private void OnDisable()
+    {
+        StopAndResetTimer();
     }
 }

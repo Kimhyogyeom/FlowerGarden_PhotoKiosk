@@ -95,7 +95,7 @@ public class FilmingPanelCtrl : MonoBehaviour
     /// - "사진 촬영" 버튼 선택 시 호출
     /// - 상태를 Filming 으로 변경하고 페이드 애니메이션 실행
     /// </summary>
-    private void OnSelectPhotoButtonClicked()
+    public void OnSelectPhotoButtonClicked()
     {
         // 상태를 촬영 모드로 전환
         GameManager.Instance.SetState(KioskState.Filming);
@@ -124,7 +124,7 @@ public class FilmingPanelCtrl : MonoBehaviour
     /// - 일부 안내 UI 숨김
     /// - StepCountdownUI 시퀀스 시작
     /// </summary>
-    private void OnPhotoButtonClicked()
+    public void OnPhotoButtonClicked()
     {
         if (_photoButton != null)
         {

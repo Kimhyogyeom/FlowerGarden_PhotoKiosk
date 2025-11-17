@@ -20,7 +20,12 @@ public class FadeAnimationCtrl : MonoBehaviour
     [SerializeField] private FilmingToSelectCtrl _filmingToSelectCtrl; // 촬영 화면 → 선택 화면으로 돌아갈 때 사용
 
     [SerializeField] private PaymentCtrl _paymentCtrl;  // 결제 완료 시스템
-    [SerializeField] private ReadyAutoTransitionCtrl _readyAutoTransitionCtrl;  // 페이드 아웃 됐을때 타이머 호출
+
+    [Header("Auto")]
+    [SerializeField] private ReadyAutoTransitionCtrl _readyAutoTransitionCtrl;      // 페이드 아웃 됐을때 타이머 호출
+    [SerializeField] private SelectAutoTransitionCtrl _selectAutoTransitionCtrl;    // 페이드 아웃 될 때 타이머 호출
+    [SerializeField] private AutoShootStartCtrl _autoShootStartCtrl;                // 페이드 아웃 될 때 타이머 호출
+
 
     /// <summary>
     /// 페이드 단계 상태 값  
@@ -62,6 +67,7 @@ public class FadeAnimationCtrl : MonoBehaviour
     /// </summary>
     public void OnFadeEnd()
     {
+        CoroutineAllStopFunction();
         if (_fadeAnimator != null)
         {
             // 페이드 애니메이션 플래그 초기화 및 페이드 아웃 사운드 재생
@@ -90,6 +96,7 @@ public class FadeAnimationCtrl : MonoBehaviour
                 if (_readyPanelTransitionCtrl != null)
                 {
                     _readyPanelTransitionCtrl.OnFadeFinished();
+                    _selectAutoTransitionCtrl.StartAutoTransitionTimer();
                 }
                 else
                 {
@@ -104,6 +111,7 @@ public class FadeAnimationCtrl : MonoBehaviour
                 if (_filmingPanelCtrl != null)
                 {
                     _filmingPanelCtrl.PanelChanger();
+                    _autoShootStartCtrl.StartAutoTransitionTimer();
                 }
                 else
                 {
@@ -138,5 +146,11 @@ public class FadeAnimationCtrl : MonoBehaviour
         {
             UnityEngine.Debug.LogWarning("_fadeAnimator reference is missing");
         }
+    }
+    private void CoroutineAllStopFunction()
+    {
+        _readyAutoTransitionCtrl.StopAndResetTimer();
+        _selectAutoTransitionCtrl.StopAutoTransitionTimer();
+        _autoShootStartCtrl.ResetAutoShootStartCtrl();
     }
 }

@@ -41,6 +41,14 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float _timeScale = 1.0f;
 #pragma warning restore CS0414
 
+    // ───────────────────────────────────────────── Test용 
+    public int _paymentToReadyTimer = 10;           // 결제 -> 래디 (현)
+    public int _readyToSelectTimer = 10;            // 래디 -> 선택 (현)
+    public int _selectToFilmingTimer = 10;          // 선택 -> 사진 (현)
+    public int _filmingToPhotoTimer = 10;           // 사진 -> 촬영 (현)
+    public int _photoToSuccessTimer = 10;           // 촬영 -> 출력 (현)
+    public int _successToPaymentTimer = 10;         // 출력 -> 래대 (현)
+
     private void Awake()
     {
         // 싱글톤 보장: 이미 다른 인스턴스가 있으면 자신을 파괴
