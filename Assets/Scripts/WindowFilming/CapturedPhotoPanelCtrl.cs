@@ -14,6 +14,13 @@ using TMPro;
 /// </summary>
 public class CapturedPhotoPanelCtrl : MonoBehaviour
 {
+    // ──────────────────────────────────────────────────────────────────────
+
+    [Header("Setting Component")]
+    [SerializeField] private CountdownTimer _countdownTimer;
+
+    // ──────────────────────────────────────────────────────────────────────
+
     [Header("Panels")]
     [Tooltip("현재 열려있는 패널(닫힐 패널)")]
     [SerializeField] private GameObject _currentPanel;
@@ -63,6 +70,8 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
     // 각 버튼이 어느 슬롯을 쓰고 있나? (-1 == 아직 안 들어감)
     private int[] _buttonAssignedSlot;    // 길이 = _photoButtons.Length
 
+
+
     private void Awake()
     {
         // 최대 선택 수는 메인 슬롯 개수 이상이 될 수 없음
@@ -105,6 +114,11 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
     /// </summary>
     public void OpenNextPanelAndApplyPhotos()
     {
+        // 그 뭐야 타이머 시작 (60초)
+        if (_countdownTimer != null)
+        {
+            _countdownTimer.StartTimer();
+        }
         if (_stepCountdownUI == null)
         {
             Debug.LogWarning("[CapturedPhotoPanelCtrl] StepCountdownUI reference is missing");
