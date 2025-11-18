@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using UnityEngine;
+using UnityEngine.AI;
 
 /// <summary>
 /// 화면 전환용 페이드 애니메이션 제어 스크립트  
@@ -72,7 +73,9 @@ public class FadeAnimationCtrl : MonoBehaviour
     /// </summary>
     public void OnFadeEnd()
     {
-        CoroutineAllStopFunction();
+        print("Fade 호출이요~!");
+
+        // CoroutineAllStopFunction();
         if (_fadeAnimator != null)
         {
             // 페이드 애니메이션 플래그 초기화 및 페이드 아웃 사운드 재생
@@ -129,20 +132,24 @@ public class FadeAnimationCtrl : MonoBehaviour
             // 수량 화면에서 결제 화면으로 전환
             else if (_isStateStep == 2)
             {
+                print("222222222222222");
                 _isStateStep = 3;
                 _quantityToPaymentCtrl.ObjectActiveCtrl();
             }
             // 2단계: 촬영 및 출력 플로우가 끝난 뒤 → Ready(결제/대기) 화면으로 복귀
             // 였는데 결제 화면에서 촬영 시작 화면으로 바뀔 예정
             // 결제화면에서 결제 진행중 화면으로 전환되어야함            
+            // 일단 안씀 ㄱㄷ
             else if (_isStateStep == 3)
             {
+                print("3333333333333");
                 _isStateStep = 4;
                 _paymentWatingPanelTranstionCtrl.OnClickGoToPayment();
             }
             // 결제 완료 -> 사진 촬영 패널로 변경
             else if (_isStateStep == 4)
             {
+                print("44444444444444");
                 _isStateStep = 5;
                 _paymentToNextStageCtrl.OnPaymentCompleted();
             }
@@ -152,8 +159,21 @@ public class FadeAnimationCtrl : MonoBehaviour
                 _isStateStep = 6;
                 _filmingPanelCtrl.FadeEndCallBack();
             }
-            else if (_isStateStep == 000)
+            // 촬영 패널에서 포토 수량 선택으로
+            else if (_isStateStep == 6)
             {
+                _isStateStep = 7;
+                _initCtrl.PanaelActiveCtrl(); // 초기화하는녀석   
+            }
+            // 포토 수량 선택에서 프린트 상태로
+            else if (_isStateStep == 7)
+            {
+                _isStateStep = 8;
+            }
+            // 프린트 상태에서 리셋 상태로 초기화
+            else if (_isStateStep == 8)
+            {
+                _isStateStep = 0;
                 _initCtrl.PanaelActiveCtrl(); // 초기화하는녀석
             }
             // ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -200,7 +220,7 @@ public class FadeAnimationCtrl : MonoBehaviour
             else if (_isStateStep == 202)
             {
                 _isStateStep = 2;
-                _homeButtonCtrl.ObjectsActiveCtrlQua();
+                _homeButtonCtrl.ObjectsActiveCtrlPay();
             }
             else
             {

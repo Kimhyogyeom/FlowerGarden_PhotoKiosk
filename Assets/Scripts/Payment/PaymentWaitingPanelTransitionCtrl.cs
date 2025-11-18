@@ -8,6 +8,8 @@ using UnityEngine.UI;
 /// </summary>
 public class PaymentWaitingPanelTransitionCtrl : MonoBehaviour
 {
+    [Header("Component Setting")]
+    [SerializeField] private FadeAnimationCtrl _fadeAnimationCtrl;
     [Header("Button")]
     [SerializeField] private Button _goToPaymentButton;
     // "결제하기", "결제 시작" 같은 버튼
@@ -63,6 +65,8 @@ public class PaymentWaitingPanelTransitionCtrl : MonoBehaviour
             _waitingForPaymentPanel.SetActive(true);
         else
             Debug.LogWarning("[PaymentWaitingPanelTransitionCtrl] _waitingForPaymentPanel reference is missing");
+
+        _fadeAnimationCtrl.StartFade();
     }
 
     /// <summary>

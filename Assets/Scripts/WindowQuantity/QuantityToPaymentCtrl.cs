@@ -46,7 +46,7 @@ public class QuantityToPaymentCtrl : MonoBehaviour
         // 상태를 결제 대기 상태로 두고 싶다면 (원하는 경우 사용)
         // GameManager.Instance.SetState(KioskState.WaitingForPayment);
 
-        _fadeAnimationCtrl._isStateStep = 3;
+        // _fadeAnimationCtrl._isStateStep = 3;
         _fadeAnimationCtrl.StartFade();
 
     }

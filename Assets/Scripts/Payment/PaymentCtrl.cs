@@ -159,12 +159,14 @@ public class PaymentCtrl : MonoBehaviour
     /// </summary>
     private IEnumerator MockPaymentRoutine()
     {
-        // 사용자에게 결제 진행 중 문구 표시
+        // 0초 지점: 바로 실행
         if (_textMeshPro != null)
             _textMeshPro.text = "결제 처리 중입니다...";
 
+        // ⏱ 1단계: _mockApproveDelay 만큼 대기
         yield return new WaitForSeconds(_mockApproveDelay);
 
+        // (여기 도착) 결제 승인 분기
         if (_alwaysSuccess)
         {
             if (_textMeshPro != null)
@@ -172,20 +174,18 @@ public class PaymentCtrl : MonoBehaviour
                 _textMeshPro.text = "결제 성공";
             }
 
-            // 실제라면 OnPaymentApproved() 안에서 StopLoading() 을 호출할 수도 있지만
-            // 여기서는 먼저 로딩을 정지한 뒤 약간 딜레이 후 승인 처리
-            StopLoading();
+            // ⏱ 2단계: 2초 더 대기
+            yield return new WaitForSeconds(5f);
 
-            yield return new WaitForSeconds(2f);
+            // (여기서부터 순서대로 실행)
             GameManager.Instance.SetState(KioskState.Filming);
-            _fadeAnimationCtrl.StartFade();
+            print("어디서 호출되냐");
+            // _fadeAnimationCtrl.StartFade();
             OnPaymentApproved();
-        }
-        else
-        {
-            OnPaymentFailed("MOCK: 결제 실패 (테스트용)");
+            StopLoading();
         }
     }
+
 
     // ---------- 실제 결제 (SDK 연동 지점) ----------
 
@@ -236,7 +236,7 @@ public class PaymentCtrl : MonoBehaviour
         // 상태를 Ready 로 되돌림
         GameManager.Instance.SetState(KioskState.Filming);
 
-        _fadeAnimationCtrl._isStateStep = 3;
+        // _fadeAnimationCtrl._isStateStep = 3;
         // 결제 패널은 닫고, Ready 패널을 다시 표시
         if (_paymentPanel != null) _paymentPanel.SetActive(false);
         else print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");

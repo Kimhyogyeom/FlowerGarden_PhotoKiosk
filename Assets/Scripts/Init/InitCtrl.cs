@@ -122,7 +122,7 @@ public class InitCtrl : MonoBehaviour
         for (int i = GameManager.Instance._successToPaymentTimer; i >= 1; i--)
         {
             if (_initText != null)
-                _initText.text = $"{i}\n돌아가기";
+                _initText.text = $"{i}";
 
             yield return new WaitForSeconds(1f);
         }
@@ -156,7 +156,7 @@ public class InitCtrl : MonoBehaviour
 
         // '돌아가기' 카운트 텍스트 초기화
         if (_initText != null)
-            _initText.text = "5\n돌아가기";
+            _initText.text = "5";
 
         // 효과음 + 페이드 시작
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._outputSuccess);

@@ -225,7 +225,7 @@ public class StepCountdownUI : MonoBehaviour
             ++_missionCount;
             if (_missionCtrl != null)
             {
-                int missionIndex = Mathf.Clamp(_missionCount - 1, 0, 3);
+                int missionIndex = Mathf.Clamp(_missionCount - 1, 0, 7);
                 string msg = _missionCtrl.GetRandomMissionMessage(missionIndex);
 
                 if (_missionAnimator != null)

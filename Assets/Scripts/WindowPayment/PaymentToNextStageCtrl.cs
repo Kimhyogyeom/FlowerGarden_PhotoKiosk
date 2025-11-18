@@ -7,6 +7,8 @@ using UnityEngine;
 /// </summary>
 public class PaymentToNextStageCtrl : MonoBehaviour
 {
+    [Header("Component Settings")]
+    [SerializeField] private FadeAnimationCtrl _fadeAnimationCtrl;
     [Header("Panel Settings")]
     [SerializeField] private GameObject _waitingForPaymentPanel;
     // 결제 대기 화면 패널 (결제 중에 보여주는 패널)
@@ -29,6 +31,7 @@ public class PaymentToNextStageCtrl : MonoBehaviour
         // 키오스크 상태 변경
         if (GameManager.Instance != null)
         {
+            // _fadeAnimationCtrl.StartFade();
             GameManager.Instance.SetState(_nextState);
         }
         else
