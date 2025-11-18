@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -23,10 +24,10 @@ public class FilmingPanelCtrl : MonoBehaviour
     [SerializeField] private Button _selectPhotoButton;
     // "사진 촬영" 모드로 진입하는 버튼 (프레임 선택 화면에서 사용)
 
-    // [SerializeField] private GameObject _currentPanel;
+    [SerializeField] private GameObject _currentPanel;
     // 현재 보여지고 있는 패널 (프레임 선택 + 설명 등)
 
-    // [SerializeField] private GameObject _changedPhotoPanel;
+    [SerializeField] private GameObject _changedPhotoPanel;
     // 페이드 이후에 보여줄 촬영용 패널
 
     [SerializeField] private Button _photoButton;
@@ -53,6 +54,19 @@ public class FilmingPanelCtrl : MonoBehaviour
 
     [SerializeField] private Color _textColor = Color.white;
     // 촬영 중에 버튼 텍스트에 적용할 색상
+
+    // 추가 ──────────────────────────────────────────────────────────── 
+    // 해봐야 6개밖에 안되는데 배열로 나눠서 관리할지 고민?
+    [SerializeField] private GameObject _titleGameobjectEnd;    // 기본 타이틀 (촬영시작 버튼을 눌러주세요)
+    [SerializeField] private GameObject _titleGameobjectStart;  // 변경 타이틀 (움직이지 말라)
+
+    [SerializeField] private GameObject _descriptionBackgroundEnd;      // 기본 백그라운드
+    [SerializeField] private GameObject _descriptionBackgroundStart;    // 변경 백그라운드 (라인 테두리)
+
+
+    [SerializeField] private GameObject _descriptionText;   // 촬영을 시작하겠습니다. 화면 위쪽에 어쩌구저쩌구
+    [SerializeField] private GameObject _photoPlayer;       // 이거 캐릭터 이름 모르겠음 = 플레이어로 통일
+
 
     private void Awake()
     {
@@ -114,8 +128,8 @@ public class FilmingPanelCtrl : MonoBehaviour
     /// </summary>
     public void PanelChanger()
     {
-        // _currentPanel.SetActive(false);
-        // _changedPhotoPanel.SetActive(true);
+        _currentPanel.SetActive(false);
+        _changedPhotoPanel.SetActive(true);
     }
     // 
     /// <summary>
@@ -126,11 +140,15 @@ public class FilmingPanelCtrl : MonoBehaviour
     /// </summary>
     public void OnPhotoButtonClicked()
     {
+        _fadeAnimationCtrl.StartFade();
+        // 촬영 버튼 사운드 재생
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._filmingButton);
+    }
+    public void FadeEndCallBack()
+    {
         if (_photoButton != null)
         {
-            // 촬영 버튼 사운드 재생
-            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._filmingButton);
-
+            GameManager.Instance.SetState(KioskState.Filming);
             // 촬영 후 선택 화면으로 가는 버튼/동작 비활성화
             // _filmingToSelectCtrl.ButtonInActive();
 
@@ -140,6 +158,8 @@ public class FilmingPanelCtrl : MonoBehaviour
             // 촬영 단계 안내/카메라 포커스 등 숨기기
             // _stepsObject.SetActive(false);
             // _cameraFocus.SetActive(false);
+
+            FilmingStart();
 
             // 버튼 컬러를 촬영 중 상태 색상으로 변경
             var cb = _photoButton.colors;
@@ -179,6 +199,34 @@ public class FilmingPanelCtrl : MonoBehaviour
         //     Debug.LogWarning("_buttonText reference is missing in OnPhotoButtonClicked");
         // }
 
-        //Debug.Log("OnClick Filming Button");
+        //Debug.Log("OnClick Filming Button");        
+    }
+    /// <summary>
+    /// [추가]
+    /// FilmingStart에서 변경된것 초기화를 할 함수로 사용될 예정
+    /// 외부 호출용?
+    /// </summary>
+    public void FilmingEnd()
+    {
+
+    }
+    /// <summary>
+    /// [추가]
+    /// 버튼을 눌렀을때 호출될것 (타이틀 변경, 백그라운드 변경, 캐릭터 숨기기)
+    /// </summary>
+    private void FilmingStart()
+    {
+        // (타이틀)
+        _titleGameobjectEnd.SetActive(false);   // 기본 타이틀 비활성화
+        _titleGameobjectStart.SetActive(true);  // 변경 타이틀 활성화
+
+        // (백그라운드)
+        _descriptionBackgroundEnd.SetActive(false);     // 기본 백그라운드 비활성화
+        _descriptionBackgroundStart.SetActive(true);    // 변경 백그라운드 활성화
+
+        // 설명 텍스트
+        _descriptionText.SetActive(false);
+        // (캐릭터)
+        _photoPlayer.SetActive(false);  // 캐릭터 숨기기
     }
 }

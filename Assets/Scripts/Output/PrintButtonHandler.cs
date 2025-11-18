@@ -147,6 +147,7 @@ public class PrintButtonHandler : MonoBehaviour
         _busy = true;
         if (_outputButton) _outputButton.interactable = false;
 
+        // 이식해야함 ───────────────────────────────────────────────────────────────────
         _printController.PrintRawImage(
             _targetRawImage,
             onDone: () =>
@@ -159,6 +160,7 @@ public class PrintButtonHandler : MonoBehaviour
             },
             toHideTemporarily: _hideWhileCapture
         );
+        // 이식해야함 ───────────────────────────────────────────────────────────────────
     }
 
     // ===== Countdown =====

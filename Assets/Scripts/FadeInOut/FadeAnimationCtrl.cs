@@ -119,6 +119,7 @@ public class FadeAnimationCtrl : MonoBehaviour
                 {
                     _filmingPanelCtrl.PanelChanger();
                     _autoShootStartCtrl.StartAutoTransitionTimer();
+                    // print("여기 실행됨?");
                 }
                 else
                 {
@@ -145,7 +146,13 @@ public class FadeAnimationCtrl : MonoBehaviour
                 _isStateStep = 5;
                 _paymentToNextStageCtrl.OnPaymentCompleted();
             }
+            // 사진 촬영 패널에서 촬영 시작으로 변경
             else if (_isStateStep == 5)
+            {
+                _isStateStep = 6;
+                _filmingPanelCtrl.FadeEndCallBack();
+            }
+            else if (_isStateStep == 000)
             {
                 _initCtrl.PanaelActiveCtrl(); // 초기화하는녀석
             }

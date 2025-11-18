@@ -24,6 +24,11 @@ public class FilmingEndCtrl : MonoBehaviour
     [SerializeField] private GameObject _outPutObj;
     // "출력하기" 버튼이 포함된 오브젝트 (출력 단계로 이동하는 UI)
 
+    [SerializeField] private GameObject _nextObj;
+    // 이거 위에 "_outPutObj" 대신에 사용될 녀석
+    // 기존 흐름 -> 촬영 -> 촬영중 -> 촬영 완료 -> 인쇄
+    // 변경 흐름 -> 촬영 -> 다음으로 -> 사진 선택 -> 인쇄
+
     [SerializeField] private GameObject _backPutObj;
     // 필요 시 사용 가능한 배경/뒤쪽 UI 오브젝트 (현재 로직에서는 직접 사용 X)
 
@@ -31,8 +36,8 @@ public class FilmingEndCtrl : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _outPutTxt;
     // "출력하기", "출력완료" 등 출력 관련 텍스트를 표시하는 TMP
 
-    [Header("Object Setting")]
-    [SerializeField] private GameObject _descriptionFingerObject;
+    // [Header("Object Setting")]
+    // [SerializeField] private GameObject _descriptionFingerObject;
     // 출력 버튼을 안내하는 손가락 가이드 오브젝트
 
     private void Awake()
@@ -85,8 +90,9 @@ public class FilmingEndCtrl : MonoBehaviour
         //_animator.SetBool("Fade", true);
 
         // "출력하기" 버튼 및 안내 손가락 가이드 노출
-        _descriptionFingerObject.SetActive(true);
-        _outPutObj.SetActive(true);
+        // _descriptionFingerObject.SetActive(true);
+        // _outPutObj.SetActive(true);
+        _nextObj.SetActive(true);
 
         // 배경 정리/전환 등 추가 연출이 필요하다면 이 아래에서 처리
 
