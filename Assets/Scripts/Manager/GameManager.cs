@@ -19,6 +19,7 @@ public enum KioskState
     Filming,            // 사진 촬영 진행 중 상태
 
     CutWindow,          // 4컷 화면
+
     Printing            // 인쇄 진행 중 상태
 }
 

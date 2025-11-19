@@ -18,6 +18,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
 
     [Header("Setting Component")]
     [SerializeField] private CountdownTimer _countdownTimer;
+    [SerializeField] private FadeAnimationCtrl _fadeAnimationCtrl;
 
     // ──────────────────────────────────────────────────────────────────────
 
@@ -114,6 +115,14 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
     /// </summary>
     public void OpenNextPanelAndApplyPhotos()
     {
+        _fadeAnimationCtrl.StartFade();
+    }
+    /// <summary>
+    /// 페이드 Start 끝났을때 호출될 함수
+    /// </summary>
+    public void FadeEndCallBack()
+    {
+        GameManager.Instance.SetState(KioskState.CutWindow);
         // 그 뭐야 타이머 시작 (60초)
         if (_countdownTimer != null)
         {
@@ -178,7 +187,6 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
                 _selectionMarkers[i].SetActive(false);
             }
         }
-
         // 패널 전환
         if (_currentPanel != null)
             _currentPanel.SetActive(false);
@@ -186,7 +194,6 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
         if (_nextPanel != null)
             _nextPanel.SetActive(true);
     }
-
     /// <summary>
     /// 개별 사진 버튼 클릭 시 호출 (Awake에서 리스너 연결됨)
     /// </summary>

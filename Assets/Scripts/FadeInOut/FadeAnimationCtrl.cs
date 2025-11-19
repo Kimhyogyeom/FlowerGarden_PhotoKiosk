@@ -13,20 +13,38 @@ using UnityEngine.AI;
 public class FadeAnimationCtrl : MonoBehaviour
 {
     [Header("Setting Component")]
-    [SerializeField] private InitCtrl _initCtrl;                    // 초기화 및 패널 전환 총괄 컨트롤러
+    [SerializeField] private InitCtrl _initCtrl;
+    // 초기화 및 패널 전환 총괄 컨트롤러
+
     [Space(10)]
-    [SerializeField] private Animator _fadeAnimator;                // Fade 애니메이션을 재생하는 Animator
-    [SerializeField] private ReadyPanelTransitionCtrl _readyPanelTransitionCtrl;  // Ready → Camera 패널 전환 담당
-    [SerializeField] private FilmingPanelCtrl _filmingPanelCtrl;    // 프레임 선택 → 촬영 패널 전환 담당
-    [SerializeField] private FilmingToSelectCtrl _filmingToSelectCtrl; // 촬영 화면 → 선택 화면으로 돌아갈 때 사용
+    [SerializeField] private Animator _fadeAnimator;
+    // Fade 애니메이션을 재생하는 Animator
+    [SerializeField] private ReadyPanelTransitionCtrl _readyPanelTransitionCtrl;
+    // Ready → Camera 패널 전환 담당
+    [SerializeField] private FilmingPanelCtrl _filmingPanelCtrl;
+    // 프레임 선택 → 촬영 패널 전환 담당
+    [SerializeField] private FilmingToSelectCtrl _filmingToSelectCtrl;
+    // 촬영 화면 → 선택 화면으로 돌아갈 때 사용
 
-    [SerializeField] private PaymentCtrl _paymentCtrl;      // 결제 완료 시스템
-    [SerializeField] private QuantityToPaymentCtrl _quantityToPaymentCtrl;  // 수량 -> 결제 컨트롤러
-    [SerializeField] private PaymentToNextStageCtrl _paymentToNextStageCtrl;    // 결제 -> 결제완료 자동 : (결제 완료 -> 필름 패널로 변경)
-    [SerializeField] private HomButtonCtrl _homeButtonCtrl; // 홈 버튼 누르면 실행될 제어 컨트롤러 
+    [SerializeField] private PaymentCtrl _paymentCtrl;
+    // 결제 완료 시스템
+    [SerializeField] private QuantityToPaymentCtrl _quantityToPaymentCtrl;
+    // 수량 -> 결제 컨트롤러
+    [SerializeField] private PaymentToNextStageCtrl _paymentToNextStageCtrl;
+    // 결제 -> 결제완료 자동 : (결제 완료 -> 필름 패널로 변경)
+    [SerializeField] private HomButtonCtrl _homeButtonCtrl;
+    // 홈 버튼 누르면 실행될 제어 컨트롤러 
 
-    [SerializeField] private PaymentWaitingPanelTransitionCtrl _paymentWatingPanelTranstionCtrl;    // 이거 결제 -> 결제 대기 할 때 로직 컨트롤러
+    [SerializeField] private PaymentWaitingPanelTransitionCtrl _paymentWatingPanelTranstionCtrl;
+    // 이거 결제 -> 결제 대기 할 때 로직 컨트롤러
 
+    [SerializeField] private PrintButtonHandler _printButtonHandler;
+
+    [SerializeField] private CapturedPhotoPanelCtrl _capturePhotoPanelCtrl;
+    // 촬영 끝나고 포토 선택 화면으로 페이드 인아웃 되게끔?
+
+
+    // 근데 오토 안 쓸 예정 (최대한 디자인 된 PDF 파일 따라하고 추후 시간날때 할 예정?)
     [Header("Auto")]
     [SerializeField] private ReadyAutoTransitionCtrl _readyAutoTransitionCtrl;      // 페이드 아웃 됐을때 타이머 호출
     [SerializeField] private SelectAutoTransitionCtrl _selectAutoTransitionCtrl;    // 페이드 아웃 될 때 타이머 호출
@@ -49,6 +67,8 @@ public class FadeAnimationCtrl : MonoBehaviour
     /// </summary>
     public void StartFade()
     {
+        print("StartFade 호출이요~!");
+
         if (_fadeAnimator != null)
         {
             _fadeAnimator.SetBool("Fade", true);
@@ -73,7 +93,7 @@ public class FadeAnimationCtrl : MonoBehaviour
     /// </summary>
     public void OnFadeEnd()
     {
-        print("Fade 호출이요~!");
+        print("OnFadeEnd 호출이요~!");
 
         // CoroutineAllStopFunction();
         if (_fadeAnimator != null)
@@ -88,7 +108,7 @@ public class FadeAnimationCtrl : MonoBehaviour
                 if (_paymentCtrl != null)
                 {
                     _paymentCtrl.OnCallbackEnd();
-                    _readyAutoTransitionCtrl.AutoTransitionTimer();
+                    // _readyAutoTransitionCtrl.AutoTransitionTimer();
                 }
                 else
                 {
@@ -104,7 +124,7 @@ public class FadeAnimationCtrl : MonoBehaviour
                 if (_readyPanelTransitionCtrl != null)
                 {
                     _readyPanelTransitionCtrl.OnFadeFinished();
-                    _selectAutoTransitionCtrl.StartAutoTransitionTimer();
+                    // _selectAutoTransitionCtrl.StartAutoTransitionTimer();
                 }
                 else
                 {
@@ -121,7 +141,7 @@ public class FadeAnimationCtrl : MonoBehaviour
                 if (_filmingPanelCtrl != null)
                 {
                     _filmingPanelCtrl.PanelChanger();
-                    _autoShootStartCtrl.StartAutoTransitionTimer();
+                    // _autoShootStartCtrl.StartAutoTransitionTimer();
                     // print("여기 실행됨?");
                 }
                 else
@@ -132,7 +152,7 @@ public class FadeAnimationCtrl : MonoBehaviour
             // 수량 화면에서 결제 화면으로 전환
             else if (_isStateStep == 2)
             {
-                print("222222222222222");
+                // print("222222222222222");
                 _isStateStep = 3;
                 _quantityToPaymentCtrl.ObjectActiveCtrl();
             }
@@ -142,14 +162,15 @@ public class FadeAnimationCtrl : MonoBehaviour
             // 일단 안씀 ㄱㄷ
             else if (_isStateStep == 3)
             {
-                print("3333333333333");
+                // print("3333333333333");
                 _isStateStep = 4;
-                _paymentWatingPanelTranstionCtrl.OnClickGoToPayment();
+                _paymentWatingPanelTranstionCtrl.FadeEndCallBack();
+                // _paymentWatingPanelTranstionCtrl.OnClickGoToPayment();
             }
             // 결제 완료 -> 사진 촬영 패널로 변경
             else if (_isStateStep == 4)
             {
-                print("44444444444444");
+                // print("44444444444444");
                 _isStateStep = 5;
                 _paymentToNextStageCtrl.OnPaymentCompleted();
             }
@@ -159,16 +180,17 @@ public class FadeAnimationCtrl : MonoBehaviour
                 _isStateStep = 6;
                 _filmingPanelCtrl.FadeEndCallBack();
             }
-            // 촬영 패널에서 포토 수량 선택으로
+            // 촬영 시작 패널에서 포토 수량 선택으로 할 것임
             else if (_isStateStep == 6)
             {
                 _isStateStep = 7;
-                _initCtrl.PanaelActiveCtrl(); // 초기화하는녀석   
+                _capturePhotoPanelCtrl.FadeEndCallBack();
             }
             // 포토 수량 선택에서 프린트 상태로
             else if (_isStateStep == 7)
             {
                 _isStateStep = 8;
+                _printButtonHandler.FadeEndCallBack();
             }
             // 프린트 상태에서 리셋 상태로 초기화
             else if (_isStateStep == 8)

@@ -180,7 +180,7 @@ public class PaymentCtrl : MonoBehaviour
             // (여기서부터 순서대로 실행)
             GameManager.Instance.SetState(KioskState.Filming);
             print("어디서 호출되냐");
-            // _fadeAnimationCtrl.StartFade();
+            _fadeAnimationCtrl.StartFade();
             OnPaymentApproved();
             StopLoading();
         }

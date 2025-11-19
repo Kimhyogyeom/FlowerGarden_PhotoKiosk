@@ -12,6 +12,10 @@ using UnityEngine.UI;
 /// </summary>
 public class PrintButtonHandler : MonoBehaviour
 {
+    [Header("Component Setting")]
+    [SerializeField] private FadeAnimationCtrl _fadeAnimationCtrl;
+    // 페이드 에니메이션
+
     [Header("Settings Object")]
     [SerializeField] private Button _outputButton;
     // 출력(인쇄) 버튼
@@ -103,7 +107,16 @@ public class PrintButtonHandler : MonoBehaviour
     /// </summary>
     public void OnClickPrint()
     {
+        _fadeAnimationCtrl.StartFade();
+    }
+    /// <summary>
+    /// 페이드 끝나면 호출될 녀석
+    /// </summary>
+    public void FadeEndCallBack()
+    {
         if (_busy) return;
+
+        GameManager.Instance.SetState(KioskState.Printing);
 
         // 사용자가 버튼을 눌러 인쇄 시작 → 카운트다운 즉시 중지
         StopCountdown();

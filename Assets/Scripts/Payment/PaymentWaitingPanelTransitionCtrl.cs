@@ -49,6 +49,15 @@ public class PaymentWaitingPanelTransitionCtrl : MonoBehaviour
     /// </summary>
     public void OnClickGoToPayment()
     {
+        _fadeAnimationCtrl.StartFade();
+    }
+
+    /// <summary>
+    /// 외부 호출용 콜백 (Fade End에서 실행될 예정)
+    /// </summary>
+    public void FadeEndCallBack()
+    {
+        print("여기 호출 몇번됨?");
         // 키오스크 상태를 "결제 대기" 로 설정
         GameManager.Instance.SetState(KioskState.WaitingForPayment);
 
@@ -65,8 +74,6 @@ public class PaymentWaitingPanelTransitionCtrl : MonoBehaviour
             _waitingForPaymentPanel.SetActive(true);
         else
             Debug.LogWarning("[PaymentWaitingPanelTransitionCtrl] _waitingForPaymentPanel reference is missing");
-
-        _fadeAnimationCtrl.StartFade();
     }
 
     /// <summary>

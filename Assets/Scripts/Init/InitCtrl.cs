@@ -36,7 +36,7 @@ public class InitCtrl : MonoBehaviour
     private ColorBlock _originColor;                            // 촬영 버튼 원래 색상 저장용
 
     [Space(10)]
-    [SerializeField] private GameObject _currentPanel;  // 현재 인쇄 완료 후 보여지는 패널
+    [SerializeField] private GameObject _currentPanel;  // 현재 인쇄 완료 Ready패널
     [Tooltip("바뀔 프레임")]
     [SerializeField] private GameObject _changePanel;   // 다시 돌아갈 패널(현재는 결제/대기 패널)
     [SerializeField] private GameObject _cameraFocus;   // 카메라 조준점(촬영 가이드용)
@@ -268,7 +268,7 @@ public class InitCtrl : MonoBehaviour
     /// </summary>
     public void PanaelActiveCtrl()
     {
-        GameManager.Instance.SetState(KioskState.Filming);
+        GameManager.Instance.SetState(KioskState.Ready);
         _currentPanel.SetActive(false);
         _changePanel.SetActive(true);
     }
