@@ -41,6 +41,8 @@ public class PrintButtonHandler : MonoBehaviour
     [SerializeField] private GameObject _changePanel;
     // 출력 버튼을 누른 뒤 보여줄 패널 (예: 인쇄 준비/진행 화면)
 
+    private int _originTimerValue = 0;
+
     [Header("References")]
     [SerializeField] private PrintController _printController;
     // 실제 캡처/파일 저장/인쇄를 수행하는 PrintController
@@ -76,6 +78,8 @@ public class PrintButtonHandler : MonoBehaviour
             _outputButton.onClick.AddListener(OnClickPrint);
         else
             Debug.LogWarning("_outputButton reference is missing");
+
+        _originTimerValue = GameManager.Instance._photoSelectToPrintTimer;
     }
 
     private void OnEnable()
@@ -198,7 +202,7 @@ public class PrintButtonHandler : MonoBehaviour
         //print("진입:::");
         _autoTriggered = false;
 
-        float remain = Mathf.Max(0f, GameManager.Instance._photoToSuccessTimer);
+        float remain = Mathf.Max(0f, GameManager.Instance._photoSelectToPrintTimer);
         int lastShown = -1;
 
         // 최초 표기
@@ -263,11 +267,46 @@ public class PrintButtonHandler : MonoBehaviour
     /// - 카운트다운 중지
     /// - 카운트 텍스트 초기화
     /// - 자동 호출 플래그 초기화
+    /// (구)
     /// </summary>
-    public void ResetPrintButtonHandler()
+    // public void ResetPrintButtonHandler()
+    // {
+    //     StopCountdown();
+    //     SetCountdownText(string.Empty);
+    //     _autoTriggered = false;
+    // }
+
+    /// <summary>
+    /// 외부에서 호출하는 "타이머 리셋 + 처음부터 다시 시작" 함수
+    /// - 카운트다운 중지
+    /// - 텍스트 초기화
+    /// - 플래그/상태 초기화
+    /// - 다시 CountdownAndAutoPrint() 코루틴 시작
+    /// </summary>
+    public void ResetAndRestartCountdown()
     {
+        // 타이머 origin 값으로 초기화
+        GameManager.Instance._photoSelectToPrintTimer = _originTimerValue;
+
+        // 1) 기존 카운트다운 완전히 정지 + 텍스트/플래그 리셋
         StopCountdown();
         SetCountdownText(string.Empty);
         _autoTriggered = false;
+
+        // 인쇄 중 상태도 해제해줘야 다시 눌릴 수 있음
+        _busy = false;
+        if (_outputButton != null)
+            _outputButton.interactable = true;
+
+        // 2) 오브젝트가 활성 상태일 때만 다시 카운트다운 시작
+        if (gameObject.activeInHierarchy)
+        {
+            _countdownRoutine = StartCoroutine(CountdownAndAutoPrint());
+        }
+        else
+        {
+            Debug.Log("[PrintButtonHandler] ResetAndRestartCountdown called, but GameObject is inactive.");
+        }
     }
 }
+

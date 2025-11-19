@@ -115,4 +115,24 @@ public class QuantitySelectCtrl : MonoBehaviour
 
         Debug.Log($"[QuantitySelectCtrl] 선택된 수량: {_selectedQuantity}");
     }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // 초기화 함수 (맨 아래 추가)
+    // 패널이 다시 열릴 때 기본 상태(첫번째 버튼 / 2장)로 되돌리고 싶을 때 사용
+    // 예) _quantitySelectCtrl.ResetQuantity();
+    // ─────────────────────────────────────────────────────────────────────
+    /// <summary>
+    /// 수량 선택을 기본 상태(0번 버튼, 기본 수량)로 초기화
+    /// </summary>
+    public void ResetQuantity()
+    {
+        if (_quantityButtons == null || _quantityButtons.Length == 0)
+        {
+            Debug.LogWarning("QuantitySelectCtrl.ResetQuantity: _quantityButtons가 비어 있습니다.");
+            return;
+        }
+
+        // 기본: 0번 버튼(2장)으로 초기화
+        ApplySelection(0);
+    }
 }

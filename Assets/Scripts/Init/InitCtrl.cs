@@ -16,41 +16,46 @@ public class InitCtrl : MonoBehaviour
     [Header("Add")]
     [SerializeField] private Button _initButton;            // 돌아가기(초기화) 버튼
     [SerializeField] private TextMeshProUGUI _initText;     // 버튼 옆/위에 카운트다운 표시용 텍스트
+    [SerializeField] private int _originTimerValue;
     private Coroutine _resetCallbackRoutine = null;         // 자동 리셋 코루틴
     // [SerializeField] private int g_successToBackTime = 10;   // 인쇄 후 초기 화면으로 돌아가기까지 대기 시간(초)
 
     [Header("Setting Component")]
     [SerializeField] private PhotoFrameSelectCtrl _photoFrameSelectCtrl;    // 프레임 선택 컨트롤러
+    [SerializeField] private QuantitySelectCtrl _quantitySelectCtrl;        // 디자인 적용 이후 : 수량 컨트롤러
+    [SerializeField] private PaymentMethodSelector _paymentMethodSelector;  // 디자인 적용 이후 : 페이먼트 컨트롤러
+    [SerializeField] private FilmingPanelCtrl _filmingPanelCtrl;            // 디자인 적용 이후 : 촬영 컨트롤러
     [SerializeField] private PrintController _printController;              // 프린트 컨트롤러
     [SerializeField] private FadeAnimationCtrl _fadeAnimationCtrl;          // 페이드 연출 컨트롤러
     [SerializeField] private PrintButtonHandler _printButtonHandler;        // 출력 버튼 핸들러
     [SerializeField] private StepCountdownUI _stepCountdownUI;              // 촬영 카운트다운 컨트롤러
-    [SerializeField] private FilmingToSelectCtrl _filmingToSelectCtrl;      // 촬영 → 선택 화면 전환 컨트롤러
-    [SerializeField] private FilmingEndCtrl _filmingEndCtrl;                // 촬영 종료 후 처리 컨트롤러 (필요시 확장용)
+    // [SerializeField] private FilmingToSelectCtrl _filmingToSelectCtrl;      // 촬영 → 선택 화면 전환 컨트롤러
+    // [SerializeField] private FilmingEndCtrl _filmingEndCtrl;                // 촬영 종료 후 처리 컨트롤러 (필요시 확장용)    
+
 
     [Header("Setting Object")]
     [SerializeField] private Button _photoButton;               // 촬영 버튼
-    [SerializeField] private GameObject _photoButtonFake;       // 촬영 중 대체/가짜 버튼
-    [SerializeField] private Image _photoImage;                 // 필요 시 사용하는 이미지(예: 프리뷰 등)
-    [SerializeField] private TextMeshProUGUI _buttonText;       // 촬영 버튼 텍스트
+    // [SerializeField] private GameObject _photoButtonFake;       // 촬영 중 대체/가짜 버튼
+    // [SerializeField] private Image _photoImage;                 // 필요 시 사용하는 이미지(예: 프리뷰 등)
+    // [SerializeField] private TextMeshProUGUI _buttonText;       // 촬영 버튼 텍스트
     private ColorBlock _originColor;                            // 촬영 버튼 원래 색상 저장용
 
     [Space(10)]
     [SerializeField] private GameObject _currentPanel;  // 현재 인쇄 완료 Ready패널
     [Tooltip("바뀔 프레임")]
     [SerializeField] private GameObject _changePanel;   // 다시 돌아갈 패널(현재는 결제/대기 패널)
-    [SerializeField] private GameObject _cameraFocus;   // 카메라 조준점(촬영 가이드용)
+    // [SerializeField] private GameObject _cameraFocus;   // 카메라 조준점(촬영 가이드용)
 
     [Header("Filming")]
-    [SerializeField] private GameObject _stepsObject;                   // 1~4(5) 스텝 표시 UI
-    [SerializeField] private string _takePictureString = "사진찍기";     // 촬영 버튼 기본 문구
-    [SerializeField] private TextMeshProUGUI _exitMessageText;          // 촬영 종료 안내 텍스트
-    [SerializeField, TextArea(4, 5)]
-    private string _exitMessageString = "사진 촬영이 종료되었습니다.\n사진을 출력하세요."; // 종료 안내 기본 문구
+    // [SerializeField] private GameObject _stepsObject;                   // 1~4(5) 스텝 표시 UI
+    // [SerializeField] private string _takePictureString = "사진찍기";     // 촬영 버튼 기본 문구
+    // [SerializeField] private TextMeshProUGUI _exitMessageText;          // 촬영 종료 안내 텍스트
+    // [SerializeField, TextArea(4, 5)]
+    // private string _exitMessageString = "사진 촬영이 종료되었습니다.\n사진을 출력하세요."; // 종료 안내 기본 문구
 
-    [SerializeField] private GameObject _exitMessage;   // 종료 안내 메시지 오브젝트
+    // [SerializeField] private GameObject _exitMessage;   // 종료 안내 메시지 오브젝트
 
-    [SerializeField] private GameObject[] _photoNumberObjs; // 각 컷 번호 아이콘/텍스트 오브젝트
+    // [SerializeField] private GameObject[] _photoNumberObjs; // 각 컷 번호 아이콘/텍스트 오브젝트
     [SerializeField] private TextMeshProUGUI _missionText;  // 미션 텍스트 출력용
 
     [Header("Test")]
@@ -58,6 +63,7 @@ public class InitCtrl : MonoBehaviour
     [SerializeField] private GameObject _endFilming;         // (테스트용) 촬영 종료 UI
     [SerializeField] private Button _endFilimgButton;        // (테스트용) 촬영 종료 버튼
 
+    [Header("Slider")]
     [SerializeField] private GameObject _filimgObject;           // 촬영 중 버튼 오브젝트
     [SerializeField] private GameObject _finishedFilimgObject;   // 촬영 완료 후 버튼 오브젝트
     [SerializeField] private Image _progressFillImage;           // 진행 바(프로그레스 바) 이미지
@@ -119,7 +125,9 @@ public class InitCtrl : MonoBehaviour
     /// </summary>
     private IEnumerator ResetCallBackCoroutine()
     {
-        for (int i = GameManager.Instance._successToPaymentTimer; i >= 1; i--)
+        _originTimerValue = GameManager.Instance._printToSuccessTimer;
+
+        for (int i = GameManager.Instance._printToSuccessTimer; i >= 1; i--)
         {
             if (_initText != null)
                 _initText.text = $"{i}";
@@ -129,6 +137,8 @@ public class InitCtrl : MonoBehaviour
 
         // 지정 시간이 모두 지나면 자동 초기화
         ResetManager();
+
+        GameManager.Instance._printToSuccessTimer = _originTimerValue;
     }
 
     // ─────────────────────────────────────────────────────────
@@ -170,6 +180,12 @@ public class InitCtrl : MonoBehaviour
         PrintReset();           // 프린트 관련 리셋        
         // ─────────────────────────────────────────────────────────
         ButtonReset();          // 기타 버튼/테스트 관련 리셋
+        // ─────────────────────────────────────────────────────────
+        //          디자인적용 이후 리셋 함수 추가 작업 1119
+        // ─────────────────────────────────────────────────────────
+        QuantityReset();        // 수량 관련
+        PaymentReset();         // 페이먼트 관련
+        FilmingReset();         // 촬영 관련
     }
 
     /// <summary>
@@ -187,28 +203,35 @@ public class InitCtrl : MonoBehaviour
     /// </summary>
     private void FilmingPanelReset()
     {
-        _stepsObject.SetActive(true);
+        // _stepsObject.SetActive(true);
 
-        _photoButton.colors = _originColor;
-        _buttonText.color = Color.black;
-        _buttonText.text = _takePictureString;
+        // _photoButton.colors = _originColor;
+        // _buttonText.color = Color.black;
+        // _buttonText.text = _takePictureString;
 
-        _photoButtonFake.SetActive(false);
+        // _photoButtonFake.SetActive(false);
 
-        _exitMessageText.text = _exitMessageString;
-        _exitMessage.SetActive(false);
+        // _exitMessageText.text = _exitMessageString;
+        // _exitMessage.SetActive(false);
 
-        _cameraFocus.SetActive(true);
+        // _cameraFocus.SetActive(true);
 
         // 미션 텍스트 카운트 초기화
-        _stepCountdownUI._missionCount = 0;
+        // _stepCountdownUI._missionCount = 0;
         // 미션 텍스트 초기화
-        _missionText.text = "";
+        // _missionText.text = "";
 
-        // 각 컷 번호 아이콘 다시 활성화
-        foreach (var item in _photoNumberObjs)
+        // // 각 컷 번호 아이콘 다시 활성화
+        // foreach (var item in _photoNumberObjs)
+        // {
+        //     item.SetActive(true);
+        // }
+
         {
-            item.SetActive(true);
+            // 미션 텍스트 카운트 초기화
+            _stepCountdownUI._missionCount = 0;
+            // 미션 텍스트 초기화
+            _missionText.text = "";
         }
     }
 
@@ -227,7 +250,8 @@ public class InitCtrl : MonoBehaviour
     /// </summary>
     private void PrintHandlerReset()
     {
-        _printButtonHandler.ResetPrintButtonHandler();
+        // _printButtonHandler.ResetPrintButtonHandler();
+        _printButtonHandler.ResetAndRestartCountdown();
     }
 
     /// <summary>
@@ -248,7 +272,7 @@ public class InitCtrl : MonoBehaviour
     private void ButtonReset()
     {
         _startFilming.SetActive(true);
-        _endFilming.SetActive(false);
+        // _endFilming.SetActive(false);    // 이거 초기화 할 필요 없이 항시 뜨게 변경됨
         _endFilimgButton.interactable = true;
         _printButtonHandler._busy = false;
 
@@ -259,7 +283,7 @@ public class InitCtrl : MonoBehaviour
         _progressFillImage.fillAmount = 0;
 
         // 뒤로가기 버튼 활성화
-        _filmingToSelectCtrl.ButtonActive();
+        // _filmingToSelectCtrl.ButtonActive();
     }
 
     /// <summary>
@@ -271,5 +295,31 @@ public class InitCtrl : MonoBehaviour
         GameManager.Instance.SetState(KioskState.Ready);
         _currentPanel.SetActive(false);
         _changePanel.SetActive(true);
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    //              디자인 적용 이후 새로 추가된 패널 리셋 관련 ↓↓↓↓↓↓↓ 
+    // ──────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// 수량 선택 관련 리셋
+    /// </summary>
+    public void QuantityReset()
+    {
+        _quantitySelectCtrl.ResetQuantity();
+    }
+    /// <summary>
+    /// 페이먼트 관련 리셋
+    /// </summary>
+    public void PaymentReset()
+    {
+        _paymentMethodSelector.ResetSelection();
+    }
+    /// <summary>
+    /// 촬영 관련 리셋
+    /// </summary>
+    public void FilmingReset()
+    {
+        _filmingPanelCtrl.ResetFilming();
     }
 }

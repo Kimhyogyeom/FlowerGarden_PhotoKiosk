@@ -31,8 +31,13 @@ public class PaymentMethodSelector : MonoBehaviour
     [SerializeField] private GameObject _cardHighlight;   // 카드 선택 표시용 이미지
     [SerializeField] private GameObject _cashHighlight;   // 현금 선택 표시용 이미지
 
+    [Header("Config")]
+    [Tooltip("기본 결제 수단 (리셋 시 이 값으로 돌아감)")]
+    [SerializeField] private PaymentMethod _defaultMethod = PaymentMethod.Payco;
+
     [Header("Runtime")]
     [SerializeField] private PaymentMethod _selectedMethod = PaymentMethod.Payco;
+
     /// <summary>
     /// 현재 선택된 결제 수단(외부에서 읽기용)
     /// </summary>
@@ -62,7 +67,8 @@ public class PaymentMethodSelector : MonoBehaviour
         AutoAssignHighlightIfNull(_cardButton, ref _cardHighlight);
         AutoAssignHighlightIfNull(_cashButton, ref _cashHighlight);
 
-        // 시작 시 전부 끄기
+        // 시작 시 기본 결제 수단으로 맞춰두기
+        _selectedMethod = _defaultMethod;
         UpdateHighlight();
     }
 
@@ -135,14 +141,27 @@ public class PaymentMethodSelector : MonoBehaviour
             _cashHighlight.SetActive(_selectedMethod == PaymentMethod.Cash);
     }
 
+    // ─────────────────────────────────────────────────────────
+    // [외부 호출용] 선택 초기화
+    // 예) 패널 OnEnable() 에서 ResetSelection() 호출
+    // ─────────────────────────────────────────────────────────
     /// <summary>
-    /// [외부 호출용] 선택 초기화   // 물어볼것, 뒤로가기나 홈 버튼을 클릭 했을 때 선택한 값을 리셋 할 것인지. 아니면 전체 시퀀스가 끝나야만 리셋을 할 것인지에 대한 궁금증
+    /// 결제 수단 선택을 기본값(_defaultMethod)으로 초기화
     /// </summary>
     public void ResetSelection()
     {
-        // 아마 기본 모드를 Payco로 가져가야 할 듯?
-        // 기본을 안해놓으면 아무것도 선택 안하고 다음으로넘어갈 시 예외 추가 + 설정만 해두면 편한데 굳이 안해? 라는 느낌이 들긴함
-        _selectedMethod = PaymentMethod.Payco;
+        _selectedMethod = _defaultMethod;
         UpdateHighlight();
+        Debug.Log($"[PaymentMethodSelector] Reset to default: {_selectedMethod}");
+    }
+
+    /// <summary>
+    /// 필요하다면 특정 값으로 강제 초기화하고 싶을 때 사용
+    /// </summary>
+    public void ResetSelection(PaymentMethod method)
+    {
+        _selectedMethod = method;
+        UpdateHighlight();
+        Debug.Log($"[PaymentMethodSelector] Reset to: {_selectedMethod}");
     }
 }

@@ -12,7 +12,7 @@ public class FilmingToSelectCtrl : MonoBehaviour
     [SerializeField] private FadeAnimationCtrl _fadeAnimationCtrl;   // 페이드 애니메이션을 담당하는 컨트롤러
 
     [Header("Object Settings")]
-    [SerializeField] private Button _filmingToSelectButton;          // 촬영 → 선택 화면으로 돌아가는 버튼
+    // [SerializeField] private Button _filmingToSelectButton;          // 촬영 → 선택 화면으로 돌아가는 버튼
 
     [Header("Panel Settings")]
     [SerializeField] private GameObject _currentPanel;               // 현재(촬영) 패널
@@ -20,15 +20,15 @@ public class FilmingToSelectCtrl : MonoBehaviour
 
     private void Awake()
     {
-        // 버튼이 정상적으로 연결되어 있으면 클릭 이벤트 등록
-        if (_filmingToSelectButton != null)
-        {
-            _filmingToSelectButton.onClick.AddListener(OnFilimingToSelectCtrl);
-        }
-        else
-        {
-            Debug.LogWarning("_filmingToSelectButton reference is missing");
-        }
+        // // 버튼이 정상적으로 연결되어 있으면 클릭 이벤트 등록
+        // if (_filmingToSelectButton != null)
+        // {
+        //     _filmingToSelectButton.onClick.AddListener(OnFilimingToSelectCtrl);
+        // }
+        // else
+        // {
+        //     Debug.LogWarning("_filmingToSelectButton reference is missing");
+        // }
     }
 
     /// <summary>
@@ -71,14 +71,14 @@ public class FilmingToSelectCtrl : MonoBehaviour
     /// </summary>
     public void ButtonActive()
     {
-        if (_filmingToSelectButton != null)
-        {
-            _filmingToSelectButton.gameObject.SetActive(true);
-        }
-        else
-        {
-            Debug.LogWarning("_filmingToSelectButton reference is missing");
-        }
+        // if (_filmingToSelectButton != null)
+        // {
+        //     _filmingToSelectButton.gameObject.SetActive(true);
+        // }
+        // else
+        // {
+        //     Debug.LogWarning("_filmingToSelectButton reference is missing");
+        // }
     }
 
     /// <summary>
@@ -87,13 +87,13 @@ public class FilmingToSelectCtrl : MonoBehaviour
     /// </summary>
     public void ButtonInActive()
     {
-        if (_filmingToSelectButton != null)
-        {
-            _filmingToSelectButton.gameObject.SetActive(false);
-        }
-        else
-        {
-            Debug.LogWarning("_filmingToSelectButton reference is missing");
-        }
+        // if (_filmingToSelectButton != null)
+        // {
+        //     _filmingToSelectButton.gameObject.SetActive(false);
+        // }
+        // else
+        // {
+        //     Debug.LogWarning("_filmingToSelectButton reference is missing");
+        // }
     }
 }

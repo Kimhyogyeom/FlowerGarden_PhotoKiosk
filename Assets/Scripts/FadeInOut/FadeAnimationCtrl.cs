@@ -23,7 +23,7 @@ public class FadeAnimationCtrl : MonoBehaviour
     // Ready → Camera 패널 전환 담당
     [SerializeField] private FilmingPanelCtrl _filmingPanelCtrl;
     // 프레임 선택 → 촬영 패널 전환 담당
-    [SerializeField] private FilmingToSelectCtrl _filmingToSelectCtrl;
+    // [SerializeField] private FilmingToSelectCtrl _filmingToSelectCtrl;s
     // 촬영 화면 → 선택 화면으로 돌아갈 때 사용
 
     [SerializeField] private PaymentCtrl _paymentCtrl;
@@ -49,6 +49,10 @@ public class FadeAnimationCtrl : MonoBehaviour
     [SerializeField] private ReadyAutoTransitionCtrl _readyAutoTransitionCtrl;      // 페이드 아웃 됐을때 타이머 호출
     [SerializeField] private SelectAutoTransitionCtrl _selectAutoTransitionCtrl;    // 페이드 아웃 될 때 타이머 호출
     [SerializeField] private AutoShootStartCtrl _autoShootStartCtrl;                // 페이드 아웃 될 때 타이머 호출
+
+    // [결제 시스템 없는 버전으로 테스트용 추가]
+    [SerializeField] private GameObject _panelWaitingForPayment;
+    [SerializeField] private GameObject _panelPayment;
 
 
     /// <summary>
@@ -149,24 +153,41 @@ public class FadeAnimationCtrl : MonoBehaviour
                     UnityEngine.Debug.LogWarning("_filmingPanelCtrl reference is missing");
                 }
             }
+            // // ──────────────────────────────────────────────────────────────────────────────────────────────
+            // // [기존 버전]
+            // // 수량 화면에서 결제 화면으로 전환
+            // else if (_isStateStep == 2)
+            // {
+            //     // print("222222222222222");
+            //     _isStateStep = 3;
+            //     _quantityToPaymentCtrl.ObjectActiveCtrl();
+            // }
+            // // 2단계: 촬영 및 출력 플로우가 끝난 뒤 → Ready(결제/대기) 화면으로 복귀
+            // // 였는데 결제 화면에서 촬영 시작 화면으로 바뀔 예정
+            // // 결제화면에서 결제 진행중 화면으로 전환되어야함            
+            // // 일단 안씀 ㄱㄷ
+            // else if (_isStateStep == 3)
+            // {
+            //     // print("3333333333333");
+            //     _isStateStep = 4;
+            //     _paymentWatingPanelTranstionCtrl.FadeEndCallBack();
+            //     // _paymentWatingPanelTranstionCtrl.OnClickGoToPayment();
+            // }
+            // // ──────────────────────────────────────────────────────────────────────────────────────────────
+            // ──────────────────────────────────────────────────────────────────────────────────────────────
+            // [수정 버전 - Test]
             // 수량 화면에서 결제 화면으로 전환
             else if (_isStateStep == 2)
             {
                 // print("222222222222222");
-                _isStateStep = 3;
+                _isStateStep = 5;
                 _quantityToPaymentCtrl.ObjectActiveCtrl();
+                _paymentToNextStageCtrl.OnPaymentCompleted();
+                if (_panelPayment.activeSelf) _panelPayment.SetActive(false);
+                if (_panelWaitingForPayment.activeSelf) _panelWaitingForPayment.SetActive(false);
+
             }
-            // 2단계: 촬영 및 출력 플로우가 끝난 뒤 → Ready(결제/대기) 화면으로 복귀
-            // 였는데 결제 화면에서 촬영 시작 화면으로 바뀔 예정
-            // 결제화면에서 결제 진행중 화면으로 전환되어야함            
-            // 일단 안씀 ㄱㄷ
-            else if (_isStateStep == 3)
-            {
-                // print("3333333333333");
-                _isStateStep = 4;
-                _paymentWatingPanelTranstionCtrl.FadeEndCallBack();
-                // _paymentWatingPanelTranstionCtrl.OnClickGoToPayment();
-            }
+            // ──────────────────────────────────────────────────────────────────────────────────────────────
             // 결제 완료 -> 사진 촬영 패널로 변경
             else if (_isStateStep == 4)
             {
@@ -209,7 +230,7 @@ public class FadeAnimationCtrl : MonoBehaviour
             {
                 UnityEngine.Debug.Log("_isStateStep : greater than 100");
                 _isStateStep = 1;
-                _filmingToSelectCtrl.PanaelActiveCtrl();
+                // _filmingToSelectCtrl.PanaelActiveCtrl();
             }
             // 101단계: 프레임 선택 화면에서 홈 화면을 클릭했을 때 실행될꺼임
             else if (_isStateStep == 101)
