@@ -73,6 +73,7 @@ public class InitCtrl : MonoBehaviour
         // 초기화(돌아가기) 버튼 클릭 리스너 등록
         _initButton.onClick.AddListener(ResetManager);
         _originColor = _photoButton.colors;
+        // _originTimerValue = GameManager.Instance._printToSuccessTimer;
     }
 
     /// <summary>
@@ -125,9 +126,10 @@ public class InitCtrl : MonoBehaviour
     /// </summary>
     private IEnumerator ResetCallBackCoroutine()
     {
+
         _originTimerValue = GameManager.Instance._printToSuccessTimer;
 
-        for (int i = GameManager.Instance._printToSuccessTimer; i >= 1; i--)
+        for (int i = _originTimerValue; i >= 1; i--)
         {
             if (_initText != null)
                 _initText.text = $"{i}";
@@ -138,7 +140,7 @@ public class InitCtrl : MonoBehaviour
         // 지정 시간이 모두 지나면 자동 초기화
         ResetManager();
 
-        GameManager.Instance._printToSuccessTimer = _originTimerValue;
+
     }
 
     // ─────────────────────────────────────────────────────────
@@ -164,9 +166,6 @@ public class InitCtrl : MonoBehaviour
         // 코루틴 참조 초기화
         _resetCallbackRoutine = null;
 
-        // '돌아가기' 카운트 텍스트 초기화
-        if (_initText != null)
-            _initText.text = "5";
 
         // 효과음 + 페이드 시작
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._outputSuccess);
@@ -186,6 +185,13 @@ public class InitCtrl : MonoBehaviour
         QuantityReset();        // 수량 관련
         PaymentReset();         // 페이먼트 관련
         FilmingReset();         // 촬영 관련
+
+        // '돌아가기' 카운트 텍스트 초기화
+        if (_initText != null)
+            _initText.text = "";
+        // '버튼 오브젝트 비활성화'
+        if (_initButton != null)
+            _initButton.gameObject.SetActive(false);
     }
 
     /// <summary>

@@ -77,7 +77,6 @@ public class FilmingPanelCtrl : MonoBehaviour
     private Color _initialButtonTextColor;
     private string _initialButtonText;
 
-
     private void Awake()
     {
         // 사진 촬영 모드 진입 버튼 리스너 등록

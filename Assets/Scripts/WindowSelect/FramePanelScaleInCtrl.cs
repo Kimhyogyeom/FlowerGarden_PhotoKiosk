@@ -37,7 +37,7 @@ public class FramePanelScaleInCtrl : MonoBehaviour
     [Header("Setting Value")]
     [SerializeField] private float _duration = 0.4f;   // 개별 스케일 인/아웃에 걸리는 시간
     [SerializeField] private float _interval = 0.05f;  // 자식 UI 순차 등장 간격
-    private int _selectedIndex = -1;                   // 현재 선택된 옵션 인덱스 (0~4, 미선택 시 -1)
+    public int _selectedIndex = -1;                    // 현재 선택된 옵션 인덱스 (0~4, 미선택 시 -1) : 무슨 프레임을 선택했는지 보여줄것임.
     private bool _isAnimating = false;                 // 스케일 인/아웃 중인지 여부(중복 입력 방지용)
 
     [Header("Application Setting")]

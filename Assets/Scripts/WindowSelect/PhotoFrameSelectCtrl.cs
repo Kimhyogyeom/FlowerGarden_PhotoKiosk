@@ -12,21 +12,24 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
     // 포토 프레임 선택 버튼(또는 하이라이트용) 오브젝트들
     // 0: 첫 번째 프레임, 1: 두 번째 프레임, 2: 세 번째 프레임
 
-    [SerializeField] private Texture[] _photoFrameTexture;
+    [SerializeField] private Sprite[] _photoFrameTexture;
     // 각 포토 프레임에 대응되는 텍스처 배열
     // 인덱스 0,1,2 순서대로 사용
 
-    [SerializeField] private RawImage _mainRawImage;
+    [SerializeField] private Image _mainRawImage;
     // 선택된 프레임을 실제로 보여주는 메인 RawImage
 
     [Header("Add Frame RawImage")]
-    [SerializeField] private RawImage _addFrameRawImage;
+    // [SerializeField] private Image _addFrameRawImage;
+    // [SerializeField] private Image _photoMainImage;
     // 인쇄용 등, 최종 합성에 사용될 추가 프레임 RawImage
 
     // 현재 어떤 프레임이 선택되어 있는지 표시하는 플래그 (필요 시 외부에서 참조)
     public bool _selectFlag0 = true;
     public bool _selectFlag1 = false;
     public bool _selectFlag2 = false;
+
+    public int _selectIndex = -1;
 
     /// <summary>
     /// 첫 번째 사진(프레임) 선택
@@ -45,15 +48,16 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
         _photoFrameSelectImages[2].SetActive(false);
 
         // 메인 RawImage에 첫 번째 프레임 적용
-        _mainRawImage.texture = _photoFrameTexture[0];
+        _mainRawImage.sprite = _photoFrameTexture[0];
 
         // 선택 상태 플래그 갱신
         _selectFlag0 = true;
         _selectFlag1 = false;
         _selectFlag2 = false;
 
+        _selectIndex = 0;
         // 최종 출력용 추가 프레임에도 동일한 텍스처 적용
-        _addFrameRawImage.texture = _photoFrameTexture[0];
+        // _addFrameRawImage.sprite = _photoFrameTexture[0];
     }
 
     /// <summary>
@@ -70,13 +74,14 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
         _photoFrameSelectImages[1].SetActive(true);
         _photoFrameSelectImages[2].SetActive(false);
 
-        _mainRawImage.texture = _photoFrameTexture[1];
+        _mainRawImage.sprite = _photoFrameTexture[1];
 
         _selectFlag0 = false;
         _selectFlag1 = true;
         _selectFlag2 = false;
 
-        _addFrameRawImage.texture = _photoFrameTexture[1];
+        _selectIndex = 1;
+        // _addFrameRawImage.sprite = _photoFrameTexture[1];
     }
 
     /// <summary>
@@ -93,13 +98,14 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
         _photoFrameSelectImages[1].SetActive(false);
         _photoFrameSelectImages[2].SetActive(true);
 
-        _mainRawImage.texture = _photoFrameTexture[2];
+        _mainRawImage.sprite = _photoFrameTexture[2];
 
         _selectFlag0 = false;
         _selectFlag1 = false;
         _selectFlag2 = true;
 
-        _addFrameRawImage.texture = _photoFrameTexture[2];
+        _selectIndex = 2;
+        // _addFrameRawImage.sprite = _photoFrameTexture[2];
     }
 
     /// <summary>

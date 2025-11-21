@@ -19,7 +19,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
     [Header("Setting Component")]
     [SerializeField] private CountdownTimer _countdownTimer;
     [SerializeField] private FadeAnimationCtrl _fadeAnimationCtrl;
-
+    [SerializeField] private PhotoFrameSelectCtrl _photoFrameSelectCtrl;
     // ──────────────────────────────────────────────────────────────────────
 
     [Header("Panels")]
@@ -42,8 +42,33 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
     [SerializeField] private string _selectionChildName = "SelectedMark";
 
     [Header("Main Preview Images")]
-    [Tooltip("최종 선택된 사진을 보여줄 4개 이미지 슬롯 (항상 보이고, sprite만 바뀜)")]
-    [SerializeField] private Image[] _mainImages = new Image[4];
+    [Tooltip("빨강 프레임 그룹")]
+    [SerializeField] private GameObject _redGameObject;
+    [SerializeField] private Image[] _mainImagesRed = new Image[4];
+
+    [Tooltip("파랑 프레임 그룹")]
+    [SerializeField] private GameObject _blueGameObject;
+    [SerializeField] private Image[] _mainImagesBlue = new Image[4];
+
+    [Tooltip("검정 프레임 그룹")]
+    [SerializeField] private GameObject _blackGameObject;
+    [SerializeField] private Image[] _mainImagesBlack = new Image[4];
+
+    // 현재 선택된 프레임에 해당하는 메인 이미지 배열 (빨/파/검 중 하나)
+    private Image[] _currentMainImages;
+
+    [Header("Main Image Scale By Frame (XYZ 개별 설정)")]
+    [Tooltip("프레임 인덱스 0(빨강)일 때 메인 이미지 스케일")]
+    [SerializeField] private Vector3 _redScale = new Vector3(1f, 1f, 1f);
+
+    [Tooltip("프레임 인덱스 1(파랑)일 때 메인 이미지 스케일")]
+    [SerializeField] private Vector3 _blueScale = new Vector3(1f, 1.05f, 1f);
+
+    [Tooltip("프레임 인덱스 2(검정)일 때 메인 이미지 스케일")]
+    [SerializeField] private Vector3 _blackScale = new Vector3(1f, 1.1f, 1f);
+
+    // 현재 선택된 프레임의 스케일 (Vector3)
+    private Vector3 _currentMainScale = Vector3.one;
 
     [Header("Selection Settings")]
     [Tooltip("최대 선택 가능한 개수 (보통 4)")]
@@ -61,24 +86,25 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
     [SerializeField] private Button _cameraWindowNextButton;
 
     // === 내부 상태 ===
-    private bool[] _isSelected;            // 각 버튼 선택 여부
+    private bool[] _isSelected;             // 각 버튼 선택 여부
     private GameObject[] _selectionMarkers; // 버튼 하위에서 찾은 선택 마커
     private int _currentSelectedCount = 0;
 
     // 슬롯별로 어떤 버튼이 들어있나? (-1 == 비어있음)
-    private int[] _slotOwners;            // 길이 = _mainImages.Length
+    private int[] _slotOwners;              // 길이 = 현재 사용하는 메인 슬롯 개수
 
     // 각 버튼이 어느 슬롯을 쓰고 있나? (-1 == 아직 안 들어감)
-    private int[] _buttonAssignedSlot;    // 길이 = _photoButtons.Length
-
-
+    private int[] _buttonAssignedSlot;      // 길이 = _photoButtons.Length
 
     private void Awake()
     {
+        // 현재 프레임 선택값에 따라 사용 프레임/이미지 배열 결정
+        ApplyFrameSelection();
+
         // 최대 선택 수는 메인 슬롯 개수 이상이 될 수 없음
-        if (_mainImages != null && _mainImages.Length > 0)
+        if (_currentMainImages != null && _currentMainImages.Length > 0)
         {
-            _maxSelection = Mathf.Min(_maxSelection, _mainImages.Length);
+            _maxSelection = Mathf.Min(_maxSelection, _currentMainImages.Length);
         }
 
         EnsureArrays();
@@ -110,6 +136,60 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
     }
 
     /// <summary>
+    /// _photoFrameSelectCtrl._selectIndex 값을 보고
+    /// - 0: 빨강 프레임 사용
+    /// - 1: 파랑 프레임 사용
+    /// - 2: 검정 프레임 사용
+    /// 으로 프레임 오브젝트 활성/비활성 및 _currentMainImages, 스케일 지정
+    /// </summary>
+    private void ApplyFrameSelection()
+    {
+        int index = 0;
+
+        if (_photoFrameSelectCtrl != null)
+        {
+            index = Mathf.Clamp(_photoFrameSelectCtrl._selectIndex, 0, 2);
+        }
+
+        // 모든 프레임 비활성
+        if (_redGameObject) _redGameObject.SetActive(false);
+        if (_blueGameObject) _blueGameObject.SetActive(false);
+        if (_blackGameObject) _blackGameObject.SetActive(false);
+
+        _currentMainImages = null;
+        _currentMainScale = Vector3.one; // 기본값
+
+        switch (index)
+        {
+            case 0: // 빨강
+                if (_redGameObject) _redGameObject.SetActive(true);
+                _currentMainImages = _mainImagesRed;
+                _currentMainScale = _redScale;
+                break;
+
+            case 1: // 파랑
+                if (_blueGameObject) _blueGameObject.SetActive(true);
+                _currentMainImages = _mainImagesBlue;
+                _currentMainScale = _blueScale;
+                break;
+
+            case 2: // 검정
+                if (_blackGameObject) _blackGameObject.SetActive(true);
+                _currentMainImages = _mainImagesBlack;
+                _currentMainScale = _blackScale;
+                break;
+        }
+
+        if (_currentMainImages == null || _currentMainImages.Length == 0)
+        {
+            Debug.LogWarning("[CapturedPhotoPanelCtrl] 현재 프레임의 메인 이미지 배열이 비어있습니다.");
+        }
+
+        // 현재 선택된 프레임의 메인 이미지들에 스케일 적용
+        ApplyScaleToCurrentMainImages();
+    }
+
+    /// <summary>
     /// "다음" 버튼에서 호출.
     /// 사진 매핑 + 패널 전환.
     /// </summary>
@@ -117,17 +197,20 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
     {
         _fadeAnimationCtrl.StartFade();
     }
+
     /// <summary>
     /// 페이드 Start 끝났을때 호출될 함수
     /// </summary>
     public void FadeEndCallBack()
     {
         GameManager.Instance.SetState(KioskState.CutWindow);
-        // 그 뭐야 타이머 시작 (60초)
+
+        // 타이머 시작 (예: 60초)
         if (_countdownTimer != null)
         {
             _countdownTimer.StartTimer();
         }
+
         if (_stepCountdownUI == null)
         {
             Debug.LogWarning("[CapturedPhotoPanelCtrl] StepCountdownUI reference is missing");
@@ -140,7 +223,11 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
             return;
         }
 
+        // 프레임 선택값 다시 반영 (사용자가 이전 화면에서 색을 바꿨을 수도 있으므로)
+        ApplyFrameSelection();
+
         // 새 패널 진입 시 선택 상태/표시 초기화
+        EnsureArrays();
         ResetSelectionOnly();
         UpdateSelectionCountText();
         UpdateMainImages();
@@ -187,6 +274,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
                 _selectionMarkers[i].SetActive(false);
             }
         }
+
         // 패널 전환
         if (_currentPanel != null)
             _currentPanel.SetActive(false);
@@ -194,6 +282,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
         if (_nextPanel != null)
             _nextPanel.SetActive(true);
     }
+
     /// <summary>
     /// 개별 사진 버튼 클릭 시 호출 (Awake에서 리스너 연결됨)
     /// </summary>
@@ -210,13 +299,19 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
 
         EnsureArrays();
 
+        if (_currentMainImages == null || _currentMainImages.Length == 0)
+        {
+            Debug.LogWarning("[CapturedPhotoPanelCtrl] 현재 메인 이미지 배열이 설정되지 않았습니다.");
+            return;
+        }
+
         // 아직 선택 안 된 상태 → 선택 시도
         if (!_isSelected[index])
         {
             // 이미 4/4면 선택 불가, 로그만
             if (_currentSelectedCount >= _maxSelection)
             {
-                Debug.Log("[CapturedPhotoPanelCtrl] 이미 최대 선택 개수(4)에 도달했습니다.");
+                Debug.Log("[CapturedPhotoPanelCtrl] 이미 최대 선택 개수에 도달했습니다.");
                 return;
             }
 
@@ -233,7 +328,6 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
 
             if (freeSlot == -1)
             {
-                // 이 경우는 거의 없겠지만 방어 코드
                 Debug.LogWarning("[CapturedPhotoPanelCtrl] 빈 슬롯이 없습니다.");
                 return;
             }
@@ -303,11 +397,11 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
             }
         }
 
-        // 슬롯 오너
-        if (_mainImages != null)
-        {
-            int slotLen = _mainImages.Length;
+        // 슬롯 오너 (현재 사용하는 메인 이미지 배열 기준)
+        int slotLen = (_currentMainImages != null) ? _currentMainImages.Length : 0;
 
+        if (slotLen > 0)
+        {
             if (_slotOwners == null || _slotOwners.Length != slotLen)
             {
                 _slotOwners = new int[slotLen];
@@ -388,34 +482,53 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
             }
         }
 
-        // 메인 4칸: "자리"는 보이되, sprite만 비움
-        if (_mainImages != null)
+        // 메인 4칸: 세 색상 모두 sprite 정리 (프레임 테두리는 유지)
+        if (_mainImagesRed != null)
         {
-            for (int i = 0; i < _mainImages.Length; i++)
+            for (int i = 0; i < _mainImagesRed.Length; i++)
             {
-                if (_mainImages[i] != null)
-                {
-                    _mainImages[i].sprite = null;
-                    // color는 그대로 둠 (테두리/배경 등 유지)
-                }
+                if (_mainImagesRed[i] != null)
+                    _mainImagesRed[i].sprite = null;
             }
         }
+
+        if (_mainImagesBlue != null)
+        {
+            for (int i = 0; i < _mainImagesBlue.Length; i++)
+            {
+                if (_mainImagesBlue[i] != null)
+                    _mainImagesBlue[i].sprite = null;
+            }
+        }
+
+        if (_mainImagesBlack != null)
+        {
+            for (int i = 0; i < _mainImagesBlack.Length; i++)
+            {
+                if (_mainImagesBlack[i] != null)
+                    _mainImagesBlack[i].sprite = null;
+            }
+        }
+
+        // 리셋 시에도 현재 프레임 스케일 유지
+        ApplyScaleToCurrentMainImages();
     }
 
     /// <summary>
-    /// 슬롯 오너 정보(_slotOwners)에 따라 메인 4칸 sprite 갱신
+    /// 슬롯 오너 정보(_slotOwners)에 따라 현재 선택된 프레임의 메인 4칸 sprite 갱신
     /// </summary>
     private void UpdateMainImages()
     {
-        if (_mainImages == null || _mainImages.Length == 0) return;
+        if (_currentMainImages == null || _currentMainImages.Length == 0) return;
         if (_stepCountdownUI == null) return;
+        if (_slotOwners == null) return;
 
-        for (int slot = 0; slot < _mainImages.Length; slot++)
+        for (int slot = 0; slot < _currentMainImages.Length; slot++)
         {
-            Image img = _mainImages[slot];
+            Image img = _currentMainImages[slot];
             if (img == null) continue;
 
-            int ownerButtonIndex = (_slotOwners != null && slot < _slotOwners.Length)
+            int ownerButtonIndex = (slot < _slotOwners.Length)
                 ? _slotOwners[slot]
                 : -1;
 
@@ -430,6 +543,25 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
                 img.sprite = s;
                 img.preserveAspect = true;
             }
+        }
+
+        // 선택된 프레임에 맞게 메인 이미지 스케일 보정
+        ApplyScaleToCurrentMainImages();
+    }
+
+    /// <summary>
+    /// 현재 선택된 프레임의 메인 이미지들에 스케일 적용 (Vector3로 X/Y/Z 각각)
+    /// </summary>
+    private void ApplyScaleToCurrentMainImages()
+    {
+        if (_currentMainImages == null) return;
+
+        for (int i = 0; i < _currentMainImages.Length; i++)
+        {
+            var img = _currentMainImages[i];
+            if (img == null) continue;
+
+            img.rectTransform.localScale = _currentMainScale;
         }
     }
 

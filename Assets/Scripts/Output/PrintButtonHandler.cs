@@ -16,6 +16,10 @@ public class PrintButtonHandler : MonoBehaviour
     [SerializeField] private FadeAnimationCtrl _fadeAnimationCtrl;
     // 페이드 에니메이션
 
+    // [SerializeField] private FramePanelScaleInCtrl _framePanelScaleInCtrl;  // 무슨 프레임을 선택했는지 알아보려고 가져옴
+    // [SerializeField] private Sprite[] _selectFrames;                        // 무슨 프레임을 선택했는지 알아본 뒤 결정지을 스프라이트
+    // [SerializeField] private Image _frameApplicationImage;                  // 스프랑리트를 적용 시킬 이미지 이옵니다.
+
     [Header("Settings Object")]
     [SerializeField] private Button _outputButton;
     // 출력(인쇄) 버튼
@@ -41,7 +45,7 @@ public class PrintButtonHandler : MonoBehaviour
     [SerializeField] private GameObject _changePanel;
     // 출력 버튼을 누른 뒤 보여줄 패널 (예: 인쇄 준비/진행 화면)
 
-    private int _originTimerValue = 0;
+    [SerializeField] private int _originTimerValue = 0;
 
     [Header("References")]
     [SerializeField] private PrintController _printController;
@@ -202,7 +206,7 @@ public class PrintButtonHandler : MonoBehaviour
         //print("진입:::");
         _autoTriggered = false;
 
-        float remain = Mathf.Max(0f, GameManager.Instance._photoSelectToPrintTimer);
+        float remain = _originTimerValue;
         int lastShown = -1;
 
         // 최초 표기
@@ -261,6 +265,30 @@ public class PrintButtonHandler : MonoBehaviour
             _countdownRoutine = null;
         }
     }
+    // /// <summary>
+    // /// 선택된 번호로 프레임 이미지 변경
+    // /// </summary>
+    // private void SelectFrameApplicationToImage()
+    // {
+    //     int index = 0;
+    //     index = _framePanelScaleInCtrl._selectedIndex;
+
+    //     if (index == 0)
+    //     {
+    //         // 첫번째 프레임 선택
+    //         _frameApplicationImage.sprite = _selectFrames[0];
+    //     }
+    //     else if (index == 1)
+    //     {
+    //         // 두번째 프레임 선택
+    //         _frameApplicationImage.sprite = _selectFrames[1];
+    //     }
+    //     else if (index == 2)
+    //     {
+    //         // 세번째 프레임 선택
+    //         _frameApplicationImage.sprite = _selectFrames[2];
+    //     }
+    // }
 
     /// <summary>
     /// 외부에서 호출하는 리셋 함수
@@ -285,9 +313,6 @@ public class PrintButtonHandler : MonoBehaviour
     /// </summary>
     public void ResetAndRestartCountdown()
     {
-        // 타이머 origin 값으로 초기화
-        GameManager.Instance._photoSelectToPrintTimer = _originTimerValue;
-
         // 1) 기존 카운트다운 완전히 정지 + 텍스트/플래그 리셋
         StopCountdown();
         SetCountdownText(string.Empty);
@@ -299,14 +324,14 @@ public class PrintButtonHandler : MonoBehaviour
             _outputButton.interactable = true;
 
         // 2) 오브젝트가 활성 상태일 때만 다시 카운트다운 시작
-        if (gameObject.activeInHierarchy)
-        {
-            _countdownRoutine = StartCoroutine(CountdownAndAutoPrint());
-        }
-        else
-        {
-            Debug.Log("[PrintButtonHandler] ResetAndRestartCountdown called, but GameObject is inactive.");
-        }
+        // if (gameObject.activeInHierarchy)
+        // {
+        //     _countdownRoutine = StartCoroutine(CountdownAndAutoPrint());
+        // }
+        // else
+        // {
+        //     Debug.Log("[PrintButtonHandler] ResetAndRestartCountdown called, but GameObject is inactive.");
+        // }
     }
 }
 
