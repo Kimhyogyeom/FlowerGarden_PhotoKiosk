@@ -51,7 +51,14 @@ public class PrintButtonHandler : MonoBehaviour
     [SerializeField] private PrintController _printController;
     // 실제 캡처/파일 저장/인쇄를 수행하는 PrintController
 
-    [SerializeField] private RawImage _targetRawImage;   // 인쇄할 RawImage
+    // ──────────────────────────────────────────────────────────────────────────────────────────
+
+    // [SerializeField] private RawImage _targetRawImage;   // 인쇄할 RawImage
+    [SerializeField] private Image _targetRawImage;   // 인쇄할 Image
+
+    // ──────────────────────────────────────────────────────────────────────────────────────────
+
+
     // PrintController.PrintRawImage 에 전달할 최종 타깃 RawImage
 
     [Header("Optional")]

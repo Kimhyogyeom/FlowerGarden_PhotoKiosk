@@ -21,6 +21,14 @@ public class HomButtonCtrl : MonoBehaviour
     [SerializeField] private GameObject _selChangePanel;     // 오픈할 패널 
 
 
+    // ──────────────────────────────────────────────────────────────────────────추가
+    [Header("Object Settings - Chroma Key")]
+    [SerializeField] private Button _chrBackButton;    // 뒤로가기 버튼
+    [SerializeField] private Button _chrHomeButton;    // 홈 버튼
+    [SerializeField] private GameObject _chrChangePanel;     // 오픈할 패널 
+    // ──────────────────────────────────────────────────────────────────────────추가
+
+
     [Header("Object Settings - Quantity")]
     [SerializeField] private Button _quaBackButton;
     [SerializeField] private Button _quaHomeButton;    // 홈 버튼
@@ -40,6 +48,10 @@ public class HomButtonCtrl : MonoBehaviour
         if (_quaHomeButton != null) _quaHomeButton.onClick.AddListener(OnHomeButtonClickQUan);
         if (_quaBackButton != null) _quaBackButton.onClick.AddListener(OnBackButtonClickQUan);
 
+        // [ChromaKey]
+        if (_chrHomeButton != null) _chrHomeButton.onClick.AddListener(OnHomeButtonClickChr);
+        if (_chrBackButton != null) _chrBackButton.onClick.AddListener(OnBackButtonClickQChr);
+
         // [payment]
         if (_payHomeButton != null) _payHomeButton.onClick.AddListener(OnHomeButtonClickPay);
         if (_payBackButton != null) _payBackButton.onClick.AddListener(OnBackButtonClickQPay);
@@ -58,7 +70,7 @@ public class HomButtonCtrl : MonoBehaviour
     /// <summary>
     /// 외부에서 호출할 오브젝트 활성 및 비활성화 함수
     /// </summary>
-    public void ObjectsActiveCtrlSel()
+    public void ObjectsActiveCtrlReset()
     {
         foreach (var item in _currentPanel)
         {
@@ -94,7 +106,7 @@ public class HomButtonCtrl : MonoBehaviour
             item.gameObject.SetActive(false);
         }
         _quaChangePanel.SetActive(true);
-        GameManager.Instance.SetState(KioskState.Select);
+        GameManager.Instance.SetState(KioskState.Chroma);
     }
     // ========================================Quantity
 
@@ -127,4 +139,34 @@ public class HomButtonCtrl : MonoBehaviour
         GameManager.Instance.SetState(KioskState.Quantity);
     }
     // ========================================Payment
+
+
+    // ========================================Chroma Key
+    /// <summary>
+    /// Chroma Key 홈 버튼 누르면 실행될 함수
+    /// </summary>
+    private void OnHomeButtonClickChr()
+    {
+        _fadeAnimationCtrl._isStateStep = 104;
+        _fadeAnimationCtrl.StartFade();
+        GameManager.Instance.SetState(KioskState.Ready);
+    }
+    /// <summary>
+    /// Chroma Key 백 버튼 누르면 실행될 함수
+    /// </summary>
+    private void OnBackButtonClickQChr()
+    {
+        _fadeAnimationCtrl._isStateStep = 203;
+        _fadeAnimationCtrl.StartFade();
+    }
+    public void ObjectsActiveCtrlChr()
+    {
+        foreach (var item in _currentPanel)
+        {
+            item.gameObject.SetActive(false);
+        }
+        _chrChangePanel.SetActive(true);
+        GameManager.Instance.SetState(KioskState.Select);
+    }
+    // ========================================Chroma Key
 }

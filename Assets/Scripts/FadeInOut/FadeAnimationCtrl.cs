@@ -26,6 +26,8 @@ public class FadeAnimationCtrl : MonoBehaviour
     // [SerializeField] private FilmingToSelectCtrl _filmingToSelectCtrl;s
     // 촬영 화면 → 선택 화면으로 돌아갈 때 사용
 
+    [SerializeField] private ChromakeyPanelCtrl _chromakeyPanelCtrl;
+
     [SerializeField] private PaymentCtrl _paymentCtrl;
     // 결제 완료 시스템
     [SerializeField] private QuantityToPaymentCtrl _quantityToPaymentCtrl;
@@ -106,23 +108,23 @@ public class FadeAnimationCtrl : MonoBehaviour
             _fadeAnimator.SetBool("Fade", false);
             SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._fadeOut);
 
+            // if (_isStateStep == -1)
+            // {
+            //     _isStateStep = 0;
+            //     if (_paymentCtrl != null)
+            //     {
+            //         _paymentCtrl.OnCallbackEnd();
+            //         // _readyAutoTransitionCtrl.AutoTransitionTimer();
+            //     }
+            //     else
+            //     {
+            //         UnityEngine.Debug.LogWarning("_paymentCtrl reference is missing");
+            //     }
+            // }
+            // 0단계: Ready 화면에서 "시작하기" 버튼 클릭 후 → 선택 화면으로 변경
             if (_isStateStep == -1)
             {
                 _isStateStep = 0;
-                if (_paymentCtrl != null)
-                {
-                    _paymentCtrl.OnCallbackEnd();
-                    // _readyAutoTransitionCtrl.AutoTransitionTimer();
-                }
-                else
-                {
-                    UnityEngine.Debug.LogWarning("_paymentCtrl reference is missing");
-                }
-            }
-            // 0단계: Ready 화면에서 "시작하기" 버튼 클릭 후 → 선택 화면으로 변경
-            else if (_isStateStep == 0)
-            {
-                _isStateStep = 1;
 
                 // Ready → Camera 전환
                 if (_readyPanelTransitionCtrl != null)
@@ -138,9 +140,9 @@ public class FadeAnimationCtrl : MonoBehaviour
             // 1단계: 프레임 선택 화면에서 "사진 찍기" 버튼 클릭 후 → 촬영 패널로 전환
             // 였는데 수량 화면 전환으로 바뀔 예정
             // 프레임 선택  화면에서 수량 화면으로 전환
-            else if (_isStateStep == 1)
+            else if (_isStateStep == 0)
             {
-                _isStateStep = 2;
+                _isStateStep = 1;
 
                 if (_filmingPanelCtrl != null)
                 {
@@ -151,6 +153,21 @@ public class FadeAnimationCtrl : MonoBehaviour
                 else
                 {
                     UnityEngine.Debug.LogWarning("_filmingPanelCtrl reference is missing");
+                }
+            }
+            else if (_isStateStep == 1)
+            {
+                _isStateStep = 2;
+
+                // 크로마키 영상 추가
+                if (_chromakeyPanelCtrl != null)
+                {
+                    _chromakeyPanelCtrl.OnPanelChange();
+                    print("222");
+                }
+                else
+                {
+                    UnityEngine.Debug.LogWarning("_chromakeyPanelCtrl reference is missing");
                 }
             }
             // // ──────────────────────────────────────────────────────────────────────────────────────────────
@@ -216,7 +233,7 @@ public class FadeAnimationCtrl : MonoBehaviour
             // 프린트 상태에서 리셋 상태로 초기화
             else if (_isStateStep == 8)
             {
-                _isStateStep = 0;
+                _isStateStep = -1;
                 _initCtrl.PanaelActiveCtrl(); // 초기화하는녀석
             }
             // ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -229,26 +246,33 @@ public class FadeAnimationCtrl : MonoBehaviour
             else if (_isStateStep == 100)
             {
                 UnityEngine.Debug.Log("_isStateStep : greater than 100");
-                _isStateStep = 1;
+                _isStateStep = -1;
                 // _filmingToSelectCtrl.PanaelActiveCtrl();
             }
             // 101단계: 프레임 선택 화면에서 홈 화면을 클릭했을 때 실행될꺼임
             else if (_isStateStep == 101)
             {
-                _isStateStep = 0;
-                _homeButtonCtrl.ObjectsActiveCtrlSel();
+                _isStateStep = -1;
+                _homeButtonCtrl.ObjectsActiveCtrlReset();
             }
             // 102단계 프레임 -> 선택 화면 -> 수량 화면에서 홈 화면을 클릭했을 때 실행될꺼임
             else if (_isStateStep == 102)
             {
-                _isStateStep = 0;
-                _homeButtonCtrl.ObjectsActiveCtrlSel();
+                _isStateStep = -1;
+                _homeButtonCtrl.ObjectsActiveCtrlReset();
             }
             // 103단계 프레임 -수량 -> 결제 화면에서 홈 화면을 클릭했을 때 실행될꺼임
             else if (_isStateStep == 103)
             {
-                _isStateStep = 0;
-                _homeButtonCtrl.ObjectsActiveCtrlSel();
+                _isStateStep = -1;
+                _homeButtonCtrl.ObjectsActiveCtrlReset();
+            }
+            // [추가] 251124
+            // 104단계 크로마키 패널에서 홈 화면을 클릭했을 때 실행될 것
+            else if (_isStateStep == 104)
+            {
+                _isStateStep = -1;
+                _homeButtonCtrl.ObjectsActiveCtrlReset();
             }
             // ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             // 뒤로가기 버튼 클릭
@@ -259,11 +283,18 @@ public class FadeAnimationCtrl : MonoBehaviour
                 _isStateStep = 1;
                 _homeButtonCtrl.ObjectsActiveCtrlQua();
             }
-            // 202단계 수량 화면에서 뒤로가기 버튼을 클릭했을 때 실행될거임 (수량 -> 선택 화면)
+            // 202단계 결제 화면에서 뒤로가기 버튼
             else if (_isStateStep == 202)
             {
                 _isStateStep = 2;
                 _homeButtonCtrl.ObjectsActiveCtrlPay();
+            }
+            // 203단계 크로마키 화면에서 뒤로가기 버튼을 클릭했을 때 실행될 것
+            else if (_isStateStep == 203)
+            {
+                _isStateStep = 0;
+                _homeButtonCtrl.ObjectsActiveCtrlChr();
+
             }
             else
             {

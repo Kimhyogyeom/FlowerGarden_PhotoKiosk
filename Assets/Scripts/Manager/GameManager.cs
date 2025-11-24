@@ -8,6 +8,8 @@ public enum KioskState
 {
     Ready,              // 대기 화면 (시작/촬영 준비 상태) // 0-1
 
+    Chroma,
+
     Select,             // 프레임/옵션 선택 화면          // 1-2
 
     Quantity,           // 수량                         // 2-3

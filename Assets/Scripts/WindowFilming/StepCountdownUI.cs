@@ -313,12 +313,13 @@ public class StepCountdownUI : MonoBehaviour
         // 인쇄까지
         if (_printController != null && _photoImageForPrint != null)
         {
-            _printController.PrintRawImage(
-                _photoImageForPrint,
-                OnPrintCompleted,
-                _stepText ? _stepText.gameObject : null,
-                _messageObject
-            );
+            print("_printController or _photoImageForPrint Missing(null)");
+            // _printController.PrintRawImage(
+            //     _photoImageForPrint,
+            //     OnPrintCompleted,
+            //     _stepText ? _stepText.gameObject : null,
+            //     _messageObject
+            // );
         }
         else
         {

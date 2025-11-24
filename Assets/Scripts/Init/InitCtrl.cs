@@ -22,6 +22,7 @@ public class InitCtrl : MonoBehaviour
 
     [Header("Setting Component")]
     [SerializeField] private PhotoFrameSelectCtrl _photoFrameSelectCtrl;    // 프레임 선택 컨트롤러
+    [SerializeField] private ChromakeySelectButton _chromakeySelectButton;        // 크로마키 선택 컨트롤러
     [SerializeField] private QuantitySelectCtrl _quantitySelectCtrl;        // 디자인 적용 이후 : 수량 컨트롤러
     [SerializeField] private PaymentMethodSelector _paymentMethodSelector;  // 디자인 적용 이후 : 페이먼트 컨트롤러
     [SerializeField] private FilmingPanelCtrl _filmingPanelCtrl;            // 디자인 적용 이후 : 촬영 컨트롤러
@@ -183,6 +184,7 @@ public class InitCtrl : MonoBehaviour
         //          디자인적용 이후 리셋 함수 추가 작업 1119
         // ─────────────────────────────────────────────────────────
         QuantityReset();        // 수량 관련
+        ChromakeyReset();       // 크로마키 관련(버튼) 리셋
         PaymentReset();         // 페이먼트 관련
         FilmingReset();         // 촬영 관련
 
@@ -313,6 +315,13 @@ public class InitCtrl : MonoBehaviour
     public void QuantityReset()
     {
         _quantitySelectCtrl.ResetQuantity();
+    }
+    /// <summary>
+    /// 크로마키 관련 리셋
+    /// </summary>
+    public void ChromakeyReset()
+    {
+        _chromakeySelectButton.ResetCtrl();
     }
     /// <summary>
     /// 페이먼트 관련 리셋

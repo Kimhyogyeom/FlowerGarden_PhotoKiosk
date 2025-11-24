@@ -131,11 +131,13 @@ public class FilmingPanelCtrl : MonoBehaviour
     /// 프레임 선택 & 사진 촬영 프레임 중
     /// - "사진 촬영" 버튼 선택 시 호출
     /// - 상태를 Filming 으로 변경하고 페이드 애니메이션 실행
+    /// [추가]
+    /// 크로마키 영상으로 변경될 예정
     /// </summary>
     public void OnSelectPhotoButtonClicked()
     {
         // 상태를 촬영 모드로 전환
-        GameManager.Instance.SetState(KioskState.Quantity);
+        GameManager.Instance.SetState(KioskState.Chroma);
 
         // 촬영 시작 버튼 사운드 재생
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._filmingStartButton);

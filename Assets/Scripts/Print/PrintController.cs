@@ -69,13 +69,6 @@ public class PrintController : MonoBehaviour
     [SerializeField] private Image _progressFill;
     // 진행도(0~1)를 표시할 fill 이미지
 
-    //[Header("Progress Timing")]
-    //[Tooltip("스풀 전송 중 채울 최대치 (0~1 사이, 출력 전반부 느낌)")]
-    ////[SerializeField, Range(0.1f, 0.99f)] private float _preSpoolMaxFill = 0.4f;
-    //
-    //[Tooltip("인쇄 명령(사진 인쇄 창 확인 포함) 후, 실제 용지 나올 때까지 예상 시간(초)")]
-    //[SerializeField] private float _postSpoolSeconds = 10.0f;
-
     [Header("Cover 옵션")]
     [SerializeField, Range(1f, 1.1f)] private float _coverBleed = 1.02f;
     // Cover 시 살짝 확대해서 바깥을 잘라낼 비율 (1보다 크면 살짝 더 확대)
@@ -180,22 +173,25 @@ public class PrintController : MonoBehaviour
 
     /// <summary>
     /// 인쇄 요청 진입점 (PrintButtonHandler 등에서 호출)
-    /// - 현재는 카메라 미연동 상태라 테스트용 코루틴만 실행
-    /// - 실제 환경에서는 하단 주석 처리된 PrintUIArea 경로를 사용
+    /// - Image가 붙은 UI 영역(RectTransform)을 기준으로 인쇄
+    /// - target 아래에 RawImage가 있으면 _captureFromSourceTexture 옵션에 따라
+    ///   RawImage.texture 기반 복사 → 없으면 화면 캡처 방식 사용
     /// </summary>
-    public void PrintRawImage(RawImage rawImage, Action onDone, params GameObject[] toHideTemporarily)
+    public void PrintRawImage(Image image, Action onDone, params GameObject[] toHideTemporarily) // ★ 변경: RawImage → Image
     {
-        // 카메라가 없어서 임시로 만든 로직
-        StartCoroutine(TestCorutine());
+        // [Test용]
+        // StartCoroutine(TestCorutine());
 
-        // 실제 환경에선 이걸 써야함
-        //if (!rawImage)
-        //{
-        //    UnityEngine.Debug.LogError("[Print] RawImage is null");
-        //    onDone?.Invoke();
-        //    return;
-        //}
-        //PrintUIArea(rawImage.rectTransform, onDone, toHideTemporarily);
+        // [Play용]
+        if (!image)
+        {
+            UnityEngine.Debug.LogError("[Print] Image is null"); // ★ 메시지도 변경
+            onDone?.Invoke();
+            return;
+        }
+
+        // Image의 RectTransform 기준으로 영역 전달
+        PrintUIArea(image.rectTransform, onDone, toHideTemporarily); // ★ rawImage.rectTransform → image.rectTransform
     }
 
     /// <summary>
