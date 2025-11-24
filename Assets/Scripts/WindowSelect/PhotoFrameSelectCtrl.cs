@@ -17,6 +17,7 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
     // 인덱스 0,1,2 순서대로 사용
 
     [SerializeField] private Image _mainRawImage;
+    [SerializeField] private Image _fakeImage;
     // 선택된 프레임을 실제로 보여주는 메인 RawImage
 
     [Header("Add Frame RawImage")]
@@ -49,7 +50,7 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
 
         // 메인 RawImage에 첫 번째 프레임 적용
         _mainRawImage.sprite = _photoFrameTexture[0];
-
+        _fakeImage.sprite = _photoFrameTexture[0];
         // 선택 상태 플래그 갱신
         _selectFlag0 = true;
         _selectFlag1 = false;
@@ -75,6 +76,7 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
         _photoFrameSelectImages[2].SetActive(false);
 
         _mainRawImage.sprite = _photoFrameTexture[1];
+        _fakeImage.sprite = _photoFrameTexture[1];
 
         _selectFlag0 = false;
         _selectFlag1 = true;
@@ -99,6 +101,7 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
         _photoFrameSelectImages[2].SetActive(true);
 
         _mainRawImage.sprite = _photoFrameTexture[2];
+        _fakeImage.sprite = _photoFrameTexture[2];
 
         _selectFlag0 = false;
         _selectFlag1 = false;

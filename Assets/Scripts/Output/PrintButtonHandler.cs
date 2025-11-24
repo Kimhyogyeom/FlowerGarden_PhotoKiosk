@@ -14,6 +14,8 @@ public class PrintButtonHandler : MonoBehaviour
 {
     [Header("Component Setting")]
     [SerializeField] private FadeAnimationCtrl _fadeAnimationCtrl;
+
+    [SerializeField] private ImageMapping _imageMapping;
     // 페이드 에니메이션
 
     // [SerializeField] private FramePanelScaleInCtrl _framePanelScaleInCtrl;  // 무슨 프레임을 선택했는지 알아보려고 가져옴
@@ -174,6 +176,9 @@ public class PrintButtonHandler : MonoBehaviour
         // -------- 출력 호출 --------
         _busy = true;
         if (_outputButton) _outputButton.interactable = false;
+
+        // 이미지 교체 호출
+        _imageMapping.ImageMappingCallBack();
 
         // 이식해야함 ───────────────────────────────────────────────────────────────────
         _printController.PrintRawImage(
