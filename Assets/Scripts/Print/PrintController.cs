@@ -14,11 +14,18 @@ using UnityEngine.UI;
 
 public class PrintController : MonoBehaviour
 {
+    [Header("Timing")]
+    [SerializeField] private float _captureStartDelay = 1f;   // 기본 1초 딜레이
+
     [Header("Compoment")]
     [SerializeField] private OutputSuccessCtrl _outputSuccessCtrl;
     [SerializeField] private GameObject _background1;
     [SerializeField] private GameObject _background2;
     [SerializeField] private GameObject _background3;
+
+    [Header("Print Settings")]
+    [Tooltip("같은 이미지를 몇 번 출력할지 (기본 2장)")]
+    [SerializeField, Min(1)] private int _printCount = 2;
 
     [Header("Capture Source")]
     [Tooltip("target에 RawImage가 있을 때 texture를 직접 복사할지 여부")]
@@ -72,6 +79,7 @@ public class PrintController : MonoBehaviour
     private float _initCoverBiasX;
     private float _initCoverBiasY;
     private int _initPostCropInsetPx;
+    private int _initPrintCount;
 
     private void Awake()
     {
@@ -87,6 +95,7 @@ public class PrintController : MonoBehaviour
         _initCoverBiasX = _coverBiasX;
         _initCoverBiasY = _coverBiasY;
         _initPostCropInsetPx = _postCropInsetPx;
+        _initPrintCount = _printCount;
     }
 
     public void ResetPrintState(bool deleteSavedPhotos = true)
@@ -106,6 +115,7 @@ public class PrintController : MonoBehaviour
         _coverBiasX = _initCoverBiasX;
         _coverBiasY = _initCoverBiasY;
         _postCropInsetPx = _initPostCropInsetPx;
+        _printCount = _initPrintCount;
 
         if (deleteSavedPhotos)
         {
@@ -208,7 +218,11 @@ public class PrintController : MonoBehaviour
             yield break;
         }
 
-        // ★ 0. 찍히면 안 되는 애들(검은 페이드 패널 등)은 미리 꺼두기
+        // Timer
+        if (_captureStartDelay > 0f)
+            yield return new WaitForSeconds(_captureStartDelay);
+
+        // 0. 찍히면 안 되는 애들(검은 페이드 패널 등)은 미리 꺼두기
         ToggleObjects(toHide, false);
 
         // ───────────────── 원래 RectTransform 상태 백업 ─────────────────
@@ -239,13 +253,14 @@ public class PrintController : MonoBehaviour
 
         // 레이아웃/캔버스 갱신
         Canvas.ForceUpdateCanvases();
-        _background1.SetActive(true);
-        _background2.SetActive(true);
-        _background3.SetActive(true);
+        // _background1.SetActive(true);
+        // _background2.SetActive(true);
+        // _background3.SetActive(true);
         yield return new WaitForEndOfFrame();
-        _background1.SetActive(false);
-        _background2.SetActive(false);
-        _background3.SetActive(false);
+        // _background1.SetActive(false);
+        // _background2.SetActive(false);
+        // _background3.SetActive(false);
+
         // ───────────────── 1) 텍스처 생성 (RawImage 우선 → 화면 캡처 폴백) ─────────────────
         Texture2D tex = null;
 
@@ -321,8 +336,16 @@ public class PrintController : MonoBehaviour
         UnityEngine.Object.Destroy(tex);
 
         // ───────────────── 4) 인쇄 + 진행 UI ─────────────────
+        // 👉 여기서 _printCount 만큼 반복 출력
         StartProgressUI();
-        yield return StartCoroutine(PrintAndNotify(savePath));
+
+        int safeCount = Mathf.Max(1, _printCount);
+        for (int i = 0; i < safeCount; i++)
+        {
+            UnityEngine.Debug.Log($"[Print] {_printCount}장 중 {i + 1}번째 출력 시작");
+            yield return StartCoroutine(PrintAndNotify(savePath));
+        }
+
         StopProgressUI();
 
         onDone?.Invoke();
@@ -755,7 +778,14 @@ public class PrintController : MonoBehaviour
         UnityEngine.Debug.Log($"[Print] test blank saved: {savePath} ({w}x{h})");
 
         StartProgressUI();
-        yield return StartCoroutine(PrintAndNotify(savePath));
+
+        int safeCount = Mathf.Max(1, _printCount);
+        for (int i = 0; i < safeCount; i++)
+        {
+            UnityEngine.Debug.Log($"[Print] 테스트 블랭크 {_printCount}장 중 {i + 1}번째 출력 시작");
+            yield return StartCoroutine(PrintAndNotify(savePath));
+        }
+
         StopProgressUI();
 
         onDone?.Invoke();

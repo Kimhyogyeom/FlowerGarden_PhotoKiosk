@@ -34,7 +34,7 @@ public class FadeAnimationCtrl : MonoBehaviour
     // 수량 -> 결제 컨트롤러
     [SerializeField] private PaymentToNextStageCtrl _paymentToNextStageCtrl;
     // 결제 -> 결제완료 자동 : (결제 완료 -> 필름 패널로 변경)
-    [SerializeField] private HomButtonCtrl _homeButtonCtrl;
+    [SerializeField] private HomAndBackButtonCtrl _homeButtonCtrl;
     // 홈 버튼 누르면 실행될 제어 컨트롤러 
 
     [SerializeField] private PaymentWaitingPanelTransitionCtrl _paymentWatingPanelTranstionCtrl;

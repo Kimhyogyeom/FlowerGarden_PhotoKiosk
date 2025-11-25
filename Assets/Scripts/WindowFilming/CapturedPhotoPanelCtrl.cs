@@ -11,6 +11,7 @@ using TMPro;
 ///   - 버튼 하위의 선택 마커(SelectedMark) ON/OFF
 ///   - 선택된 사진을 메인 4칸에 "고정 슬롯 방식"으로 배치
 ///   - 선택 개수 텍스트: 0/4, 1/4 ... 업데이트
+///   - 현재 프레임 색에 해당하는 Print 슬롯 배열에 최종 4장 복사
 /// </summary>
 public class CapturedPhotoPanelCtrl : MonoBehaviour
 {
@@ -45,14 +46,17 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
     [Tooltip("빨강 프레임 그룹")]
     [SerializeField] private GameObject _redGameObject;
     [SerializeField] private Image[] _mainImagesRed = new Image[4];
+    [SerializeField] private Image[] _mainImagesRedPrint = new Image[4];
 
     [Tooltip("파랑 프레임 그룹")]
     [SerializeField] private GameObject _blueGameObject;
     [SerializeField] private Image[] _mainImagesBlue = new Image[4];
+    [SerializeField] private Image[] _mainImagesBluePrint = new Image[4];
 
     [Tooltip("검정 프레임 그룹")]
     [SerializeField] private GameObject _blackGameObject;
     [SerializeField] private Image[] _mainImagesBlack = new Image[4];
+    [SerializeField] private Image[] _mainImagesBlackPrint = new Image[4];
 
     // 현재 선택된 프레임에 해당하는 메인 이미지 배열 (빨/파/검 중 하나)
     private Image[] _currentMainImages;
@@ -98,16 +102,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
 
     private void Awake()
     {
-        // 현재 프레임 선택값에 따라 사용 프레임/이미지 배열 결정
-        ApplyFrameSelection();
-
-        // 최대 선택 수는 메인 슬롯 개수 이상이 될 수 없음
-        if (_currentMainImages != null && _currentMainImages.Length > 0)
-        {
-            _maxSelection = Mathf.Min(_maxSelection, _currentMainImages.Length);
-        }
-
-        EnsureArrays();
+        // 버튼 하위의 선택 마커(SelectedMark) 찾아두기
         FindSelectionMarkersFromButtons();
 
         // "다음" 버튼 → 사진 매핑 + 패널 전환
@@ -129,10 +124,8 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
             }
         }
 
-        // 시작 상태 초기화
-        ResetSelectionOnly();
-        UpdateSelectionCountText();
-        UpdateMainImages();
+        // 시작 상태 전체 리셋 (프레임/슬롯/텍스트/마커)
+        ResetCapturedPhotoPanel();
     }
 
     /// <summary>
@@ -184,9 +177,6 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
         {
             Debug.LogWarning("[CapturedPhotoPanelCtrl] 현재 프레임의 메인 이미지 배열이 비어있습니다.");
         }
-
-        // 현재 선택된 프레임의 메인 이미지들에 스케일 적용
-        ApplyScaleToCurrentMainImages();
     }
 
     /// <summary>
@@ -223,14 +213,8 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
             return;
         }
 
-        // 프레임 선택값 다시 반영 (사용자가 이전 화면에서 색을 바꿨을 수도 있으므로)
-        ApplyFrameSelection();
-
-        // 새 패널 진입 시 선택 상태/표시 초기화
-        EnsureArrays();
-        ResetSelectionOnly();
-        UpdateSelectionCountText();
-        UpdateMainImages();
+        // 새 패널 진입 시 전체 상태 리셋 (프레임/슬롯/텍스트/마커)
+        ResetCapturedPhotoPanel();
 
         // StepCountdownUI에서 캡처된 스프라이트를 버튼들에 매핑
         for (int i = 0; i < _photoButtons.Length; i++)
@@ -266,7 +250,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
                 btn.interactable = true;
             }
 
-            // 선택 마커 OFF
+            // 선택 마커 OFF (리셋 시점에서 이미 꺼지지만 안전하게 한 번 더)
             if (_selectionMarkers != null &&
                 i < _selectionMarkers.Length &&
                 _selectionMarkers[i] != null)
@@ -294,6 +278,8 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
         if (captured == null)
         {
             Debug.LogWarning($"[CapturedPhotoPanelCtrl] No sprite at index {index}");
+
+
             return;
         }
 
@@ -372,6 +358,10 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
         // 메인 이미지 + 텍스트 갱신
         UpdateMainImages();
         UpdateSelectionCountText();
+
+        // ✅ 현재 프레임(_photoFrameSelectCtrl._selectIndex)에 맞는 Print 슬롯 배열에
+        //    최신 메인 4칸 내용을 복사
+        CopyFinalSelectionToPrintSlots();
     }
 
     // ================== Helpers ==================
@@ -573,5 +563,105 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
         if (_selectedCountText == null) return;
 
         _selectedCountText.text = $"{_currentSelectedCount} / {_maxSelection}";
+    }
+
+    // ================== 인쇄용 슬롯 복사 관련 ==================
+
+    /// <summary>
+    /// src 이미지 배열의 sprite를 dst 배열로 복사
+    /// </summary>
+    private void CopySpriteArray(Image[] src, Image[] dst)
+    {
+        if (src == null || dst == null) return;
+
+        int len = Mathf.Min(src.Length, dst.Length);
+        for (int i = 0; i < len; i++)
+        {
+            if (src[i] == null || dst[i] == null) continue;
+
+            dst[i].sprite = src[i].sprite;
+            dst[i].preserveAspect = true;
+
+            var c = dst[i].color;
+            if (dst[i].sprite != null)
+            {
+                c.a = 1f;
+                dst[i].color = c;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 현재 선택된 프레임 색(빨/파/검)에 따라
+    /// 메인 미리보기 4칸의 최종 이미지를
+    /// 해당 프레임의 인쇄용 슬롯(_mainImagesXXXPrint)으로 복사
+    /// </summary>
+    public void CopyFinalSelectionToPrintSlots()
+    {
+        if (_currentMainImages == null || _currentMainImages.Length == 0)
+        {
+            Debug.LogWarning("[CapturedPhotoPanelCtrl] _currentMainImages 비어있음 - 최종 선택 이미지가 없습니다.");
+            return;
+        }
+
+        int index = 0;
+        if (_photoFrameSelectCtrl != null)
+            index = Mathf.Clamp(_photoFrameSelectCtrl._selectIndex, 0, 2);
+
+        switch (index)
+        {
+            case 0: // 빨강
+                CopySpriteArray(_currentMainImages, _mainImagesRedPrint);
+                break;
+
+            case 1: // 파랑
+                CopySpriteArray(_currentMainImages, _mainImagesBluePrint);
+                break;
+
+            case 2: // 검정
+                CopySpriteArray(_currentMainImages, _mainImagesBlackPrint);
+                break;
+        }
+
+        Debug.Log("[CapturedPhotoPanelCtrl] 최종 선택 4장을 인쇄용 슬롯으로 복사 완료 (index=" + index + ")");
+    }
+
+    // ==================  외부에서 호출할 리셋 함수 ==================
+
+    /// <summary>
+    /// 외부에서 호출 가능한 전체 리셋 함수
+    /// - 현재 프레임 index에 맞춰 프레임 활성/비활성
+    /// - _currentMainImages / _currentMainScale 설정
+    /// - _maxSelection 보정
+    /// - 내부 배열 생성/초기화
+    /// - 선택 상태/슬롯/마커/메인 이미지/텍스트까지 한 번에 리셋
+    /// </summary>
+    public void ResetCapturedPhotoPanel()
+    {
+        print("=======================================================");
+        print("ResetCapturedPhotoPanel 리셋 된다아ㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏ");
+        print("=======================================================");
+
+        // 프레임 선택값 반영 (빨/파/검 + 스케일 설정)
+        ApplyFrameSelection();
+
+        // 최대 선택 수는 메인 슬롯 개수 이상이 될 수 없음
+        if (_currentMainImages != null && _currentMainImages.Length > 0)
+        {
+            _maxSelection = Mathf.Min(_maxSelection, _currentMainImages.Length);
+        }
+
+        // 배열/슬롯/선택 정보 준비
+        EnsureArrays();
+
+        // 선택 상태/마커/슬롯/메인 이미지 정리
+        ResetSelectionOnly();
+
+        // 선택 개수 텍스트 & 메인 이미지 표시 갱신
+        UpdateSelectionCountText();
+        UpdateMainImages();
+
+        // 리셋 직후 Print 슬롯도 깨끗이 맞추고 싶다면(선택 사항):
+        // CopyFinalSelectionToPrintSlots();
     }
 }

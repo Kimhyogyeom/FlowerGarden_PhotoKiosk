@@ -9,14 +9,14 @@ using UnityEngine;
 public class MissionApplicationCtrl : MonoBehaviour
 {
     // 공통 프리픽스 (무지개 "MISSION ")
-    private const string MissionPrefix =
-        "<color=#FF0000>M</color>" +
-        "<color=#FFA500>I</color>" +
-        "<color=#FFFF00>S</color>" +
-        "<color=#00FF00>S</color>" +
-        "<color=#0000FF>I</color>" +
-        "<color=#000080>O</color>" +
-        "<color=#800080>N</color> ";
+    private const string MissionPrefix = "";
+    // "<color=#FF0000>M</color>" +
+    // "<color=#FFA500>I</color>" +
+    // "<color=#FFFF00>S</color>" +
+    // "<color=#00FF00>S</color>" +
+    // "<color=#0000FF>I</color>" +
+    // "<color=#000080>O</color>" +
+    // "<color=#800080>N</color> ";
 
     // 1컷: 세 가지 랜덤 문구
     private string _missionMessage00_0 = MissionPrefix + "1컷: 살짝 미소~";

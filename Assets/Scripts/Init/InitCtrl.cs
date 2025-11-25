@@ -30,6 +30,8 @@ public class InitCtrl : MonoBehaviour
     [SerializeField] private FadeAnimationCtrl _fadeAnimationCtrl;          // 페이드 연출 컨트롤러
     [SerializeField] private PrintButtonHandler _printButtonHandler;        // 출력 버튼 핸들러
     [SerializeField] private StepCountdownUI _stepCountdownUI;              // 촬영 카운트다운 컨트롤러
+
+    [SerializeField] private CapturedPhotoPanelCtrl _capturedPhotoPanelCtrl;    // 포토 셀렉에서 캡처 관련 함수 
     // [SerializeField] private FilmingToSelectCtrl _filmingToSelectCtrl;      // 촬영 → 선택 화면 전환 컨트롤러
     // [SerializeField] private FilmingEndCtrl _filmingEndCtrl;                // 촬영 종료 후 처리 컨트롤러 (필요시 확장용)    
 
@@ -187,6 +189,10 @@ public class InitCtrl : MonoBehaviour
         ChromakeyReset();       // 크로마키 관련(버튼) 리셋
         PaymentReset();         // 페이먼트 관련
         FilmingReset();         // 촬영 관련
+        // ─────────────────────────────────────────────────────────
+        //          디자인적용 이후 리셋 함수 추가 작업 1125
+        // ─────────────────────────────────────────────────────────
+        PhotoCaptureReset();    // 포토 선텍 리셋 관련
 
         // '돌아가기' 카운트 텍스트 초기화
         if (_initText != null)
@@ -336,5 +342,13 @@ public class InitCtrl : MonoBehaviour
     public void FilmingReset()
     {
         _filmingPanelCtrl.ResetFilming();
+    }
+
+    /// <summary>
+    /// 포토 선택에서 리셋 관련 함수
+    /// </summary>
+    public void PhotoCaptureReset()
+    {
+        _capturedPhotoPanelCtrl.ResetCapturedPhotoPanel();
     }
 }

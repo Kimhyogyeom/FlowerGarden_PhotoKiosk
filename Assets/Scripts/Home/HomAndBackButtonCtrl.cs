@@ -4,7 +4,7 @@ using UnityEngine.UI;
 /// <summary>
 /// 홈 버튼 클릭시 제어할 스크립트
 /// </summary>
-public class HomButtonCtrl : MonoBehaviour
+public class HomAndBackButtonCtrl : MonoBehaviour
 {
     [Header("Component")]
     [SerializeField] private FadeAnimationCtrl _fadeAnimationCtrl;  // 페이드ㅡ 애니메이션 컨트롤러
