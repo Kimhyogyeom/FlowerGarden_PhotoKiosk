@@ -238,10 +238,11 @@ public class StepCountdownUI : MonoBehaviour
                 int missionIndex = Mathf.Clamp(_missionCount - 1, 0, 7);
                 string msg = _missionCtrl.GetRandomMissionMessage(missionIndex);
 
-                if (_missionAnimator != null)
-                    _missionAnimator.SetTextAndSlideIn(msg);
-                else if (_missionText != null)
-                    _missionText.text = msg;
+                // Mission Text 실행시키는곳 임시 주석
+                // if (_missionAnimator != null)
+                //     _missionAnimator.SetTextAndSlideIn(msg);
+                // else if (_missionText != null)
+                //     _missionText.text = msg;
             }
 
             UpdateStepImageAlpha(step - 1);

@@ -8,6 +8,9 @@ using UnityEngine.UI;
 /// </summary>
 public class QuantitySelectCtrl : MonoBehaviour
 {
+    [Header("Compoment Settings")]
+    [SerializeField] private PrintController _printController;
+
     [Header("Buttons")]
     [Tooltip("수량 선택 버튼들 (왼쪽부터 순서대로 5개)")]
     [SerializeField] private Button[] _quantityButtons = new Button[5];
@@ -100,6 +103,9 @@ public class QuantitySelectCtrl : MonoBehaviour
     {
         _selectedIndex = index;
         _selectedQuantity = _quantities[index];
+
+        // 프린트 카운트를 현재 적용된 개수로 변경 갯수? 개수? 뭥미?
+        _printController._printCount = _selectedQuantity;
 
         for (int i = 0; i < _quantityButtons.Length; i++)
         {

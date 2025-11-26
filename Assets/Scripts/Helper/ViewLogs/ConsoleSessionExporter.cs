@@ -225,7 +225,7 @@ public class ConsoleSessionExporter : MonoBehaviour
         {
             _rows.Clear();
         }
-        Debug.Log("[ConsoleExport] Session cleared");
+        // Debug.Log("[ConsoleExport] Session cleared");
     }
 
     /// <summary>

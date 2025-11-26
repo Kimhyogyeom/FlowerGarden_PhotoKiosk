@@ -25,7 +25,7 @@ public class PrintController : MonoBehaviour
 
     [Header("Print Settings")]
     [Tooltip("같은 이미지를 몇 번 출력할지 (기본 2장)")]
-    [SerializeField, Min(1)] private int _printCount = 2;
+    [SerializeField, Min(1)] public int _printCount = 2;
 
     [Header("Capture Source")]
     [Tooltip("target에 RawImage가 있을 때 texture를 직접 복사할지 여부")]
