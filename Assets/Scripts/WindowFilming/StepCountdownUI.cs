@@ -44,6 +44,16 @@ public class StepCountdownUI : MonoBehaviour
     [Tooltip("최종 인쇄에 사용할 RawImage (옵션). 비우면 인쇄 스킵.")]
     [SerializeField] private RawImage _photoImageForPrint;
 
+    [Header("Virtual Capture Rect")]
+    [Tooltip("true면, RawImage 실제 사이즈와 관계없이 이 가상 크기만큼만 중앙에서 캡처")]
+    [SerializeField] private bool _useVirtualCaptureRect = false;
+
+    [Tooltip("UI 기준 가상 캡처 너비 (예전 width 값, 예: 470)")]
+    [SerializeField] private float _virtualCaptureWidth = 470f;
+
+    [Tooltip("UI 기준 가상 캡처 높이 (예전 height 값, 예: 640)")]
+    [SerializeField] private float _virtualCaptureHeight = 640f;
+
     [Header("Progress Slider (Optional)")]
     [Tooltip("각 촬영 단계 진행도를 표시할 슬라이더 (0~1). 비우면 무시.")]
     [SerializeField] private Slider _stepProgressSlider;
@@ -358,6 +368,7 @@ public class StepCountdownUI : MonoBehaviour
         if (_countdownText) _countdownText.gameObject.SetActive(false);
         if (_countdownTextParent) _countdownTextParent.gameObject.SetActive(false);
 
+        // 렌더 끝날 때까지 대기
         yield return new WaitForEndOfFrame();
 
         var canvas = target.GetComponentInParent<Canvas>();
@@ -365,25 +376,75 @@ public class StepCountdownUI : MonoBehaviour
         if (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay)
             cam = canvas.worldCamera;
 
+        // 1) 전체 RectTransform의 화면 영역 먼저 구하기
         Vector3[] wc = new Vector3[4];
-        target.GetWorldCorners(wc);
+        target.GetWorldCorners(wc);  // 0: 좌하, 2: 우상 기준
+
         Vector2 s0 = RectTransformUtility.WorldToScreenPoint(cam, wc[0]);
         Vector2 s2 = RectTransformUtility.WorldToScreenPoint(cam, wc[2]);
 
-        float x = Mathf.Min(s0.x, s2.x);
-        float y = Mathf.Min(s0.y, s2.y);
-        float w = Mathf.Abs(s2.x - s0.x);
-        float h = Mathf.Abs(s2.y - s0.y);
+        float fullX = Mathf.Min(s0.x, s2.x);
+        float fullY = Mathf.Min(s0.y, s2.y);
+        float fullW = Mathf.Abs(s2.x - s0.x);
+        float fullH = Mathf.Abs(s2.y - s0.y);
 
-        x = Mathf.Clamp(x, 0, Screen.width);
-        y = Mathf.Clamp(y, 0, Screen.height);
-        w = Mathf.Clamp(w, 0, Screen.width - x);
-        h = Mathf.Clamp(h, 0, Screen.height - y);
+        // 최종 캡처할 화면 영역(기본은 전체)
+        float capX = fullX;
+        float capY = fullY;
+        float capW = fullW;
+        float capH = fullH;
 
-        int iw = Mathf.Max(1, Mathf.RoundToInt(w));
-        int ih = Mathf.Max(1, Mathf.RoundToInt(h));
-        int ix = Mathf.RoundToInt(x);
-        int iy = Mathf.RoundToInt(y);
+        // 2) 가상 캡처 크기를 사용할 경우 → 가운데만 잘라서 쓰기
+        if (_useVirtualCaptureRect)
+        {
+            // target.rect : UI 로컬 좌표 기준 (CanvasScaler 스케일 전)
+            Rect localRect = target.rect;
+
+            // 로컬 기준 실제 너비/높이 (예: 900 x 640)
+            float localW = localRect.width;
+            float localH = localRect.height;
+
+            // 안전장치
+            if (localW < 1f) localW = 1f;
+            if (localH < 1f) localH = 1f;
+
+            // 전체 화면 영역과 로컬 폭/높이의 스케일 비율
+            // (CanvasScaler, 해상도 상관없이 비율로 맞춰줌)
+            float scaleX = fullW / localW;
+            float scaleY = fullH / localH;
+
+            // "옛날에 사용하던 가상의 폭/높이" (예: 470 x 640)
+            float desiredLocalW = Mathf.Min(_virtualCaptureWidth, localW);
+            float desiredLocalH = Mathf.Min(_virtualCaptureHeight, localH);
+
+            // 그걸 화면 공간으로 환산
+            float desiredScreenW = desiredLocalW * scaleX;
+            float desiredScreenH = desiredLocalH * scaleY;
+
+            // 혹시라도 전체보다 더 크게 계산되면 안전하게 잘라줌
+            capW = Mathf.Min(fullW, desiredScreenW);
+            capH = Mathf.Min(fullH, desiredScreenH);
+
+            // 전체 rect 중앙에서 원하는 크기만큼 가운데로 잘라내기
+            capX = fullX + (fullW - capW) * 0.5f;
+            capY = fullY + (fullH - capH) * 0.5f;
+
+            // 디버그용
+            Debug.Log($"[Capture] VirtualRect 사용: full=({fullW}x{fullH}), local=({localW}x{localH}), " +
+                      $"virtLocal=({_virtualCaptureWidth}x{_virtualCaptureHeight}), " +
+                      $"capScreen=({capW}x{capH}) at ({capX},{capY})");
+        }
+
+        // 3) 화면 범위로 클램프
+        capX = Mathf.Clamp(capX, 0, Screen.width);
+        capY = Mathf.Clamp(capY, 0, Screen.height);
+        capW = Mathf.Clamp(capW, 0, Screen.width - capX);
+        capH = Mathf.Clamp(capH, 0, Screen.height - capY);
+
+        int iw = Mathf.Max(1, Mathf.RoundToInt(capW));
+        int ih = Mathf.Max(1, Mathf.RoundToInt(capH));
+        int ix = Mathf.RoundToInt(capX);
+        int iy = Mathf.RoundToInt(capY);
 
         var tex = new Texture2D(iw, ih, TextureFormat.RGB24, false);
         tex.ReadPixels(new Rect(ix, iy, iw, ih), 0, 0);

@@ -359,7 +359,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
         UpdateMainImages();
         UpdateSelectionCountText();
 
-        // ✅ 현재 프레임(_photoFrameSelectCtrl._selectIndex)에 맞는 Print 슬롯 배열에
+        // 현재 프레임(_photoFrameSelectCtrl._selectIndex)에 맞는 Print 슬롯 배열에
         //    최신 메인 4칸 내용을 복사
         CopyFinalSelectionToPrintSlots();
     }
@@ -638,9 +638,9 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
     /// </summary>
     public void ResetCapturedPhotoPanel()
     {
-        print("=======================================================");
-        print("ResetCapturedPhotoPanel 리셋 된다아ㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏ");
-        print("=======================================================");
+        // print("=======================================================");
+        // print("ResetCapturedPhotoPanel 리셋 된다아ㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏ");
+        // print("=======================================================");
 
         // 프레임 선택값 반영 (빨/파/검 + 스케일 설정)
         ApplyFrameSelection();
