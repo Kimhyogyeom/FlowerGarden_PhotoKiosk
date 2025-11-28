@@ -1,8 +1,10 @@
-// PrintController.cs (Image + RawImage 대응, 고화질 PNG 버전)
+// PrintController.cs (Image + RawImage + Bridge 대응, 고화질 PNG 버전)
 // - RawImage: texture 복사(uvRect 반영, 페이드 영향 없음)
 // - Image(+자식): 화면에서 RectTransform 영역 캡처(자식 포함 가능)
-// - 캡처 순간에 _hideWhileCapture 에 들어있는 오브젝트만 잠깐 비활성화
-// - PNG(무손실) 저장 후 Windows printto / print 호출
+// - 캡처 순간에 toHideTemporarily 에 들어있는 오브젝트만 잠깐 비활성화
+// - PNG(무손실) 저장 후
+//   1) 가능하면 PhotoPrinterBridge.exe 호출(자동 인쇄, 대화창 없음)
+//   2) 실패 시 Windows printto / print 폴백
 
 using System;
 using System.Collections;
@@ -14,6 +16,12 @@ using UnityEngine.UI;
 
 public class PrintController : MonoBehaviour
 {
+    [Header("Bridge Settings")]
+    [SerializeField] private bool _usePrinterBridge = true;
+    [SerializeField] private string _bridgeExeName = "PhotoPrinterBridge.exe";
+    [SerializeField, Min(1)] private int _bridgeCopies = 1;      // Bridge에 넘길 기본 장수
+    [SerializeField] private float _bridgeTimeoutSeconds = 60f;  // Bridge 프로세스 최대 대기 시간
+
     [Header("Timing")]
     [SerializeField] private float _captureStartDelay = 1f;   // 기본 1초 딜레이
 
@@ -52,7 +60,7 @@ public class PrintController : MonoBehaviour
     [SerializeField] private int _outputWidth = 1240;
     [SerializeField] private int _outputHeight = 1844;
 
-    [Header("Windows Print Target")]
+    [Header("Windows Print Target (레거시 폴백용)")]
     [Tooltip("printto에 사용할 프린터 이름 (비우면 OS 기본 print 사용)")]
     [SerializeField] private string _printerName = "DS-RX1";
 
@@ -124,7 +132,6 @@ public class PrintController : MonoBehaviour
                 string dir = Application.persistentDataPath;
                 if (Directory.Exists(dir))
                 {
-                    // PNG / JPG 둘 다 정리
                     var pngFiles = Directory.GetFiles(dir, "photo_raw_*.png");
                     var jpgFiles = Directory.GetFiles(dir, "photo_raw_*.jpg");
 
@@ -253,13 +260,7 @@ public class PrintController : MonoBehaviour
 
         // 레이아웃/캔버스 갱신
         Canvas.ForceUpdateCanvases();
-        // _background1.SetActive(true);
-        // _background2.SetActive(true);
-        // _background3.SetActive(true);
         yield return new WaitForEndOfFrame();
-        // _background1.SetActive(false);
-        // _background2.SetActive(false);
-        // _background3.SetActive(false);
 
         // ───────────────── 1) 텍스처 생성 (RawImage 우선 → 화면 캡처 폴백) ─────────────────
         Texture2D tex = null;
@@ -336,14 +337,20 @@ public class PrintController : MonoBehaviour
         UnityEngine.Object.Destroy(tex);
 
         // ───────────────── 4) 인쇄 + 진행 UI ─────────────────
-        // 👉 여기서 _printCount 만큼 반복 출력
         StartProgressUI();
 
-        int safeCount = Mathf.Max(1, _printCount);
-        for (int i = 0; i < safeCount; i++)
+        if (_usePrinterBridge)
         {
-            UnityEngine.Debug.Log($"[Print] {_printCount}장 중 {i + 1}번째 출력 시작");
-            yield return StartCoroutine(PrintAndNotify(savePath));
+            yield return StartCoroutine(PrintViaBridgeAndNotify(savePath));
+        }
+        else
+        {
+            int safeCount = Mathf.Max(1, _printCount);
+            for (int i = 0; i < safeCount; i++)
+            {
+                UnityEngine.Debug.Log($"[Print] (Legacy) {_printCount}장 중 {i + 1}번째 출력 시작");
+                yield return StartCoroutine(PrintAndNotifyLegacy(savePath));
+            }
         }
 
         StopProgressUI();
@@ -411,7 +418,7 @@ public class PrintController : MonoBehaviour
 
         UnityEngine.Debug.Log($"[Print] CaptureRectTransformArea: {iw}x{ih} at ({ix},{iy})");
 
-        var tex = new Texture2D(iw, ih, TextureFormat.RGBA32, false);   // ★ RGBA32
+        var tex = new Texture2D(iw, ih, TextureFormat.RGBA32, false);
         tex.ReadPixels(new Rect(ix, iy, iw, ih), 0, 0);
         tex.Apply(false);
         return tex;
@@ -455,7 +462,7 @@ public class PrintController : MonoBehaviour
 
         UnityEngine.Debug.Log($"[Print] CaptureRectTransformAreaIncludingChildren: {iw}x{ih} at ({ix},{iy})");
 
-        var tex = new Texture2D(iw, ih, TextureFormat.RGBA32, false);   // ★ RGBA32
+        var tex = new Texture2D(iw, ih, TextureFormat.RGBA32, false);
         tex.ReadPixels(new Rect(ix, iy, iw, ih), 0, 0);
         tex.Apply(false);
         return tex;
@@ -537,9 +544,89 @@ public class PrintController : MonoBehaviour
         return dst;
     }
 
-    // ===== 인쇄 =====
+    // ===== Bridge 인쇄 =====
+    private IEnumerator PrintViaBridgeAndNotify(string imagePath)
+    {
+#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
 
-    private IEnumerator PrintAndNotify(string imagePath)
+        // Unity 빌드 기준: .exe 옆에 Bridge exe 두기
+        string bridgeDir = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+        string bridgePath = Path.Combine(bridgeDir, _bridgeExeName);
+
+        if (!File.Exists(bridgePath))
+        {
+            UnityEngine.Debug.LogWarning($"[Print] Bridge exe not found: {bridgePath} → legacy print로 폴백");
+            yield return StartCoroutine(PrintAndNotifyLegacy(imagePath));
+            yield break;
+        }
+
+        int unityCopies = Mathf.Max(1, _printCount);
+        int bridgeCopies = Mathf.Max(1, _bridgeCopies);
+        int totalCopies = unityCopies * bridgeCopies;
+
+        float timeout = Mathf.Max(5f, _bridgeTimeoutSeconds);
+
+        Process proc = null;
+        bool started = false;
+
+        // try 안에서는 yield 사용 안 함
+        try
+        {
+            var psi = new ProcessStartInfo(bridgePath)
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                // Program.cs에서 args: <imagePath> <copies> <timeoutSeconds> <printerName?> 라고 가정
+                Arguments = $"\"{imagePath}\" {totalCopies} {timeout} \"{_printerName}\""
+            };
+
+            UnityEngine.Debug.Log($"[Print] Bridge start: {psi.FileName} {psi.Arguments}");
+            proc = Process.Start(psi);
+            started = (proc != null);
+        }
+        catch (Exception e)
+        {
+            UnityEngine.Debug.LogError($"[Print] Bridge 예외 발생(시작 실패): {e.Message}");
+            started = false;
+        }
+
+        if (!started)
+        {
+            UnityEngine.Debug.LogWarning("[Print] Bridge 프로세스 시작 실패 → legacy print로 폴백");
+            yield return StartCoroutine(PrintAndNotifyLegacy(imagePath));
+            yield break;
+        }
+
+        // 여기부터는 try 바깥이니까 yield 사용 가능
+        float elapsed = 0f;
+        while (!proc.HasExited && elapsed < timeout)
+        {
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (!proc.HasExited)
+        {
+            try { proc.Kill(); } catch { }
+            UnityEngine.Debug.LogWarning("[Print] Bridge timeout 초과, 프로세스 강제 종료");
+        }
+        else
+        {
+            UnityEngine.Debug.Log("[Print] Bridge 인쇄 완료 (또는 정상 종료)");
+        }
+
+        UnityEngine.Debug.Log("출력 완료! (Bridge)");
+        _outputSuccessCtrl.OutputSuccessObjChange();
+
+#else
+        // 윈도우가 아니면 그냥 레거시 or 저장만
+        yield return StartCoroutine(PrintAndNotifyLegacy(imagePath));
+#endif
+    }
+
+    // ===== 레거시 Windows 인쇄 (사진 인쇄 창 + AutoConfirm 포함) =====
+
+    private IEnumerator PrintAndNotifyLegacy(string imagePath)
     {
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
         bool started = false;
@@ -611,7 +698,7 @@ public class PrintController : MonoBehaviour
         }
         TickProgressUITo(1f);
 
-        UnityEngine.Debug.Log("출력 완료!");
+        UnityEngine.Debug.Log("출력 완료! (Legacy)");
         _outputSuccessCtrl.OutputSuccessObjChange();
 
 #else
@@ -738,7 +825,7 @@ public class PrintController : MonoBehaviour
             outH = targetH;
         }
 
-        var outTex = new Texture2D(outW, outH, TextureFormat.RGBA32, false); // ★ RGBA32
+        var outTex = new Texture2D(outW, outH, TextureFormat.RGBA32, false);
         outTex.ReadPixels(new Rect(cropL, cropB, outW, outH), 0, 0);
         outTex.Apply(false);
 
@@ -762,7 +849,7 @@ public class PrintController : MonoBehaviour
         int w = Mathf.Max(8, _outputWidth);
         int h = Mathf.Max(8, _outputHeight);
 
-        var tex = new Texture2D(w, h, TextureFormat.RGBA32, false); // ★ RGBA32
+        var tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
         var fill = new Color32(255, 255, 255, 255);
         var buf = new Color32[w * h];
         for (int i = 0; i < buf.Length; i++) buf[i] = fill;
@@ -771,7 +858,7 @@ public class PrintController : MonoBehaviour
 
         string folderPath = Application.persistentDataPath;
         Directory.CreateDirectory(folderPath);
-        string filename = $"photo_testblank_{DateTime.Now:yyyyMMdd_HHmmss}.png"; // ★ PNG
+        string filename = $"photo_testblank_{DateTime.Now:yyyyMMdd_HHmmss}.png";
         string savePath = Path.Combine(folderPath, filename);
         File.WriteAllBytes(savePath, tex.EncodeToPNG());
         UnityEngine.Object.Destroy(tex);
@@ -779,11 +866,18 @@ public class PrintController : MonoBehaviour
 
         StartProgressUI();
 
-        int safeCount = Mathf.Max(1, _printCount);
-        for (int i = 0; i < safeCount; i++)
+        if (_usePrinterBridge)
         {
-            UnityEngine.Debug.Log($"[Print] 테스트 블랭크 {_printCount}장 중 {i + 1}번째 출력 시작");
-            yield return StartCoroutine(PrintAndNotify(savePath));
+            yield return StartCoroutine(PrintViaBridgeAndNotify(savePath));
+        }
+        else
+        {
+            int safeCount = Mathf.Max(1, _printCount);
+            for (int i = 0; i < safeCount; i++)
+            {
+                UnityEngine.Debug.Log($"[Print] 테스트 블랭크 {_printCount}장 중 {i + 1}번째 출력 시작 (Legacy)");
+                yield return StartCoroutine(PrintAndNotifyLegacy(savePath));
+            }
         }
 
         StopProgressUI();
