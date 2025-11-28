@@ -84,6 +84,7 @@ public class QuantitySelectCtrl : MonoBehaviour
     /// </summary>
     private void OnClickQuantity(int index)
     {
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
         if (_quantities == null || _quantities.Length <= index)
         {
             Debug.LogWarning("QuantitySelectCtrl: _quantities 설정이 부족합니다.");

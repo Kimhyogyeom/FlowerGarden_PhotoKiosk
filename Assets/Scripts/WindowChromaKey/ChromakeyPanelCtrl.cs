@@ -24,6 +24,7 @@ public class ChromakeyPanelCtrl : MonoBehaviour
     /// </summary>
     public void OnFadeStart()
     {
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
         _fadeAnimationCtrl.StartFade();
     }
     /// <summary>
@@ -36,6 +37,6 @@ public class ChromakeyPanelCtrl : MonoBehaviour
         if (_nextPanel != null) _nextPanel.SetActive(true);
 
         // Payment로 상태 변경
-        GameManager.Instance.SetState(KioskState.Payment);
+        GameManager.Instance.SetState(KioskState.Quantity);
     }
 }

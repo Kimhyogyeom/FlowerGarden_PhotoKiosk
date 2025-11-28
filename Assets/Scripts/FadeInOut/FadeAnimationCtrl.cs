@@ -78,7 +78,7 @@ public class FadeAnimationCtrl : MonoBehaviour
         if (_fadeAnimator != null)
         {
             _fadeAnimator.SetBool("Fade", true);
-            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._fadeIn);
+            // Sound
         }
         else
         {
@@ -106,7 +106,7 @@ public class FadeAnimationCtrl : MonoBehaviour
         {
             // 페이드 애니메이션 플래그 초기화 및 페이드 아웃 사운드 재생
             _fadeAnimator.SetBool("Fade", false);
-            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._fadeOut);
+            // Sound
 
             // if (_isStateStep == -1)
             // {

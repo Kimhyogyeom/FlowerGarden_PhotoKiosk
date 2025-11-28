@@ -93,6 +93,36 @@ public class GameManager : MonoBehaviour
     {
         _currentState = newState;
         Debug.Log($"[KIOSK] State -> {newState}");
+
+        if (newState == KioskState.Ready)
+        {
+            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._windowReady);
+        }
+        else if (newState == KioskState.Select)
+        {
+            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._windowSelectSound);
+        }
+        else if (newState == KioskState.Chroma)
+        {
+            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._windowChromaSound);
+        }
+        else if (newState == KioskState.Quantity)
+        {
+            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._windowQuantitySound);
+        }
+        else if (newState == KioskState.Filming)
+        {
+            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._windowCameraStartSound);
+        }
+        else if (newState == KioskState.CutWindow)
+        {
+            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._windowPhotoSelectSound);
+        }
+        else if (newState == KioskState.Printing)
+        {
+            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._windowPrintSound);
+        }
+
     }
 
     /// <summary>

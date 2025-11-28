@@ -48,7 +48,7 @@ public class QuantityToPaymentCtrl : MonoBehaviour
 
         // _fadeAnimationCtrl._isStateStep = 3;
         _fadeAnimationCtrl.StartFade();
-
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
     public void ObjectActiveCtrl()
     {

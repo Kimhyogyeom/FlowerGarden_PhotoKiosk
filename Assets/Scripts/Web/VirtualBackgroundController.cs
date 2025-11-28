@@ -53,16 +53,27 @@ public class VirtualBackgroundController : MonoBehaviour
 
     private void InitializeModel()
     {
-        if (_modelAsset == null)
+        // 방법 1: Inspector에서 연결된 경우
+        if (_modelAsset != null)
         {
-            Debug.LogError("[VirtualBackground] Model asset이 없습니다!");
+            var _model = ModelLoader.Load(_modelAsset);
+            _worker = WorkerFactory.CreateWorker(WorkerFactory.Type.Compute, _model);
+            Debug.Log("[VirtualBackground] 세그멘테이션 모델 로드 완료 (Inspector)");
+            return;
+        }
+
+        // 방법 2: Resources에서 직접 로드 (빌드 대비)
+        NNModel runtimeModel = Resources.Load<NNModel>("Models/selfie_segmentation_landscape");
+        if (runtimeModel == null)
+        {
+            Debug.LogError("[VirtualBackground] Resources/Models/selfie_segmentation_landscape 모델을 찾을 수 없습니다!");
             enabled = false;
             return;
         }
 
-        var model = ModelLoader.Load(_modelAsset);
+        var model = ModelLoader.Load(runtimeModel);
         _worker = WorkerFactory.CreateWorker(WorkerFactory.Type.Compute, model);
-        Debug.Log("[VirtualBackground] 세그멘테이션 모델 로드 완료 (GPU 모드)");
+        Debug.Log("[VirtualBackground] 세그멘테이션 모델 로드 완료 (Resources)");
     }
 
     private void CreateRenderTextures()

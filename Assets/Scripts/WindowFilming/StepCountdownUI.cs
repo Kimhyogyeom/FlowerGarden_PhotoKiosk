@@ -257,12 +257,12 @@ public class StepCountdownUI : MonoBehaviour
                 if (_countdownText)
                     _countdownText.text = current.ToString();
 
-                if (current == 3)
-                    SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._numberSfx3);
-                else if (current == 2)
-                    SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._numberSfx2);
-                else if (current == 1)
-                    SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._numberSfx1);
+                // if (current == 3)
+                //     SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._numberSfx3);
+                // else if (current == 2)
+                //     SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._numberSfx2);
+                // else if (current == 1)
+                //     SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._numberSfx1);
 
                 if (_stepProgressSlider)
                 {
@@ -283,12 +283,10 @@ public class StepCountdownUI : MonoBehaviour
             // 실제 캡처
             yield return StartCoroutine(CaptureRawImage(_targetRawImage.rectTransform, step - 1));
             Debug.Log($"[StepCountdown] 찰칵! stepIndex={step - 1}");
-
+            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._shutterSound);
             // 촬영 연출
             if (_filmingAnimator != null)
                 _filmingAnimator.SetTrigger("Filming");
-
-            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._photoSFX);
 
             if (_swingRotateHandle != null)
                 _swingRotateHandle._animIsStopFlag = true;

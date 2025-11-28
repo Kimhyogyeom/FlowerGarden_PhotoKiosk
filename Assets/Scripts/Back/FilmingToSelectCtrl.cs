@@ -41,7 +41,7 @@ public class FilmingToSelectCtrl : MonoBehaviour
     public void OnFilimingToSelectCtrl()
     {
         GameManager.Instance.SetState(KioskState.Select);
-        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._backButton);
+        // Sound
 
         // 100은 FadeAnimationCtrl에서 "촬영 → 선택 화면으로 복귀" 케이스를 구분하기 위한 값
         _fadeAnimationCtrl._isStateStep = 100;

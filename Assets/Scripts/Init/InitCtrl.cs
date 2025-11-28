@@ -165,13 +165,13 @@ public class InitCtrl : MonoBehaviour
             StopCoroutine(_resetCallbackRoutine);
             _resetCallbackRoutine = null;
         }
-
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
         // 코루틴 참조 초기화
         _resetCallbackRoutine = null;
 
 
         // 효과음 + 페이드 시작
-        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._outputSuccess);
+        // Sound
         _fadeAnimationCtrl.StartFade();
 
         // ─────────────────────────────────────────────────────────

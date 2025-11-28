@@ -140,7 +140,7 @@ public class PrintButtonHandler : MonoBehaviour
         _autoTriggered = false;
 
         GameManager.Instance.SetState(KioskState.Printing);
-        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._filmingOutputButton);
+        // Sound
 
         // 필수 레퍼런스 체크
         if (_printController == null || _targetRawImage == null)
@@ -193,6 +193,7 @@ public class PrintButtonHandler : MonoBehaviour
             },
             toHideTemporarily: _hideWhileCapture
         );
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
         // 이식해야함 ───────────────────────────────────────────────────────────────────
     }
 

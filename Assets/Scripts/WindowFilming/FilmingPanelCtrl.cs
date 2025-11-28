@@ -140,7 +140,7 @@ public class FilmingPanelCtrl : MonoBehaviour
         GameManager.Instance.SetState(KioskState.Chroma);
 
         // 촬영 시작 버튼 사운드 재생
-        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._filmingStartButton);
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
 
         // 화면 전환용 페이드 애니메이션 실행
         _fadeAnimationCtrl.StartFade();
@@ -164,9 +164,9 @@ public class FilmingPanelCtrl : MonoBehaviour
     public void OnPhotoButtonClicked()
     {
         _fadeAnimationCtrl.StartFade();
-
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
         // 촬영 버튼 사운드 재생
-        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._filmingButton);
+        // Sound
     }
 
     /// <summary>
@@ -177,7 +177,9 @@ public class FilmingPanelCtrl : MonoBehaviour
     {
         if (_photoButton != null)
         {
-            GameManager.Instance.SetState(KioskState.Filming);
+            // GameManager.Instance.SetState(KioskState.Filming);
+            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._windowCamearaPlayingSound);
+            print("Camera Start -> Camera Playing");
             // 촬영 후 선택 화면으로 가는 버튼/동작 비활성화
             // _filmingToSelectCtrl.ButtonInActive();
 

@@ -124,7 +124,8 @@ public class FramePanelScaleInCtrl : MonoBehaviour
         GameManager.Instance.SetState(KioskState.Select);
 
         // 프레임 적용 버튼 클릭 사운드
-        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._frameApplicationButton);
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
+        // Sound
 
         // 스케일 아웃 시작 (UI 축소 후 패널 닫기)
         StartCoroutine(ScaleOutAndClose());
@@ -155,7 +156,7 @@ public class FramePanelScaleInCtrl : MonoBehaviour
             GameManager.Instance.SetState(KioskState.Select);
 
             // 프레임 변경 버튼 사운드
-            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._frameChangeButton);
+            // Sound
 
             // // 현재 프레임 패널 비활성화, 프레임 변경 패널 활성화
             // _panelFrameCurrent.SetActive(false);
@@ -183,7 +184,7 @@ public class FramePanelScaleInCtrl : MonoBehaviour
         else
         {
             // 선택 상태로 전환
-            GameManager.Instance.SetState(KioskState.Select);
+            // GameManager.Instance.SetState(KioskState.Select);
             _selectedIndex = index;
 
             {

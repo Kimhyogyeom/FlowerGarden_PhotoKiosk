@@ -66,6 +66,7 @@ public class HomAndBackButtonCtrl : MonoBehaviour
         _fadeAnimationCtrl._isStateStep = 101;
         _fadeAnimationCtrl.StartFade();
         GameManager.Instance.SetState(KioskState.Ready);
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
     /// <summary>
     /// 외부에서 호출할 오브젝트 활성 및 비활성화 함수
@@ -90,6 +91,7 @@ public class HomAndBackButtonCtrl : MonoBehaviour
         _fadeAnimationCtrl._isStateStep = 102;
         _fadeAnimationCtrl.StartFade();
         GameManager.Instance.SetState(KioskState.Ready);
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
     /// <summary>
     /// Quantity 백 버튼 누르면 실행될 함수
@@ -98,6 +100,7 @@ public class HomAndBackButtonCtrl : MonoBehaviour
     {
         _fadeAnimationCtrl._isStateStep = 201;
         _fadeAnimationCtrl.StartFade();
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
     public void ObjectsActiveCtrlQua()
     {
@@ -120,6 +123,7 @@ public class HomAndBackButtonCtrl : MonoBehaviour
         _fadeAnimationCtrl._isStateStep = 103;
         _fadeAnimationCtrl.StartFade();
         GameManager.Instance.SetState(KioskState.Ready);
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
     /// <summary>
     /// Payment 백 버튼 누르면 실행될 함수
@@ -137,6 +141,7 @@ public class HomAndBackButtonCtrl : MonoBehaviour
         }
         _payChangePanel.SetActive(true);
         GameManager.Instance.SetState(KioskState.Quantity);
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
     // ========================================Payment
 
@@ -150,6 +155,7 @@ public class HomAndBackButtonCtrl : MonoBehaviour
         _fadeAnimationCtrl._isStateStep = 104;
         _fadeAnimationCtrl.StartFade();
         GameManager.Instance.SetState(KioskState.Ready);
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
     /// <summary>
     /// Chroma Key 백 버튼 누르면 실행될 함수
@@ -158,6 +164,7 @@ public class HomAndBackButtonCtrl : MonoBehaviour
     {
         _fadeAnimationCtrl._isStateStep = 203;
         _fadeAnimationCtrl.StartFade();
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
     public void ObjectsActiveCtrlChr()
     {

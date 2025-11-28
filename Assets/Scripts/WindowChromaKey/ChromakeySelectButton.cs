@@ -85,7 +85,7 @@ public class ChromakeySelectButton : MonoBehaviour
     {
         // 현재 선택 인덱스 업데이트
         _selectNumber = index;
-
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
         // 선택/비선택 오브젝트 토글
         // _selectObjects / _noSelectObjects 배열의 길이는 동일하다고 가정
         for (int i = 0; i < _selectObjects.Length; i++)

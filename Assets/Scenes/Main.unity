@@ -11986,7 +11986,7 @@ MonoBehaviour:
   _fadeAnimationCtrl: {fileID: 258928097}
   _waitingForPaymentPanel: {fileID: 1393010138}
   _nextPanel: {fileID: 152201183}
-  _nextState: 5
+  _nextState: 6
 --- !u!1 &710357268
 GameObject:
   m_ObjectHideFlags: 0
@@ -36083,7 +36083,7 @@ AudioSource:
   m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
-  Loop: 0
+  Loop: 1
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0

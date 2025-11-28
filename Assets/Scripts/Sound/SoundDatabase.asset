@@ -12,18 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 246efdb762aba0147bf14a94ae6e5a52, type: 3}
   m_Name: SoundDatabase
   m_EditorClassIdentifier: 
-  _fadeIn: {fileID: 0}
-  _fadeOut: {fileID: 0}
-  _startButton: {fileID: 0}
-  _frameChangeButton: {fileID: 0}
-  _filmingStartButton: {fileID: 0}
-  _frameSelectButton: {fileID: 0}
-  _frameApplicationButton: {fileID: 0}
-  _filmingButton: {fileID: 0}
-  _backButton: {fileID: 0}
-  _filmingOutputButton: {fileID: 0}
-  _numberSfx1: {fileID: 0}
-  _numberSfx2: {fileID: 0}
-  _numberSfx3: {fileID: 0}
-  _photoSFX: {fileID: 0}
-  _outputSuccess: {fileID: 0}
+  _basicBGM: {fileID: 8300000, guid: 2764ae835b321374289213f13015b0dc, type: 3}
+  _buttonClickSound: {fileID: 8300000, guid: 17a7c5ac75153ef4ca401b5274f83605, type: 3}
+  _shutterSound: {fileID: 8300000, guid: 66965d7319d87064988c1926cc7c135d, type: 3}
+  _windowReady: {fileID: 8300000, guid: a8d425e2266b71947a1841be92ebd2dc, type: 3}
+  _windowSelectSound: {fileID: 8300000, guid: b050b2246c0b4144b94bc45522d83f99, type: 3}
+  _windowChromaSound: {fileID: 8300000, guid: ae7e0c160ff5bbf46b8199d68ab1a968, type: 3}
+  _windowQuantitySound: {fileID: 8300000, guid: 8693b51a7fe477b428a86989525664a9, type: 3}
+  _windowCameraStartSound: {fileID: 8300000, guid: 8d84086eb442862409a41be76099c871, type: 3}
+  _windowCamearaPlayingSound: {fileID: 8300000, guid: 65b8f9a1ab189e745b2ed5e6b35904f7, type: 3}
+  _windowPhotoSelectSound: {fileID: 8300000, guid: 3320f710d007b3549a0386f48a04cc72, type: 3}
+  _windowPrintSound: {fileID: 8300000, guid: 71b0201485cc04a42a2b036b14dccbe7, type: 3}
+  _failSound: {fileID: 8300000, guid: eefefca8690a0d644871e829223bb320, type: 3}

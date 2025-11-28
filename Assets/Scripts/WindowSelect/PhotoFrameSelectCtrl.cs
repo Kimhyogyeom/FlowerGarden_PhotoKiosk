@@ -41,8 +41,7 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
     public void OnPhotoFrameSelect0()
     {
         // 프레임 선택 버튼 사운드
-        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._frameSelectButton);
-
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
         // 선택 표시 갱신 (첫 번째만 활성화)
         _photoFrameSelectImages[0].SetActive(true);
         _photoFrameSelectImages[1].SetActive(false);
@@ -69,8 +68,8 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
     /// </summary>
     public void OnPhotoFrameSelect1()
     {
-        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._frameSelectButton);
-
+        // Sound
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
         _photoFrameSelectImages[0].SetActive(false);
         _photoFrameSelectImages[1].SetActive(true);
         _photoFrameSelectImages[2].SetActive(false);
@@ -94,8 +93,8 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
     /// </summary>
     public void OnPhotoFrameSelect2()
     {
-        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._frameSelectButton);
-
+        // Sound
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
         _photoFrameSelectImages[0].SetActive(false);
         _photoFrameSelectImages[1].SetActive(false);
         _photoFrameSelectImages[2].SetActive(true);

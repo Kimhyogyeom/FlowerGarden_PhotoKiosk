@@ -194,7 +194,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
     public void FadeEndCallBack()
     {
         GameManager.Instance.SetState(KioskState.CutWindow);
-
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
         // 타이머 시작 (예: 60초)
         if (_countdownTimer != null)
         {
@@ -297,6 +297,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
             // 이미 4/4면 선택 불가, 로그만
             if (_currentSelectedCount >= _maxSelection)
             {
+                SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._failSound);
                 Debug.Log("[CapturedPhotoPanelCtrl] 이미 최대 선택 개수에 도달했습니다.");
                 return;
             }
@@ -624,6 +625,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
         }
 
         Debug.Log("[CapturedPhotoPanelCtrl] 최종 선택 4장을 인쇄용 슬롯으로 복사 완료 (index=" + index + ")");
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
 
     // ==================  외부에서 호출할 리셋 함수 ==================
