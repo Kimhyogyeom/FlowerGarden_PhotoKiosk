@@ -22,6 +22,9 @@ public class WebcamPreview : MonoBehaviour
     [SerializeField] private int requestedHeight = 720;   // 1080 → 720
     [SerializeField] private int requestedFps = 30;    // 요청 프레임 수
 
+    [Header("Mirror Settings")]
+    [SerializeField] private bool _mirrorHorizontal = true;  // 좌우반전 여부
+
     [Header("Setting Object")]
     [SerializeField] private GameObject _cameraPanel;
     // 카메라가 실제로 보이는 패널(ON일 때만 업데이트)
@@ -31,6 +34,7 @@ public class WebcamPreview : MonoBehaviour
     // 회전/플립 값 캐싱용
     private int _lastRotation = -999;
     private bool _lastVerticallyMirrored = false;
+    private bool _lastHorizontalMirrored = false;  // 좌우반전 캐싱용
 
     private void Start()
     {
@@ -73,6 +77,7 @@ public class WebcamPreview : MonoBehaviour
         // 초기 값 리셋
         _lastRotation = -999;
         _lastVerticallyMirrored = !_tex.videoVerticallyMirrored; // 강제로 처음 한 번 갱신되게
+        _lastHorizontalMirrored = !_mirrorHorizontal; // 강제로 처음 한 번 갱신되게
     }
 
     private void LateUpdate()
@@ -87,6 +92,17 @@ public class WebcamPreview : MonoBehaviour
         // 카메라의 회전 각도 및 상하 반전 여부 읽기
         int rot = _tex.videoRotationAngle;       // 0 / 90 / 180 / 270
         bool vert = _tex.videoVerticallyMirrored; // 상하 반전 여부 (true 이면 위아래가 뒤집혀 있음)
+
+        // === 좌우반전 값이 바뀐 경우에만 UV 갱신 ===
+        if (_mirrorHorizontal != _lastHorizontalMirrored)
+        {
+            var uv = webcamTarget.uvRect;
+            uv.x = _mirrorHorizontal ? 1f : 0f;
+            uv.width = _mirrorHorizontal ? -1f : 1f;
+            webcamTarget.uvRect = uv;
+
+            _lastHorizontalMirrored = _mirrorHorizontal;
+        }
 
         // === 상하 반전 값이 바뀐 경우에만 UV 갱신 ===
         if (vert != _lastVerticallyMirrored)
@@ -158,5 +174,29 @@ public class WebcamPreview : MonoBehaviour
         {
             _tex.Pause();
         }
+    }
+
+    /// <summary>
+    /// 외부에서 WebCamTexture를 가져갈 수 있게 하는 getter
+    /// </summary>
+    public WebCamTexture GetTexture()
+    {
+        return _tex;
+    }
+
+    /// <summary>
+    /// 좌우반전 토글 (외부에서 호출 가능)
+    /// </summary>
+    public void ToggleMirror()
+    {
+        _mirrorHorizontal = !_mirrorHorizontal;
+    }
+
+    /// <summary>
+    /// 좌우반전 설정
+    /// </summary>
+    public void SetMirror(bool mirror)
+    {
+        _mirrorHorizontal = mirror;
     }
 }

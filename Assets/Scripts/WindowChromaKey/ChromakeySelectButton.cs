@@ -11,6 +11,7 @@ using UnityEngine.UI;
 /// </summary>
 public class ChromakeySelectButton : MonoBehaviour
 {
+    [SerializeField] private VirtualBackgroundController _virtualBg;
     [Header("크로마키 배경 컨트롤러")]
     [SerializeField] private ChromaKeyBackgroundSelector _chromaKeyBackgroundSelector;
     // 실제 크로마키 배경을 변경하는 컨트롤러 (SetMode(int)로 모드 변경)
@@ -110,16 +111,19 @@ public class ChromakeySelectButton : MonoBehaviour
         {
             _mainImage.sprite = _ImageToSprites[0];     // A에 해당하는 이미지
             _chromaKeyBackgroundSelector.SetMode(0);    // 크로마키 모드 0
+            _virtualBg.SetBackground(0);
         }
         else if (_selectNumber == 1)
         {
             _mainImage.sprite = _ImageToSprites[1];     // B에 해당하는 이미지
             _chromaKeyBackgroundSelector.SetMode(1);    // 크로마키 모드 1
+            _virtualBg.SetBackground(1);
         }
         else if (_selectNumber == 2)
         {
             _mainImage.sprite = _ImageToSprites[2];     // C에 해당하는 이미지
             _chromaKeyBackgroundSelector.SetMode(2);    // 크로마키 모드 2
+            _virtualBg.SetBackground(2);
         }
     }
 
