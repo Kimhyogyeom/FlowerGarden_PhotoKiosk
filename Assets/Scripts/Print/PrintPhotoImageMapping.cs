@@ -39,7 +39,7 @@ public class ImageMapping : MonoBehaviour
             return;
         }
 
-        int index = Mathf.Clamp(_photoFrameSelectCtrl._selectIndex, 0, 2);
+        int index = Mathf.Clamp(_photoFrameSelectCtrl._selectIndexHight, 0, 2);
 
         // 기본적으로 전부 끄고 시작
         if (_redObject) _redObject.SetActive(false);

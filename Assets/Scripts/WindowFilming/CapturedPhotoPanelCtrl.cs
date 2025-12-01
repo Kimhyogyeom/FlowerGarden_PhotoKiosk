@@ -141,7 +141,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
 
         if (_photoFrameSelectCtrl != null)
         {
-            index = Mathf.Clamp(_photoFrameSelectCtrl._selectIndex, 0, 2);
+            index = Mathf.Clamp(_photoFrameSelectCtrl._selectIndexHight, 0, 2);
         }
 
         // 모든 프레임 비활성
@@ -607,7 +607,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
 
         int index = 0;
         if (_photoFrameSelectCtrl != null)
-            index = Mathf.Clamp(_photoFrameSelectCtrl._selectIndex, 0, 2);
+            index = Mathf.Clamp(_photoFrameSelectCtrl._selectIndexHight, 0, 2);
 
         switch (index)
         {

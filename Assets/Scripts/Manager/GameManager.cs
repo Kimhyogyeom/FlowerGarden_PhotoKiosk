@@ -1,3 +1,4 @@
+using Unity.Barracuda;
 using UnityEngine;
 
 /// <summary>
@@ -7,6 +8,8 @@ using UnityEngine;
 public enum KioskState
 {
     Ready,              // 대기 화면 (시작/촬영 준비 상태) // 0-1
+
+    Mode,               // 게임 모드 아니 프레임 모드 가로/세로
 
     Chroma,
 
@@ -25,6 +28,12 @@ public enum KioskState
     Printing            // 인쇄 진행 중 상태
 }
 
+public enum KioskMode
+{
+    Hight,  // 세로 모드
+
+    Width   // 가로 모드
+}
 /// <summary>
 /// 키오스크 전체 흐름을 관리하는 GameManager
 /// - 현재 상태를 저장하고, 상태 변경 시 로그 출력
@@ -40,10 +49,16 @@ public class GameManager : MonoBehaviour
     [SerializeField]
     private KioskState _currentState = KioskState.WaitingForPayment; // 현재 키오스크 상태
 
+    [SerializeField]
+    private KioskMode _currentMode = KioskMode.Hight;   // 키오스크 모드
     /// <summary>
     /// 현재 키오스크 상태 읽기 전용 프로퍼티
     /// </summary>
     public KioskState CurrentState => _currentState;
+    /// <summary>
+    /// 현재 키오스크 모드 읽기 전용 프로퍼티
+    /// </summary>
+    public KioskMode CurrentMode => _currentMode;
 
 #pragma warning disable CS0414
     [Range(1f, 10f)]
@@ -98,6 +113,10 @@ public class GameManager : MonoBehaviour
         {
             SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._windowReady);
         }
+        else if (newState == KioskState.Mode)
+        {
+            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._windowModeSound);
+        }
         else if (newState == KioskState.Select)
         {
             SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._windowSelectSound);
@@ -122,7 +141,11 @@ public class GameManager : MonoBehaviour
         {
             SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._windowPrintSound);
         }
-
+    }
+    public void SetMode(KioskMode newMode)
+    {
+        _currentMode = newMode;
+        Debug.Log($"[KIOSK] Mode -> {newMode}");
     }
 
     /// <summary>
@@ -131,4 +154,11 @@ public class GameManager : MonoBehaviour
     /// <param name="state">비교할 상태</param>
     /// <returns>현재 상태가 인자로 넘긴 상태와 같으면 true</returns>
     public bool Is(KioskState state) => _currentState == state;
+
+    /// <summary>
+    /// 얘는 Mode임
+    /// </summary>
+    /// <param name="mode"></param>
+    /// <returns></returns>
+    public bool Is(KioskMode mode) => _currentMode == mode;
 }

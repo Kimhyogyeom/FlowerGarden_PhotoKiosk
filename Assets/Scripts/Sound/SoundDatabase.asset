@@ -16,6 +16,7 @@ MonoBehaviour:
   _buttonClickSound: {fileID: 8300000, guid: 17a7c5ac75153ef4ca401b5274f83605, type: 3}
   _shutterSound: {fileID: 8300000, guid: 66965d7319d87064988c1926cc7c135d, type: 3}
   _windowReady: {fileID: 8300000, guid: a8d425e2266b71947a1841be92ebd2dc, type: 3}
+  _windowModeSound: {fileID: 8300000, guid: 3b4b77e4219c387448c86e79cc085ef6, type: 3}
   _windowSelectSound: {fileID: 8300000, guid: b050b2246c0b4144b94bc45522d83f99, type: 3}
   _windowChromaSound: {fileID: 8300000, guid: ae7e0c160ff5bbf46b8199d68ab1a968, type: 3}
   _windowQuantitySound: {fileID: 8300000, guid: 8693b51a7fe477b428a86989525664a9, type: 3}

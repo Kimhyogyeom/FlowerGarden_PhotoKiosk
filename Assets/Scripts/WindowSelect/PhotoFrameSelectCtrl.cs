@@ -7,17 +7,27 @@ using UnityEngine.UI;
 /// </summary>
 public class PhotoFrameSelectCtrl : MonoBehaviour
 {
-    [Header("Photo Frame Select Images")]
-    [SerializeField] private GameObject[] _photoFrameSelectImages;
-    // 포토 프레임 선택 버튼(또는 하이라이트용) 오브젝트들
-    // 0: 첫 번째 프레임, 1: 두 번째 프레임, 2: 세 번째 프레임
-
-    [SerializeField] private Sprite[] _photoFrameTexture;
+    [Header("hight")]
+    [SerializeField] private Sprite[] _photoFrameTextureHight;
     // 각 포토 프레임에 대응되는 텍스처 배열
     // 인덱스 0,1,2 순서대로 사용
+    [SerializeField] private GameObject[] _photoFrameSelectImagesHight;
+    // 포토 프레임 선택 버튼(또는 하이라이트용) 오브젝트들
+    // 0: 첫 번째 프레임, 1: 두 번째 프레임, 2: 세 번째 프레임
+    [SerializeField] private Image _mainRawImageHight;
+    [SerializeField] private Image _fakeImageHight;
 
-    [SerializeField] private Image _mainRawImage;
-    [SerializeField] private Image _fakeImage;
+    [Space(5)]
+
+    [Header("Width")]
+    [SerializeField] private Sprite[] _photoFrameTextureWidth;
+    // 각 포토 프레임에 대응되는 텍스처 배열
+    // 인덱스 0,1,2 순서대로 사용
+    [SerializeField] private GameObject[] _photoFrameSelectImagesWidth;
+    // 포토 프레임 선택 버튼(또는 하이라이트용) 오브젝트들
+    // 0: 첫 번째 프레임, 1: 두 번째 프레임, 2: 세 번째 프레임
+    [SerializeField] private Image _mainRawImageWidth;
+    [SerializeField] private Image _fakeImageWidth;
     // 선택된 프레임을 실제로 보여주는 메인 RawImage
 
     [Header("Add Frame RawImage")]
@@ -26,11 +36,17 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
     // 인쇄용 등, 최종 합성에 사용될 추가 프레임 RawImage
 
     // 현재 어떤 프레임이 선택되어 있는지 표시하는 플래그 (필요 시 외부에서 참조)
-    public bool _selectFlag0 = true;
-    public bool _selectFlag1 = false;
-    public bool _selectFlag2 = false;
+    public bool _selectFlag0Hight = true;
+    public bool _selectFlag1Hight = false;
+    public bool _selectFlag2Hight = false;
 
-    public int _selectIndex = -1;
+    public int _selectIndexHight = -1;
+
+    public bool _selectFlag0Width = true;
+    public bool _selectFlag1Width = false;
+    public bool _selectFlag2Width = false;
+
+    public int _selectIndexWidth = -1;
 
     /// <summary>
     /// 첫 번째 사진(프레임) 선택
@@ -43,19 +59,19 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
         // 프레임 선택 버튼 사운드
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
         // 선택 표시 갱신 (첫 번째만 활성화)
-        _photoFrameSelectImages[0].SetActive(true);
-        _photoFrameSelectImages[1].SetActive(false);
-        _photoFrameSelectImages[2].SetActive(false);
+        _photoFrameSelectImagesHight[0].SetActive(true);
+        _photoFrameSelectImagesHight[1].SetActive(false);
+        _photoFrameSelectImagesHight[2].SetActive(false);
 
         // 메인 RawImage에 첫 번째 프레임 적용
-        _mainRawImage.sprite = _photoFrameTexture[0];
-        _fakeImage.sprite = _photoFrameTexture[0];
+        _mainRawImageHight.sprite = _photoFrameTextureHight[0];
+        _fakeImageHight.sprite = _photoFrameTextureHight[0];
         // 선택 상태 플래그 갱신
-        _selectFlag0 = true;
-        _selectFlag1 = false;
-        _selectFlag2 = false;
+        _selectFlag0Hight = true;
+        _selectFlag1Hight = false;
+        _selectFlag2Hight = false;
 
-        _selectIndex = 0;
+        _selectIndexHight = 0;
         // 최종 출력용 추가 프레임에도 동일한 텍스처 적용
         // _addFrameRawImage.sprite = _photoFrameTexture[0];
     }
@@ -70,18 +86,18 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
     {
         // Sound
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
-        _photoFrameSelectImages[0].SetActive(false);
-        _photoFrameSelectImages[1].SetActive(true);
-        _photoFrameSelectImages[2].SetActive(false);
+        _photoFrameSelectImagesHight[0].SetActive(false);
+        _photoFrameSelectImagesHight[1].SetActive(true);
+        _photoFrameSelectImagesHight[2].SetActive(false);
 
-        _mainRawImage.sprite = _photoFrameTexture[1];
-        _fakeImage.sprite = _photoFrameTexture[1];
+        _mainRawImageHight.sprite = _photoFrameTextureHight[1];
+        _fakeImageHight.sprite = _photoFrameTextureHight[1];
 
-        _selectFlag0 = false;
-        _selectFlag1 = true;
-        _selectFlag2 = false;
+        _selectFlag0Hight = false;
+        _selectFlag1Hight = true;
+        _selectFlag2Hight = false;
 
-        _selectIndex = 1;
+        _selectIndexHight = 1;
         // _addFrameRawImage.sprite = _photoFrameTexture[1];
     }
 
@@ -95,21 +111,84 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
     {
         // Sound
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
-        _photoFrameSelectImages[0].SetActive(false);
-        _photoFrameSelectImages[1].SetActive(false);
-        _photoFrameSelectImages[2].SetActive(true);
+        _photoFrameSelectImagesHight[0].SetActive(false);
+        _photoFrameSelectImagesHight[1].SetActive(false);
+        _photoFrameSelectImagesHight[2].SetActive(true);
 
-        _mainRawImage.sprite = _photoFrameTexture[2];
-        _fakeImage.sprite = _photoFrameTexture[2];
+        _mainRawImageHight.sprite = _photoFrameTextureHight[2];
+        _fakeImageHight.sprite = _photoFrameTextureHight[2];
 
-        _selectFlag0 = false;
-        _selectFlag1 = false;
-        _selectFlag2 = true;
+        _selectFlag0Hight = false;
+        _selectFlag1Hight = false;
+        _selectFlag2Hight = true;
 
-        _selectIndex = 2;
+        _selectIndexHight = 2;
         // _addFrameRawImage.sprite = _photoFrameTexture[2];
     }
+    // ────────────────────────────────────────────────────────────────────────────────────────────────────
+    /// <summary>
+    /// Width 0번 프레임
+    /// </summary>
+    public void OnPhotoFrameSelect0W()
+    {
+        // Sound
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
+        _photoFrameSelectImagesWidth[0].SetActive(false);
+        _photoFrameSelectImagesWidth[1].SetActive(false);
+        _photoFrameSelectImagesWidth[2].SetActive(true);
 
+        _mainRawImageWidth.sprite = _photoFrameTextureWidth[2];
+        _fakeImageWidth.sprite = _photoFrameTextureWidth[2];
+
+        _selectFlag0Width = false;
+        _selectFlag1Width = false;
+        _selectFlag2Width = true;
+
+        _selectIndexWidth = 2;
+        // _addFrameRawImage.sprite = _photoFrameTexture[2];
+    }
+    /// <summary>
+    /// Width 1번 프레임
+    /// </summary>
+    public void OnPhotoFrameSelect1W()
+    {
+        // Sound
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
+        _photoFrameSelectImagesWidth[0].SetActive(false);
+        _photoFrameSelectImagesWidth[1].SetActive(false);
+        _photoFrameSelectImagesWidth[2].SetActive(true);
+
+        _mainRawImageWidth.sprite = _photoFrameTextureWidth[2];
+        _fakeImageWidth.sprite = _photoFrameTextureWidth[2];
+
+        _selectFlag0Width = false;
+        _selectFlag1Width = false;
+        _selectFlag2Width = true;
+
+        _selectIndexWidth = 2;
+        // _addFrameRawImage.sprite = _photoFrameTexture[2];
+    }
+    /// <summary>
+    /// Width 2번 프레임
+    /// </summary>
+    public void OnPhotoFrameSelect2W()
+    {
+        // Sound
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
+        _photoFrameSelectImagesWidth[0].SetActive(false);
+        _photoFrameSelectImagesWidth[1].SetActive(false);
+        _photoFrameSelectImagesWidth[2].SetActive(true);
+
+        _mainRawImageWidth.sprite = _photoFrameTextureWidth[2];
+        _fakeImageWidth.sprite = _photoFrameTextureWidth[2];
+
+        _selectFlag0Width = false;
+        _selectFlag1Width = false;
+        _selectFlag2Width = true;
+
+        _selectIndexWidth = 2;
+        // _addFrameRawImage.sprite = _photoFrameTexture[2];
+    }
     /// <summary>
     /// 리셋 로직
     /// - 항상 첫 번째 프레임이 선택된 상태로 초기화

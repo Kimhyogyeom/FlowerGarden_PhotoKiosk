@@ -45,6 +45,8 @@ public class FadeAnimationCtrl : MonoBehaviour
     [SerializeField] private CapturedPhotoPanelCtrl _capturePhotoPanelCtrl;
     // 촬영 끝나고 포토 선택 화면으로 페이드 인아웃 되게끔?
 
+    [SerializeField] private WindowModePanelCtrl _windowModePanelCtrl;
+
 
     // 근데 오토 안 쓸 예정 (최대한 디자인 된 PDF 파일 따라하고 추후 시간날때 할 예정?)
     [Header("Auto")]
@@ -122,9 +124,9 @@ public class FadeAnimationCtrl : MonoBehaviour
             //     }
             // }
             // 0단계: Ready 화면에서 "시작하기" 버튼 클릭 후 → 선택 화면으로 변경
-            if (_isStateStep == -1)
+            if (_isStateStep == -2)
             {
-                _isStateStep = 0;
+                _isStateStep = -1;
 
                 // Ready → Camera 전환
                 if (_readyPanelTransitionCtrl != null)
@@ -137,6 +139,22 @@ public class FadeAnimationCtrl : MonoBehaviour
                     UnityEngine.Debug.LogWarning("_readyPanelTransitionCtrl reference is missing");
                 }
             }
+            // [Mode 추가] ready -> Mode
+            else if (_isStateStep == -1)
+            {
+                _isStateStep = 0;
+
+                // Ready → Camera 전환
+                if (_windowModePanelCtrl != null)
+                {
+                    _windowModePanelCtrl.FadeFinishEvent();
+                }
+                else
+                {
+                    UnityEngine.Debug.LogWarning("_windowModePanelCtrl reference is missing");
+                }
+            }
+
             // 1단계: 프레임 선택 화면에서 "사진 찍기" 버튼 클릭 후 → 촬영 패널로 전환
             // 였는데 수량 화면 전환으로 바뀔 예정
             // 프레임 선택  화면에서 수량 화면으로 전환
@@ -157,13 +175,13 @@ public class FadeAnimationCtrl : MonoBehaviour
             }
             else if (_isStateStep == 1)
             {
-                _isStateStep = 2;
+                _isStateStep = 3;
 
                 // 크로마키 영상 추가
                 if (_chromakeyPanelCtrl != null)
                 {
                     _chromakeyPanelCtrl.OnPanelChange();
-                    print("222");
+                    // print("222");
                 }
                 else
                 {
@@ -197,7 +215,7 @@ public class FadeAnimationCtrl : MonoBehaviour
             else if (_isStateStep == 2)
             {
                 // print("222222222222222");
-                _isStateStep = 5;
+                _isStateStep = 3;
                 _quantityToPaymentCtrl.ObjectActiveCtrl();
                 _paymentToNextStageCtrl.OnPaymentCompleted();
                 if (_panelPayment.activeSelf) _panelPayment.SetActive(false);
@@ -206,34 +224,34 @@ public class FadeAnimationCtrl : MonoBehaviour
             }
             // ──────────────────────────────────────────────────────────────────────────────────────────────
             // 결제 완료 -> 사진 촬영 패널로 변경
-            else if (_isStateStep == 4)
+            else if (_isStateStep == 3)
             {
                 // print("44444444444444");
-                _isStateStep = 5;
+                _isStateStep = 4;
                 _paymentToNextStageCtrl.OnPaymentCompleted();
             }
             // 사진 촬영 패널에서 촬영 시작으로 변경
-            else if (_isStateStep == 5)
+            else if (_isStateStep == 4)
             {
-                _isStateStep = 6;
+                _isStateStep = 5;
                 _filmingPanelCtrl.FadeEndCallBack();
             }
             // 촬영 시작 패널에서 포토 수량 선택으로 할 것임
-            else if (_isStateStep == 6)
+            else if (_isStateStep == 5)
             {
-                _isStateStep = 7;
+                _isStateStep = 6;
                 _capturePhotoPanelCtrl.FadeEndCallBack();
             }
             // 포토 수량 선택에서 프린트 상태로
-            else if (_isStateStep == 7)
+            else if (_isStateStep == 6)
             {
-                _isStateStep = 8;
+                _isStateStep = 7;
                 _printButtonHandler.FadeEndCallBack();
             }
             // 프린트 상태에서 리셋 상태로 초기화
-            else if (_isStateStep == 8)
+            else if (_isStateStep == 7)
             {
-                _isStateStep = -1;
+                _isStateStep = -2;
                 _initCtrl.PanaelActiveCtrl(); // 초기화하는녀석
             }
             // ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -246,47 +264,59 @@ public class FadeAnimationCtrl : MonoBehaviour
             else if (_isStateStep == 100)
             {
                 UnityEngine.Debug.Log("_isStateStep : greater than 100");
-                _isStateStep = -1;
+                _isStateStep = -2;
+                _homeButtonCtrl.ObjectsActiveCtrlReset();
+
                 // _filmingToSelectCtrl.PanaelActiveCtrl();
             }
             // 101단계: 프레임 선택 화면에서 홈 화면을 클릭했을 때 실행될꺼임
             else if (_isStateStep == 101)
             {
-                _isStateStep = -1;
+                _isStateStep = -2;
                 _homeButtonCtrl.ObjectsActiveCtrlReset();
             }
             // 102단계 프레임 -> 선택 화면 -> 수량 화면에서 홈 화면을 클릭했을 때 실행될꺼임
             else if (_isStateStep == 102)
             {
-                _isStateStep = -1;
+                _isStateStep = -2;
                 _homeButtonCtrl.ObjectsActiveCtrlReset();
             }
             // 103단계 프레임 -수량 -> 결제 화면에서 홈 화면을 클릭했을 때 실행될꺼임
             else if (_isStateStep == 103)
             {
-                _isStateStep = -1;
+                _isStateStep = -2;
                 _homeButtonCtrl.ObjectsActiveCtrlReset();
             }
             // [추가] 251124
             // 104단계 크로마키 패널에서 홈 화면을 클릭했을 때 실행될 것
             else if (_isStateStep == 104)
             {
-                _isStateStep = -1;
+                _isStateStep = -2;
                 _homeButtonCtrl.ObjectsActiveCtrlReset();
             }
             // ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             // 뒤로가기 버튼 클릭
             // ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+            else if (_isStateStep == 199)
+            {
+                _isStateStep = -2;
+                _homeButtonCtrl.ObjectsActiveCtrlMod();
+            }
+            else if (_isStateStep == 200)
+            {
+                _isStateStep = -1;
+                _homeButtonCtrl.ObjectsActiveCtrlSel();
+            }
             // 201단계 수량 화면에서 뒤로가기 버튼을 클릭했을 때 실행될거임 (수량 -> 선택 화면)
             else if (_isStateStep == 201)
             {
-                _isStateStep = 1;
+                _isStateStep = 0;
                 _homeButtonCtrl.ObjectsActiveCtrlQua();
             }
             // 202단계 결제 화면에서 뒤로가기 버튼
             else if (_isStateStep == 202)
             {
-                _isStateStep = 2;
+                _isStateStep = 1;
                 _homeButtonCtrl.ObjectsActiveCtrlPay();
             }
             // 203단계 크로마키 화면에서 뒤로가기 버튼을 클릭했을 때 실행될 것

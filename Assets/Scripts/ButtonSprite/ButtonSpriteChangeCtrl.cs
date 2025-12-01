@@ -10,6 +10,24 @@ public class ButtonSpriteChangeCtrl : MonoBehaviour
 
     // ─────────────────────────────────────────────────────────────────────
     [Header("Panel Select")]
+    [SerializeField] private Button _panelModeBack;
+    [SerializeField] private Image _panelModeBackImage;
+    [SerializeField] private Sprite _panelModeBackBasic;
+    [SerializeField] private Sprite _panelModeBackClick;
+
+    [SerializeField] private Button _panelModeNext;
+    [SerializeField] private Image _panelModeNextImage;
+    [SerializeField] private Sprite _panelModeNextBasic;
+    [SerializeField] private Sprite _panelModeNextClick;
+
+    [SerializeField] private Button _panelModeHome;
+    [SerializeField] private Image _panelModeHomeImage;
+    [SerializeField] private Sprite _panelModeHomeBasic;
+    [SerializeField] private Sprite _panelModeHomeClick;
+    // ─────────────────────────────────────────────────────────────────────
+
+    // ─────────────────────────────────────────────────────────────────────
+    [Header("Panel Select")]
     [SerializeField] private Button _panelSelectBack;
     [SerializeField] private Image _panelSelectBackImage;
     [SerializeField] private Sprite _panelSelectBackBasic;
@@ -98,6 +116,11 @@ public class ButtonSpriteChangeCtrl : MonoBehaviour
 
     private void Awake()
     {
+        // Mode
+        SafeAddListener(_panelModeBack, OnClickPanelModeBack);
+        SafeAddListener(_panelModeNext, OnClickPanelModeNext);
+        SafeAddListener(_panelModeHome, OnClickPanelModeHome);
+
         // Select
         SafeAddListener(_panelSelectBack, OnClickPanelSelectBack);
         SafeAddListener(_panelSelectNext, OnClickPanelSelectNext);
@@ -137,6 +160,22 @@ public class ButtonSpriteChangeCtrl : MonoBehaviour
         }
 
         button.onClick.AddListener(() => action());
+    }
+
+    // ───────────────── Mode ─────────────────
+    private void OnClickPanelModeBack()
+    {
+        SetClickAndReset(_panelModeBackImage, _panelModeBackClick, _panelModeBackBasic);
+    }
+
+    private void OnClickPanelModeNext()
+    {
+        SetClickAndReset(_panelModeNextImage, _panelModeNextClick, _panelModeNextBasic);
+    }
+
+    private void OnClickPanelModeHome()
+    {
+        SetClickAndReset(_panelModeHomeImage, _panelModeHomeClick, _panelModeHomeBasic);
     }
 
     // ───────────────── Select ─────────────────

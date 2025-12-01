@@ -28,21 +28,23 @@ public class VirtualBackgroundController : MonoBehaviour
     [Header("Quality Settings")]
     [SerializeField] private float _maskThreshold = 0.6f;
     [SerializeField] private float _edgeSmoothness = 0.05f;
-    [SerializeField] private float _temporalStability = 0.7f; // ← 추가! (0.5~0.9)
-    [SerializeField] private float _dilateAmount = 0.1f;            // ← 이 줄 추가!
-    [SerializeField] private float _fillHolesAmount = 0.9f;         // ← 이 줄 추가!
+    [SerializeField] private float _temporalStability = 0.7f;
+    [SerializeField] private float _dilateAmount = 0.1f;
+    [SerializeField] private float _fillHolesAmount = 0.9f;
 
     [Header("Mirror Settings")]
-    [SerializeField] private bool _mirrorHorizontal = true;  // ← 추가!
+    [SerializeField] private bool _mirrorHorizontal = true;
+
+    [Header("Mirror Settings")]
 
     // 내부 변수
     private IWorker _worker;
     private Material _compositeMaterial;
     private RenderTexture _maskTexture;
-    private RenderTexture _previousMaskTexture; // ← 추가!
+    private RenderTexture _previousMaskTexture;
     private RenderTexture _outputTexture;
     private int _frameCounter = 0;
-    private bool _isFirstFrame = true; // ← 추가!
+    private bool _isFirstFrame = true;
 
     void Start()
     {

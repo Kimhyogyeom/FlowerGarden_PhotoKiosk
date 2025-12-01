@@ -190,6 +190,7 @@ public class FramePanelScaleInCtrl : MonoBehaviour
             {
                 // 추후 이미지 받으면 _selectedIndex로 선택한 것을 판단해 여기서 처리 예정
                 // 현재는 인덱스 범위를 나눠서 0,1,2 프레임 선택 처리
+                // ─────────────────────────────────────────────────────────────────── hight
                 if (-1 < _selectedIndex && _selectedIndex <= 0)
                 {
                     Debug.Log($"select Number 0 : {_selectedIndex}");
@@ -205,6 +206,25 @@ public class FramePanelScaleInCtrl : MonoBehaviour
                     Debug.Log($"select Number 2 : {_selectedIndex}");
                     _photoFrameSelectCtrl.OnPhotoFrameSelect2();
                 }
+                // ─────────────────────────────────────────────────────────────────── hight
+
+                // ─────────────────────────────────────────────────────────────────── Width
+                else if (2 < _selectedIndex && _selectedIndex <= 3)
+                {
+                    Debug.Log($"select Number 0 : {_selectedIndex}");
+                    _photoFrameSelectCtrl.OnPhotoFrameSelect0W();
+                }
+                else if (3 < _selectedIndex && _selectedIndex <= 4)
+                {
+                    Debug.Log($"select Number 1 : {_selectedIndex}");
+                    _photoFrameSelectCtrl.OnPhotoFrameSelect1W();
+                }
+                else if (4 < _selectedIndex && _selectedIndex <= 5)
+                {
+                    Debug.Log($"select Number 2 : {_selectedIndex}");
+                    _photoFrameSelectCtrl.OnPhotoFrameSelect2W();
+                }
+                // ─────────────────────────────────────────────────────────────────── Width
             }
         }
     }

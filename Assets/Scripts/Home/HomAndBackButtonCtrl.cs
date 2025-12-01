@@ -13,6 +13,10 @@ public class HomAndBackButtonCtrl : MonoBehaviour
     [Header("Object Settings commonness")]
     [SerializeField] private GameObject[] _currentPanel;  // 숨길 패널들
 
+    [Header("Object Settings - Mode")]
+    [SerializeField] private Button _modBackButton;    // 뒤로가기 버튼
+    [SerializeField] private Button _modHomeButton;    // 홈 버튼
+    [SerializeField] private GameObject _modChangePanel;     // 오픈할 패널 
 
 
     [Header("Object Settings - Select")]
@@ -40,9 +44,13 @@ public class HomAndBackButtonCtrl : MonoBehaviour
     [SerializeField] private GameObject _payChangePanel;     // 오픈할 패널 
     void Awake()
     {
+        // [Mode]
+        if (_modHomeButton != null) _modHomeButton.onClick.AddListener(OnHomeButtonClickMod);
+        if (_modBackButton != null) _modBackButton.onClick.AddListener(OnBackButtonClickMod);
+
         // [Select]
         if (_selHomeButton != null) _selHomeButton.onClick.AddListener(OnHomeButtonClickSel);
-        if (_selBackButton != null) _selBackButton.onClick.AddListener(OnHomeButtonClickSel);
+        if (_selBackButton != null) _selBackButton.onClick.AddListener(OnBackButtonClickSel);
 
         // [Select]
         if (_quaHomeButton != null) _quaHomeButton.onClick.AddListener(OnHomeButtonClickQUan);
@@ -56,6 +64,50 @@ public class HomAndBackButtonCtrl : MonoBehaviour
         if (_payHomeButton != null) _payHomeButton.onClick.AddListener(OnHomeButtonClickPay);
         if (_payBackButton != null) _payBackButton.onClick.AddListener(OnBackButtonClickQPay);
     }
+    /// <summary>
+    /// 외부에서 호출할 오브젝트 활성 및 비활성화 함수 홈으로가긔
+    /// </summary>
+    public void ObjectsActiveCtrlReset()
+    {
+        foreach (var item in _currentPanel)
+        {
+            item.gameObject.SetActive(false);
+        }
+        _modChangePanel.SetActive(true);
+        GameManager.Instance.SetState(KioskState.Ready);
+    }
+
+    // ========================================Mode
+    /// <summary>
+    /// Mode 홈 버튼 누르면 실행될 함수
+    /// </summary>
+    private void OnHomeButtonClickMod()
+    {
+        _fadeAnimationCtrl._isStateStep = 100;
+        _fadeAnimationCtrl.StartFade();
+        // GameManager.Instance.SetState(KioskState.Ready);
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
+    }
+    /// <summary>
+    /// Mode 백 버튼 누르면 실행될 함수
+    /// </summary>
+    private void OnBackButtonClickMod()
+    {
+        _fadeAnimationCtrl._isStateStep = 199;
+        _fadeAnimationCtrl.StartFade();
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
+    }
+    public void ObjectsActiveCtrlMod()
+    {
+        foreach (var item in _currentPanel)
+        {
+            item.gameObject.SetActive(false);
+        }
+        _modChangePanel.SetActive(true);
+        GameManager.Instance.SetState(KioskState.Ready);
+    }
+    // ========================================Mode
+
 
     // ========================================Select
     /// <summary>
@@ -69,15 +121,22 @@ public class HomAndBackButtonCtrl : MonoBehaviour
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
     /// <summary>
-    /// 외부에서 호출할 오브젝트 활성 및 비활성화 함수
+    /// Select 백 버튼 누르면 실행될 함수
     /// </summary>
-    public void ObjectsActiveCtrlReset()
+    private void OnBackButtonClickSel()
+    {
+        _fadeAnimationCtrl._isStateStep = 200;
+        _fadeAnimationCtrl.StartFade();
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
+    }
+    public void ObjectsActiveCtrlSel()
     {
         foreach (var item in _currentPanel)
         {
             item.gameObject.SetActive(false);
         }
         _selChangePanel.SetActive(true);
+        GameManager.Instance.SetState(KioskState.Mode);
     }
     // ========================================Select
 

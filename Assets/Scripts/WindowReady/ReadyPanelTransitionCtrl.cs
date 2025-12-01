@@ -29,6 +29,7 @@ public class ReadyPanelTransitionCtrl : MonoBehaviour
     private void Awake()
     {
         SoundManager.Instance.PlayBGM(SoundManager.Instance._soundDatabase._basicBGM);
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._windowReady);
         if (_startButton != null)
         {
             // 시작 버튼 클릭 시 OnReadyClicked 실행
@@ -67,7 +68,7 @@ public class ReadyPanelTransitionCtrl : MonoBehaviour
         if (_fadeAnimationCtrl != null)
         {
             // 상태 변경 (Ready 화면에서 선택 단계로 전환)
-            GameManager.Instance.SetState(KioskState.Select);
+            GameManager.Instance.SetState(KioskState.Mode);
             SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
             // 페이드 애니메이션 시작
             _fadeAnimationCtrl.StartFade();

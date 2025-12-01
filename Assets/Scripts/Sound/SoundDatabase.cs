@@ -12,6 +12,7 @@ public class SoundDatabase : ScriptableObject
 
     [Header("TTS")]
     public AudioClip _windowReady;
+    public AudioClip _windowModeSound;
     public AudioClip _windowSelectSound;
     public AudioClip _windowChromaSound;
     public AudioClip _windowQuantitySound;
