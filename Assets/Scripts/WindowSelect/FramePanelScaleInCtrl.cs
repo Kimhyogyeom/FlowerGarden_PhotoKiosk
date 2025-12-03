@@ -194,35 +194,35 @@ public class FramePanelScaleInCtrl : MonoBehaviour
                 if (-1 < _selectedIndex && _selectedIndex <= 0)
                 {
                     Debug.Log($"select Number 0 : {_selectedIndex}");
-                    _photoFrameSelectCtrl.OnPhotoFrameSelect0();
+                    _photoFrameSelectCtrl.OnPhotoFrameSelect0Hight();
                 }
                 else if (0 < _selectedIndex && _selectedIndex <= 1)
                 {
                     Debug.Log($"select Number 1 : {_selectedIndex}");
-                    _photoFrameSelectCtrl.OnPhotoFrameSelect1();
+                    _photoFrameSelectCtrl.OnPhotoFrameSelect1Hight();
                 }
                 else if (1 < _selectedIndex && _selectedIndex <= 2)
                 {
                     Debug.Log($"select Number 2 : {_selectedIndex}");
-                    _photoFrameSelectCtrl.OnPhotoFrameSelect2();
+                    _photoFrameSelectCtrl.OnPhotoFrameSelect2Hight();
                 }
                 // ─────────────────────────────────────────────────────────────────── hight
 
                 // ─────────────────────────────────────────────────────────────────── Width
                 else if (2 < _selectedIndex && _selectedIndex <= 3)
                 {
-                    Debug.Log($"select Number 0 : {_selectedIndex}");
-                    _photoFrameSelectCtrl.OnPhotoFrameSelect0W();
+                    Debug.Log($"select Number 3 : {_selectedIndex}");
+                    _photoFrameSelectCtrl.OnPhotoFrameSelect0Width();
                 }
                 else if (3 < _selectedIndex && _selectedIndex <= 4)
                 {
-                    Debug.Log($"select Number 1 : {_selectedIndex}");
-                    _photoFrameSelectCtrl.OnPhotoFrameSelect1W();
+                    Debug.Log($"select Number 4 : {_selectedIndex}");
+                    _photoFrameSelectCtrl.OnPhotoFrameSelect1Width();
                 }
                 else if (4 < _selectedIndex && _selectedIndex <= 5)
                 {
-                    Debug.Log($"select Number 2 : {_selectedIndex}");
-                    _photoFrameSelectCtrl.OnPhotoFrameSelect2W();
+                    Debug.Log($"select Number 5 : {_selectedIndex}");
+                    _photoFrameSelectCtrl.OnPhotoFrameSelect2Width();
                 }
                 // ─────────────────────────────────────────────────────────────────── Width
             }

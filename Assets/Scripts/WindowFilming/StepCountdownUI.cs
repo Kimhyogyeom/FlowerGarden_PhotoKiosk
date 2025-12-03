@@ -412,21 +412,43 @@ public class StepCountdownUI : MonoBehaviour
             float scaleX = fullW / localW;
             float scaleY = fullH / localH;
 
-            // "옛날에 사용하던 가상의 폭/높이" (예: 470 x 640)
-            float desiredLocalW = Mathf.Min(_virtualCaptureWidth, localW);
-            float desiredLocalH = Mathf.Min(_virtualCaptureHeight, localH);
 
-            // 그걸 화면 공간으로 환산
-            float desiredScreenW = desiredLocalW * scaleX;
-            float desiredScreenH = desiredLocalH * scaleY;
+            if (GameManager.Instance.CurrentMode == KioskMode.Hight)
+            {
+                // "옛날에 사용하던 가상의 폭/높이" (예: 470 x 640)
+                float desiredLocalW = Mathf.Min(_virtualCaptureWidth, localW);
+                float desiredLocalH = Mathf.Min(_virtualCaptureHeight, localH);
 
-            // 혹시라도 전체보다 더 크게 계산되면 안전하게 잘라줌
-            capW = Mathf.Min(fullW, desiredScreenW);
-            capH = Mathf.Min(fullH, desiredScreenH);
+                // 그걸 화면 공간으로 환산
+                float desiredScreenW = desiredLocalW * scaleX;
+                float desiredScreenH = desiredLocalH * scaleY;
 
-            // 전체 rect 중앙에서 원하는 크기만큼 가운데로 잘라내기
-            capX = fullX + (fullW - capW) * 0.5f;
-            capY = fullY + (fullH - capH) * 0.5f;
+                // 혹시라도 전체보다 더 크게 계산되면 안전하게 잘라줌
+                capW = Mathf.Min(fullW, desiredScreenW);
+                capH = Mathf.Min(fullH, desiredScreenH);
+
+                // 전체 rect 중앙에서 원하는 크기만큼 가운데로 잘라내기
+                capX = fullX + (fullW - capW) * 0.5f;
+                capY = fullY + (fullH - capH) * 0.5f;
+            }
+            else if (GameManager.Instance.CurrentMode == KioskMode.Width)
+            {
+                // "옛날에 사용하던 가상의 폭/높이" (예: 470 x 640)
+                float desiredLocalW = Mathf.Min(_virtualCaptureHeight * 1.4f, localW);
+                float desiredLocalH = Mathf.Min(_virtualCaptureWidth * 1.3f, localH);
+
+                // 그걸 화면 공간으로 환산
+                float desiredScreenW = desiredLocalW * scaleX;
+                float desiredScreenH = desiredLocalH * scaleY;
+
+                // 혹시라도 전체보다 더 크게 계산되면 안전하게 잘라줌
+                capW = Mathf.Min(fullW, desiredScreenW);
+                capH = Mathf.Min(fullH, desiredScreenH);
+
+                // 전체 rect 중앙에서 원하는 크기만큼 가운데로 잘라내기
+                capX = fullX + (fullW - capW) * 0.5f;
+                capY = fullY + (fullH - capH) * 0.5f;
+            }
 
             // 디버그용
             Debug.Log($"[Capture] VirtualRect 사용: full=({fullW}x{fullH}), local=({localW}x{localH}), " +

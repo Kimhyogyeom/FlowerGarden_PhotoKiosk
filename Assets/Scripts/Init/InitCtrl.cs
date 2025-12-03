@@ -20,7 +20,10 @@ public class InitCtrl : MonoBehaviour
     private Coroutine _resetCallbackRoutine = null;         // 자동 리셋 코루틴
     // [SerializeField] private int g_successToBackTime = 10;   // 인쇄 후 초기 화면으로 돌아가기까지 대기 시간(초)
 
+    [SerializeField] private Button _filmingButton;
+
     [Header("Setting Component")]
+    [SerializeField] private WindowModePanelCtrl _windowModePanelCtrl;      // 가로 / 세로 모드 추가
     [SerializeField] private PhotoFrameSelectCtrl _photoFrameSelectCtrl;    // 프레임 선택 컨트롤러
     [SerializeField] private ChromakeySelectButton _chromakeySelectButton;        // 크로마키 선택 컨트롤러
     [SerializeField] private QuantitySelectCtrl _quantitySelectCtrl;        // 디자인 적용 이후 : 수량 컨트롤러
@@ -159,6 +162,9 @@ public class InitCtrl : MonoBehaviour
     /// </summary>
     private void ResetManager()
     {
+        // 초기화
+        GameManager.Instance.SetMode(KioskMode.Hight);
+
         // 자동 콜백 코루틴 정리
         if (_resetCallbackRoutine != null)
         {
@@ -175,6 +181,7 @@ public class InitCtrl : MonoBehaviour
         _fadeAnimationCtrl.StartFade();
 
         // ─────────────────────────────────────────────────────────
+        HightAndWidthReset();   // 가로 / 세로 모드 초기화
         FrameSelectReset();     // 프레임 관련 리셋
         FilmingPanelReset();    // 촬영 패널 관련 리셋
         CaptureReset();         // 캡처 관련 리셋
@@ -316,6 +323,14 @@ public class InitCtrl : MonoBehaviour
     // ──────────────────────────────────────────────────────────────────
 
     /// <summary>
+    /// 가로 / 세로 초기화
+    /// </summary>
+    public void HightAndWidthReset()
+    {
+        _windowModePanelCtrl.ModeAllReset();
+    }
+
+    /// <summary>
     /// 수량 선택 관련 리셋
     /// </summary>
     public void QuantityReset()
@@ -342,8 +357,8 @@ public class InitCtrl : MonoBehaviour
     public void FilmingReset()
     {
         _filmingPanelCtrl.ResetFilming();
+        _filmingButton.gameObject.SetActive(true);
     }
-
     /// <summary>
     /// 포토 선택에서 리셋 관련 함수
     /// </summary>

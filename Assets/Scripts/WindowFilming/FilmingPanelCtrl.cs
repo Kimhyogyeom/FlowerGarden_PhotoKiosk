@@ -1,5 +1,6 @@
 using JetBrains.Annotations;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -80,6 +81,7 @@ public class FilmingPanelCtrl : MonoBehaviour
     private void Awake()
     {
         // 사진 촬영 모드 진입 버튼 리스너 등록
+        // 이였는데 프레임 추가건으로 이거 프레임 선택 "다음으로" 버튼임
         if (_selectPhotoButton != null)
         {
             _selectPhotoButton.onClick.AddListener(OnSelectPhotoButtonClicked);
@@ -144,6 +146,7 @@ public class FilmingPanelCtrl : MonoBehaviour
 
         // 화면 전환용 페이드 애니메이션 실행
         _fadeAnimationCtrl.StartFade();
+
     }
 
     /// <summary>
@@ -164,6 +167,7 @@ public class FilmingPanelCtrl : MonoBehaviour
     public void OnPhotoButtonClicked()
     {
         _fadeAnimationCtrl.StartFade();
+        _photoButton.gameObject.SetActive(false);
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
         // 촬영 버튼 사운드 재생
         // Sound

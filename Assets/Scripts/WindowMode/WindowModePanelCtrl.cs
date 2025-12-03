@@ -5,6 +5,8 @@ public class WindowModePanelCtrl : MonoBehaviour
 {
     [Header("Component Setting")]
     [SerializeField] private FadeAnimationCtrl _fadeAnimationCtrl;
+    [SerializeField] private FramePanelScaleInCtrl _framePanelScaleInCtrl;
+
     [Header("프레임 가로")]
     [SerializeField] private Button _frameWidth;            // 프레임 가로
     [SerializeField] private GameObject _frameWidthLine;    // 프레임 라인
@@ -45,6 +47,7 @@ public class WindowModePanelCtrl : MonoBehaviour
 
         _hightWidthFlag = true;
         FrameObjectSetting(_hightWidthFlag);
+        _framePanelScaleInCtrl._selectedIndex = 0;
     }
     /// <summary>
     /// 프레임 세로 클릭
@@ -59,6 +62,7 @@ public class WindowModePanelCtrl : MonoBehaviour
 
         _hightWidthFlag = false;
         FrameObjectSetting(_hightWidthFlag);
+        _framePanelScaleInCtrl._selectedIndex = 3;
     }
 
     /// <summary>
@@ -90,6 +94,7 @@ public class WindowModePanelCtrl : MonoBehaviour
     }
     public void ModeAllReset()
     {
-
+        // 기본 모드로 되돌리기
+        OnClickFrameWidth();
     }
 }

@@ -12,6 +12,7 @@ using TMPro;
 ///   - 선택된 사진을 메인 4칸에 "고정 슬롯 방식"으로 배치
 ///   - 선택 개수 텍스트: 0/4, 1/4 ... 업데이트
 ///   - 현재 프레임 색에 해당하는 Print 슬롯 배열에 최종 4장 복사
+///   - KioskMode.Hight / KioskMode.Width 에 따라 다른 프레임 세트(red/blue/black vs redWidth/blueWidth/blackWidth) + 버튼 세트 사용
 /// </summary>
 public class CapturedPhotoPanelCtrl : MonoBehaviour
 {
@@ -34,31 +35,60 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
     [Tooltip("촬영 & 캡처를 담당하는 StepCountdownUI")]
     [SerializeField] private StepCountdownUI _stepCountdownUI;
 
-    [Header("Target Buttons")]
-    [Tooltip("새 패널에 있는 사진 선택 버튼들 (버튼의 Image에 사진 매핑)")]
-    [SerializeField] private Button[] _photoButtons; // 8개 예상
+    // ──────────────────────────────────────────────────────────────────────
+    // 버튼 세트: Hight / Width 별로 분리
+    // ──────────────────────────────────────────────────────────────────────
+    [Header("Target Buttons (Hight Mode)")]
+    [Tooltip("세로(Hight) 모드에서 사용하는 사진 선택 버튼들")]
+    [SerializeField] private Button[] _photoButtonsHight; // 8개 예상
+
+    [Header("Target Buttons (Width Mode)")]
+    [Tooltip("가로(Width) 모드에서 사용하는 사진 선택 버튼들")]
+    [SerializeField] private Button[] _photoButtonsWidth; // 8개 예상
 
     [Header("Selection Marker Settings")]
     [Tooltip("버튼 하위에서 선택 마커로 사용할 자식 오브젝트 이름")]
     [SerializeField] private string _selectionChildName = "SelectedMark";
 
-    [Header("Main Preview Images")]
-    [Tooltip("빨강 프레임 그룹")]
+    // ──────────────────────────────────────────────────────────────────────
+    // 세로(Hight) 모드용 프레임/메인 이미지/인쇄용 이미지
+    // ──────────────────────────────────────────────────────────────────────
+    [Header("Main Preview Images (Hight Mode)")]
+    [Tooltip("세로(Hight) - 빨강 프레임 그룹")]
     [SerializeField] private GameObject _redGameObject;
     [SerializeField] private Image[] _mainImagesRed = new Image[4];
     [SerializeField] private Image[] _mainImagesRedPrint = new Image[4];
 
-    [Tooltip("파랑 프레임 그룹")]
+    [Tooltip("세로(Hight) - 파랑 프레임 그룹")]
     [SerializeField] private GameObject _blueGameObject;
     [SerializeField] private Image[] _mainImagesBlue = new Image[4];
     [SerializeField] private Image[] _mainImagesBluePrint = new Image[4];
 
-    [Tooltip("검정 프레임 그룹")]
+    [Tooltip("세로(Hight) - 검정 프레임 그룹")]
     [SerializeField] private GameObject _blackGameObject;
     [SerializeField] private Image[] _mainImagesBlack = new Image[4];
     [SerializeField] private Image[] _mainImagesBlackPrint = new Image[4];
 
-    // 현재 선택된 프레임에 해당하는 메인 이미지 배열 (빨/파/검 중 하나)
+    // ──────────────────────────────────────────────────────────────────────
+    // 가로(Width) 모드용 프레임/메인 이미지/인쇄용 이미지
+    // ──────────────────────────────────────────────────────────────────────
+    [Header("Main Preview Images (Width Mode)")]
+    [Tooltip("가로(Width) - 빨강 프레임 그룹")]
+    [SerializeField] private GameObject _redGameObjectWidth;
+    [SerializeField] private Image[] _mainImagesRedWidth = new Image[4];
+    [SerializeField] private Image[] _mainImagesRedPrintWidth = new Image[4];
+
+    [Tooltip("가로(Width) - 파랑 프레임 그룹")]
+    [SerializeField] private GameObject _blueGameObjectWidth;
+    [SerializeField] private Image[] _mainImagesBlueWidth = new Image[4];
+    [SerializeField] private Image[] _mainImagesBluePrintWidth = new Image[4];
+
+    [Tooltip("가로(Width) - 검정 프레임 그룹")]
+    [SerializeField] private GameObject _blackGameObjectWidth;
+    [SerializeField] private Image[] _mainImagesBlackWidth = new Image[4];
+    [SerializeField] private Image[] _mainImagesBlackPrintWidth = new Image[4];
+
+    // 현재 선택된 프레임에 해당하는 메인 이미지 배열 (빨/파/검 중 하나, Hight/Width 공용)
     private Image[] _currentMainImages;
 
     [Header("Main Image Scale By Frame (XYZ 개별 설정)")]
@@ -70,6 +100,14 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
 
     [Tooltip("프레임 인덱스 2(검정)일 때 메인 이미지 스케일")]
     [SerializeField] private Vector3 _blackScale = new Vector3(1f, 1.1f, 1f);
+
+    [SerializeField] private Vector3 _redScaleWidth = new Vector3(1f, 1f, 1f);
+
+    [Tooltip("프레임 인덱스 1(파랑)일 때 메인 이미지 스케일")]
+    [SerializeField] private Vector3 _blueScaleWidth = new Vector3(1f, 1.05f, 1f);
+
+    [Tooltip("프레임 인덱스 2(검정)일 때 메인 이미지 스케일")]
+    [SerializeField] private Vector3 _blackScaleWidth = new Vector3(1f, 1.1f, 1f);
 
     // 현재 선택된 프레임의 스케일 (Vector3)
     private Vector3 _currentMainScale = Vector3.one;
@@ -89,6 +127,10 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
     [Tooltip("카메라윈도우 패널의 '다음' 버튼")]
     [SerializeField] private Button _cameraWindowNextButton;
 
+    [Header("Open Panel")]
+    [SerializeField] private GameObject _frameHight;
+    [SerializeField] private GameObject _frameWidth;
+
     // === 내부 상태 ===
     private bool[] _isSelected;             // 각 버튼 선택 여부
     private GameObject[] _selectionMarkers; // 버튼 하위에서 찾은 선택 마커
@@ -98,56 +140,114 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
     private int[] _slotOwners;              // 길이 = 현재 사용하는 메인 슬롯 개수
 
     // 각 버튼이 어느 슬롯을 쓰고 있나? (-1 == 아직 안 들어감)
-    private int[] _buttonAssignedSlot;      // 길이 = _photoButtons.Length
+    private int[] _buttonAssignedSlot;      // 길이 = 현재 사용하는 버튼 배열 길이
+
+    // ──────────────────────────────────────────────────────────────────────
+    // 모드/현재 버튼 헬퍼
+    // ──────────────────────────────────────────────────────────────────────
+    private bool IsHightMode
+    {
+        get
+        {
+            if (GameManager.Instance == null) return true;
+            return GameManager.Instance.CurrentMode == KioskMode.Hight;
+        }
+    }
+
+    private Button[] GetCurrentPhotoButtons()
+    {
+        return IsHightMode ? _photoButtonsHight : _photoButtonsWidth;
+    }
+
+    /// <summary>
+    /// 현재 모드에 맞는 프레임 인덱스 (0: 빨강, 1: 파랑, 2: 검정)
+    /// Hight 모드 → _selectIndexHight
+    /// Width 모드 → _selectIndexWidth
+    /// </summary>
+    private int CurrentFrameIndex
+    {
+        get
+        {
+            if (_photoFrameSelectCtrl == null) return 0;
+
+            if (IsHightMode)
+                return Mathf.Clamp(_photoFrameSelectCtrl._selectIndexHight, 0, 2);
+            else
+                return Mathf.Clamp(_photoFrameSelectCtrl._selectIndexWidth, 0, 2);
+        }
+    }
 
     private void Awake()
     {
-        // 버튼 하위의 선택 마커(SelectedMark) 찾아두기
-        FindSelectionMarkersFromButtons();
-
         // "다음" 버튼 → 사진 매핑 + 패널 전환
         if (_cameraWindowNextButton != null)
         {
             _cameraWindowNextButton.onClick.AddListener(OpenNextPanelAndApplyPhotos);
         }
 
-        // 각 사진 버튼 클릭 → 선택/취소 토글
-        if (_photoButtons != null)
-        {
-            for (int i = 0; i < _photoButtons.Length; i++)
-            {
-                int idx = i; // 클로저 방지
-                if (_photoButtons[i] != null)
-                {
-                    _photoButtons[i].onClick.AddListener(() => OnPhotoButtonClicked(idx));
-                }
-            }
-        }
+        // Hight/Width 버튼 둘 다 리스너 연결
+        AttachClickListeners(_photoButtonsHight);
+        AttachClickListeners(_photoButtonsWidth);
 
         // 시작 상태 전체 리셋 (프레임/슬롯/텍스트/마커)
         ResetCapturedPhotoPanel();
     }
 
     /// <summary>
-    /// _photoFrameSelectCtrl._selectIndex 값을 보고
+    /// 버튼 배열에 OnClick 리스너 연결 (Hight/Width 공용)
+    /// </summary>
+    private void AttachClickListeners(Button[] buttons)
+    {
+        if (buttons == null) return;
+
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            int idx = i; // 클로저 방지
+            if (buttons[i] != null)
+            {
+                buttons[i].onClick.AddListener(() => OnPhotoButtonClicked(idx));
+            }
+        }
+    }
+
+    /// <summary>
+    /// _photoFrameSelectCtrl 의 현재 선택값을 보고
     /// - 0: 빨강 프레임 사용
     /// - 1: 파랑 프레임 사용
     /// - 2: 검정 프레임 사용
-    /// 으로 프레임 오브젝트 활성/비활성 및 _currentMainImages, 스케일 지정
+    /// 그리고 GameManager.Instance.CurrentMode 에 따라
+    /// - Hight 모드: red/blue/black 세트
+    /// - Width 모드: redWidth/blueWidth/blackWidth 세트
+    /// 를 활성/비활성 및 _currentMainImages, 스케일 지정
     /// </summary>
     private void ApplyFrameSelection()
     {
-        int index = 0;
+        int index = CurrentFrameIndex;
+        bool isHightMode = IsHightMode;
 
-        if (_photoFrameSelectCtrl != null)
+        // 모드별 프레임 전체 ON/OFF (세로/가로 루트)
+        if (GameManager.Instance != null)
         {
-            index = Mathf.Clamp(_photoFrameSelectCtrl._selectIndexHight, 0, 2);
+            if (GameManager.Instance.CurrentMode == KioskMode.Hight)
+            {
+                if (_frameHight) _frameHight.SetActive(true);
+                if (_frameWidth) _frameWidth.SetActive(false);
+            }
+            else if (GameManager.Instance.CurrentMode == KioskMode.Width)
+            {
+                if (_frameHight) _frameHight.SetActive(false);
+                if (_frameWidth) _frameWidth.SetActive(true);
+            }
         }
 
-        // 모든 프레임 비활성
+        // 모든 프레임 비활성 (Hight + Width 둘 다)
         if (_redGameObject) _redGameObject.SetActive(false);
         if (_blueGameObject) _blueGameObject.SetActive(false);
         if (_blackGameObject) _blackGameObject.SetActive(false);
+
+        if (_redGameObjectWidth) _redGameObjectWidth.SetActive(false);
+        if (_blueGameObjectWidth) _blueGameObjectWidth.SetActive(false);
+        if (_blackGameObjectWidth) _blackGameObjectWidth.SetActive(false);
 
         _currentMainImages = null;
         _currentMainScale = Vector3.one; // 기본값
@@ -155,27 +255,76 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
         switch (index)
         {
             case 0: // 빨강
-                if (_redGameObject) _redGameObject.SetActive(true);
-                _currentMainImages = _mainImagesRed;
-                _currentMainScale = _redScale;
+                if (isHightMode)
+                {
+                    if (_redGameObject) _redGameObject.SetActive(true);
+                    _currentMainImages = _mainImagesRed;
+                }
+                else
+                {
+                    if (_redGameObjectWidth) _redGameObjectWidth.SetActive(true);
+                    _currentMainImages = _mainImagesRedWidth;
+                }
+                if (GameManager.Instance.CurrentMode == KioskMode.Hight)
+                {
+                    _currentMainScale = _redScale;
+                }
+                else
+                {
+                    _currentMainScale = _redScaleWidth;
+                }
                 break;
 
             case 1: // 파랑
-                if (_blueGameObject) _blueGameObject.SetActive(true);
-                _currentMainImages = _mainImagesBlue;
-                _currentMainScale = _blueScale;
+                if (isHightMode)
+                {
+                    if (_blueGameObject) _blueGameObject.SetActive(true);
+                    _currentMainImages = _mainImagesBlue;
+                }
+                else
+                {
+                    if (_blueGameObjectWidth) _blueGameObjectWidth.SetActive(true);
+                    _currentMainImages = _mainImagesBlueWidth;
+                }
+                if (GameManager.Instance.CurrentMode == KioskMode.Hight)
+                {
+                    _currentMainScale = _blueScale;
+                }
+                else
+                {
+                    _currentMainScale = _blueScaleWidth;
+                }
                 break;
 
             case 2: // 검정
-                if (_blackGameObject) _blackGameObject.SetActive(true);
-                _currentMainImages = _mainImagesBlack;
-                _currentMainScale = _blackScale;
+                if (isHightMode)
+                {
+                    if (_blackGameObject) _blackGameObject.SetActive(true);
+                    _currentMainImages = _mainImagesBlack;
+                }
+                else
+                {
+                    if (_blackGameObjectWidth) _blackGameObjectWidth.SetActive(true);
+                    _currentMainImages = _mainImagesBlackWidth;
+                }
+                if (GameManager.Instance.CurrentMode == KioskMode.Hight)
+                {
+                    _currentMainScale = _blackScale;
+                }
+                else
+                {
+                    _currentMainScale = _blackScaleWidth;
+                }
                 break;
         }
 
         if (_currentMainImages == null || _currentMainImages.Length == 0)
         {
-            Debug.LogWarning("[CapturedPhotoPanelCtrl] 현재 프레임의 메인 이미지 배열이 비어있습니다.");
+            Debug.LogWarning($"[CapturedPhotoPanelCtrl] 현재 프레임의 메인 이미지 배열이 비어있습니다. index={index}, mode={(isHightMode ? "Hight" : "Width")}");
+        }
+        else
+        {
+            Debug.Log($"[CapturedPhotoPanelCtrl] ApplyFrameSelection index={index}, mode={(isHightMode ? "Hight" : "Width")}, mainCount={_currentMainImages.Length}");
         }
     }
 
@@ -207,9 +356,10 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
             return;
         }
 
-        if (_photoButtons == null || _photoButtons.Length == 0)
+        var buttons = GetCurrentPhotoButtons();
+        if (buttons == null || buttons.Length == 0)
         {
-            Debug.LogWarning("[CapturedPhotoPanelCtrl] _photoButtons is empty");
+            Debug.LogWarning("[CapturedPhotoPanelCtrl] 현재 모드의 photoButtons 가 비어있습니다.");
             return;
         }
 
@@ -217,9 +367,9 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
         ResetCapturedPhotoPanel();
 
         // StepCountdownUI에서 캡처된 스프라이트를 버튼들에 매핑
-        for (int i = 0; i < _photoButtons.Length; i++)
+        for (int i = 0; i < buttons.Length; i++)
         {
-            Button btn = _photoButtons[i];
+            Button btn = buttons[i];
             if (btn == null) continue;
 
             Image targetImg = btn.image;
@@ -278,8 +428,6 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
         if (captured == null)
         {
             Debug.LogWarning($"[CapturedPhotoPanelCtrl] No sprite at index {index}");
-
-
             return;
         }
 
@@ -360,7 +508,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
         UpdateMainImages();
         UpdateSelectionCountText();
 
-        // 현재 프레임(_photoFrameSelectCtrl._selectIndex)에 맞는 Print 슬롯 배열에
+        // 현재 프레임(_photoFrameSelectCtrl 의 선택값)에 맞는 Print 슬롯 배열에
         //    최신 메인 4칸 내용을 복사
         CopyFinalSelectionToPrintSlots();
     }
@@ -372,10 +520,11 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
     /// </summary>
     private void EnsureArrays()
     {
-        // 버튼 관련 배열
-        if (_photoButtons != null)
+        // 버튼 관련 배열 (현재 모드 기준)
+        var buttons = GetCurrentPhotoButtons();
+        if (buttons != null)
         {
-            int len = _photoButtons.Length;
+            int len = buttons.Length;
 
             if (_isSelected == null || _isSelected.Length != len)
                 _isSelected = new bool[len];
@@ -404,20 +553,23 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
 
     /// <summary>
     /// 각 버튼 하위에서 선택 마커(SelectedMark)를 자동으로 찾아서 저장
+    /// (현재 모드의 버튼 세트 기준)
     /// </summary>
     private void FindSelectionMarkersFromButtons()
     {
-        if (_photoButtons == null || _photoButtons.Length == 0)
+        var buttons = GetCurrentPhotoButtons();
+
+        if (buttons == null || buttons.Length == 0)
         {
             _selectionMarkers = null;
             return;
         }
 
-        _selectionMarkers = new GameObject[_photoButtons.Length];
+        _selectionMarkers = new GameObject[buttons.Length];
 
-        for (int i = 0; i < _photoButtons.Length; i++)
+        for (int i = 0; i < buttons.Length; i++)
         {
-            var btn = _photoButtons[i];
+            var btn = buttons[i];
             if (btn == null)
                 continue;
 
@@ -473,7 +625,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
             }
         }
 
-        // 메인 4칸: 세 색상 모두 sprite 정리 (프레임 테두리는 유지)
+        // 메인 4칸: 세로(Hight) 색상 모두 sprite 정리 (프레임 테두리는 유지)
         if (_mainImagesRed != null)
         {
             for (int i = 0; i < _mainImagesRed.Length; i++)
@@ -498,6 +650,34 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
             {
                 if (_mainImagesBlack[i] != null)
                     _mainImagesBlack[i].sprite = null;
+            }
+        }
+
+        // 메인 4칸: 가로(Width) 색상 모두 sprite 정리
+        if (_mainImagesRedWidth != null)
+        {
+            for (int i = 0; i < _mainImagesRedWidth.Length; i++)
+            {
+                if (_mainImagesRedWidth[i] != null)
+                    _mainImagesRedWidth[i].sprite = null;
+            }
+        }
+
+        if (_mainImagesBlueWidth != null)
+        {
+            for (int i = 0; i < _mainImagesBlueWidth.Length; i++)
+            {
+                if (_mainImagesBlueWidth[i] != null)
+                    _mainImagesBlueWidth[i].sprite = null;
+            }
+        }
+
+        if (_mainImagesBlackWidth != null)
+        {
+            for (int i = 0; i < _mainImagesBlackWidth.Length; i++)
+            {
+                if (_mainImagesBlackWidth[i] != null)
+                    _mainImagesBlackWidth[i].sprite = null;
             }
         }
 
@@ -595,7 +775,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
     /// <summary>
     /// 현재 선택된 프레임 색(빨/파/검)에 따라
     /// 메인 미리보기 4칸의 최종 이미지를
-    /// 해당 프레임의 인쇄용 슬롯(_mainImagesXXXPrint)으로 복사
+    /// 해당 프레임의 인쇄용 슬롯(_mainImagesXXXPrint 또는 _mainImagesXXXPrintWidth)으로 복사
     /// </summary>
     public void CopyFinalSelectionToPrintSlots()
     {
@@ -605,26 +785,35 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
             return;
         }
 
-        int index = 0;
-        if (_photoFrameSelectCtrl != null)
-            index = Mathf.Clamp(_photoFrameSelectCtrl._selectIndexHight, 0, 2);
+        int index = CurrentFrameIndex;
+        bool isHightMode = IsHightMode;
 
         switch (index)
         {
             case 0: // 빨강
-                CopySpriteArray(_currentMainImages, _mainImagesRedPrint);
+                if (isHightMode)
+                    CopySpriteArray(_currentMainImages, _mainImagesRedPrint);
+                else
+                    CopySpriteArray(_currentMainImages, _mainImagesRedPrintWidth);
                 break;
 
             case 1: // 파랑
-                CopySpriteArray(_currentMainImages, _mainImagesBluePrint);
+                if (isHightMode)
+                    CopySpriteArray(_currentMainImages, _mainImagesBluePrint);
+                else
+                    CopySpriteArray(_currentMainImages, _mainImagesBluePrintWidth);
                 break;
 
             case 2: // 검정
-                CopySpriteArray(_currentMainImages, _mainImagesBlackPrint);
+                if (isHightMode)
+                    CopySpriteArray(_currentMainImages, _mainImagesBlackPrint);
+                else
+                    CopySpriteArray(_currentMainImages, _mainImagesBlackPrintWidth);
                 break;
         }
 
-        Debug.Log("[CapturedPhotoPanelCtrl] 최종 선택 4장을 인쇄용 슬롯으로 복사 완료 (index=" + index + ")");
+        Debug.Log("[CapturedPhotoPanelCtrl] 최종 선택 4장을 인쇄용 슬롯으로 복사 완료 (index=" + index + ", mode=" +
+                  (isHightMode ? "Hight" : "Width") + ")");
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
 
@@ -640,12 +829,11 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
     /// </summary>
     public void ResetCapturedPhotoPanel()
     {
-        // print("=======================================================");
-        // print("ResetCapturedPhotoPanel 리셋 된다아ㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏ");
-        // print("=======================================================");
-
-        // 프레임 선택값 반영 (빨/파/검 + 스케일 설정)
+        // 프레임 선택값 반영 (빨/파/검 + 스케일 설정 + Hight/Width 분기)
         ApplyFrameSelection();
+
+        // 현재 모드의 버튼 기준으로 마커 다시 스캔
+        FindSelectionMarkersFromButtons();
 
         // 최대 선택 수는 메인 슬롯 개수 이상이 될 수 없음
         if (_currentMainImages != null && _currentMainImages.Length > 0)
@@ -663,7 +851,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
         UpdateSelectionCountText();
         UpdateMainImages();
 
-        // 리셋 직후 Print 슬롯도 깨끗이 맞추고 싶다면(선택 사항):
+        // 필요하면 여기서 Print 슬롯도 초기화하고 싶으면, 아래 주석 풀어서 사용
         // CopyFinalSelectionToPrintSlots();
     }
 }

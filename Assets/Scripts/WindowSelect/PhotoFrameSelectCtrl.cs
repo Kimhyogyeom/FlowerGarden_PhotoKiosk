@@ -54,7 +54,7 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
     /// - 첫 번째 프레임 하이라이트
     /// - 메인/추가 RawImage 텍스처를 첫 번째 프레임으로 설정
     /// </summary>
-    public void OnPhotoFrameSelect0()
+    public void OnPhotoFrameSelect0Hight()
     {
         // 프레임 선택 버튼 사운드
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
@@ -82,7 +82,7 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
     /// - 두 번째 프레임 하이라이트
     /// - 메인/추가 RawImage 텍스처를 두 번째 프레임으로 설정
     /// </summary>
-    public void OnPhotoFrameSelect1()
+    public void OnPhotoFrameSelect1Hight()
     {
         // Sound
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
@@ -107,7 +107,7 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
     /// - 세 번째 프레임 하이라이트
     /// - 메인/추가 RawImage 텍스처를 세 번째 프레임으로 설정
     /// </summary>
-    public void OnPhotoFrameSelect2()
+    public void OnPhotoFrameSelect2Hight()
     {
         // Sound
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
@@ -125,53 +125,57 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
         _selectIndexHight = 2;
         // _addFrameRawImage.sprite = _photoFrameTexture[2];
     }
-    // ────────────────────────────────────────────────────────────────────────────────────────────────────
+    // ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+
+    // ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     /// <summary>
     /// Width 0번 프레임
     /// </summary>
-    public void OnPhotoFrameSelect0W()
+    public void OnPhotoFrameSelect0Width()
     {
         // Sound
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
-        _photoFrameSelectImagesWidth[0].SetActive(false);
+        _photoFrameSelectImagesWidth[0].SetActive(true);
         _photoFrameSelectImagesWidth[1].SetActive(false);
-        _photoFrameSelectImagesWidth[2].SetActive(true);
+        _photoFrameSelectImagesWidth[2].SetActive(false);
 
-        _mainRawImageWidth.sprite = _photoFrameTextureWidth[2];
-        _fakeImageWidth.sprite = _photoFrameTextureWidth[2];
+        _mainRawImageWidth.sprite = _photoFrameTextureWidth[0];
+        _fakeImageWidth.sprite = _photoFrameTextureWidth[0];
 
         _selectFlag0Width = false;
         _selectFlag1Width = false;
         _selectFlag2Width = true;
 
-        _selectIndexWidth = 2;
+        _selectIndexWidth = 0;
         // _addFrameRawImage.sprite = _photoFrameTexture[2];
     }
     /// <summary>
     /// Width 1번 프레임
     /// </summary>
-    public void OnPhotoFrameSelect1W()
+    public void OnPhotoFrameSelect1Width()
     {
         // Sound
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
         _photoFrameSelectImagesWidth[0].SetActive(false);
-        _photoFrameSelectImagesWidth[1].SetActive(false);
-        _photoFrameSelectImagesWidth[2].SetActive(true);
+        _photoFrameSelectImagesWidth[1].SetActive(true);
+        _photoFrameSelectImagesWidth[2].SetActive(false);
 
-        _mainRawImageWidth.sprite = _photoFrameTextureWidth[2];
-        _fakeImageWidth.sprite = _photoFrameTextureWidth[2];
+        _mainRawImageWidth.sprite = _photoFrameTextureWidth[1];
+        _fakeImageWidth.sprite = _photoFrameTextureWidth[1];
 
         _selectFlag0Width = false;
         _selectFlag1Width = false;
         _selectFlag2Width = true;
 
-        _selectIndexWidth = 2;
+        _selectIndexWidth = 1;
         // _addFrameRawImage.sprite = _photoFrameTexture[2];
     }
     /// <summary>
     /// Width 2번 프레임
     /// </summary>
-    public void OnPhotoFrameSelect2W()
+    public void OnPhotoFrameSelect2Width()
     {
         // Sound
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
@@ -195,9 +199,10 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
     /// </summary>
     public void AllReset()
     {
+        // print("========================reset=========================");
         // 첫 번째 프레임 선택 로직 재사용
-        OnPhotoFrameSelect0();
-
+        OnPhotoFrameSelect0Hight();
+        OnPhotoFrameSelect0Width();
         // 아래 코드는 OnPhotoFrameSelect0()과 동일한 동작이라 주석 처리해둔 상태
         //_photoFrameSelectImages[0].SetActive(true);
         //_photoFrameSelectImages[1].SetActive(false);

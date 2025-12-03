@@ -14,13 +14,7 @@ public class PrintButtonHandler : MonoBehaviour
 {
     [Header("Component Setting")]
     [SerializeField] private FadeAnimationCtrl _fadeAnimationCtrl;
-
-    [SerializeField] private ImageMapping _imageMapping;
-    // 페이드 에니메이션
-
-    // [SerializeField] private FramePanelScaleInCtrl _framePanelScaleInCtrl;  // 무슨 프레임을 선택했는지 알아보려고 가져옴
-    // [SerializeField] private Sprite[] _selectFrames;                        // 무슨 프레임을 선택했는지 알아본 뒤 결정지을 스프라이트
-    // [SerializeField] private Image _frameApplicationImage;                  // 스프랑리트를 적용 시킬 이미지 이옵니다.
+    [SerializeField] private PrintPhotoImageMapping _imageMapping;
 
     [Header("Settings Object")]
     [SerializeField] private Button _outputButton;
@@ -41,6 +35,7 @@ public class PrintButtonHandler : MonoBehaviour
     [SerializeField] private Image[] _changeImages;
     // 출력 화면에서 사용할 썸네일/미리보기 이미지들
 
+    [Header("Panels")]
     [SerializeField] private GameObject _currentPanel;
     // 출력 버튼을 누르기 전까지 사용하던 패널
 
@@ -53,25 +48,15 @@ public class PrintButtonHandler : MonoBehaviour
     [SerializeField] private PrintController _printController;
     // 실제 캡처/파일 저장/인쇄를 수행하는 PrintController
 
-    // ──────────────────────────────────────────────────────────────────────────────────────────
-
-    // [SerializeField] private RawImage _targetRawImage;   // 인쇄할 RawImage
-    [SerializeField] private Image _targetRawImage;   // 인쇄할 Image
-
-    // ──────────────────────────────────────────────────────────────────────────────────────────
-
-
-    // PrintController.PrintRawImage 에 전달할 최종 타깃 RawImage
+    [Header("Print Target (Hight / Width)")]
+    [SerializeField] private Image _targetRawImage;        // Hight 모드 인쇄 대상
+    [SerializeField] private Image _targetRawImageWidth;   // Width 모드 인쇄 대상
 
     [Header("Optional")]
     [SerializeField] private GameObject[] _hideWhileCapture; // 캡처 중 숨김
     // 캡처 시 화면에 찍히지 않길 원하는 UI 오브젝트들
 
     [Header("Countdown")]
-    // [SerializeField] private float _countTime = 60f; // 초
-    // 출력 대기 카운트다운 시간 (초 단위)
-
-    //[SerializeField] private Text _countdownTextUGUI;           
     [SerializeField] private TextMeshProUGUI _countdownTMP; // TMP 사용 시
     // 카운트다운 숫자를 표시할 TMP 텍스트
 
@@ -79,11 +64,31 @@ public class PrintButtonHandler : MonoBehaviour
     // true 인 동안에는 인쇄 중으로 간주하고 버튼 재클릭/자동 호출 방지
 
     private Coroutine _countdownRoutine;
-    // 카운트다운 코루틴 핸들
-
 #pragma warning disable CS0414
     private bool _autoTriggered = false; // 카운트다운으로 자동 호출했는지 여부(중복 방지)
-#pragma warning disable CS0414
+#pragma warning restore CS0414
+
+    // ─────────────────────────────────────────────────────────────
+    // 모드 헬퍼 / 출력 대상 선택 (나머지 이미지는 전부 공용 사용)
+    // ─────────────────────────────────────────────────────────────
+
+    private bool IsHightMode
+    {
+        get
+        {
+            if (GameManager.Instance == null) return true;
+            return GameManager.Instance.CurrentMode == KioskMode.Hight;
+        }
+    }
+
+    private Image TargetImage
+    {
+        get
+        {
+            // Kiosk 모드에 따라 최종 출력 대상만 분기
+            return IsHightMode ? _targetRawImage : _targetRawImageWidth;
+        }
+    }
 
     private void Awake()
     {
@@ -92,7 +97,8 @@ public class PrintButtonHandler : MonoBehaviour
         else
             Debug.LogWarning("_outputButton reference is missing");
 
-        _originTimerValue = GameManager.Instance._photoSelectToPrintTimer;
+        if (GameManager.Instance != null)
+            _originTimerValue = GameManager.Instance._photoSelectToPrintTimer;
     }
 
     private void OnEnable()
@@ -104,10 +110,6 @@ public class PrintButtonHandler : MonoBehaviour
     private void OnDisable()
     {
         OutputEnableBroadcaster.OnOutputEnabled -= StartCorutineToEvent;
-        // 비활성화 시 카운트다운 정지 + 초기화 (필요 시 주석 해제)
-        //StopCountdown();
-        //SetCountdownText(string.Empty);
-        //_autoTriggered = false;
     }
 
     private void OnDestroy()
@@ -118,14 +120,13 @@ public class PrintButtonHandler : MonoBehaviour
 
     /// <summary>
     /// 사용자가 직접 "출력" 버튼을 눌렀을 때 호출
-    /// - 카운트다운 중지
-    /// - 패널/이미지 교체
-    /// - PrintController 를 통해 인쇄 요청
+    /// - 지금은 페이드만 시작, 실제 작업은 FadeEndCallBack 에서
     /// </summary>
     public void OnClickPrint()
     {
         _fadeAnimationCtrl.StartFade();
     }
+
     /// <summary>
     /// 페이드 끝나면 호출될 녀석
     /// </summary>
@@ -139,24 +140,24 @@ public class PrintButtonHandler : MonoBehaviour
         StopCountdown();
         _autoTriggered = false;
 
-        GameManager.Instance.SetState(KioskState.Printing);
-        // Sound
-
-        // 필수 레퍼런스 체크
-        if (_printController == null || _targetRawImage == null)
+        // 필수 레퍼런스 체크 (모드에 따라 TargetImage만 분기)
+        if (_printController == null || TargetImage == null)
         {
-            Debug.LogWarning("PrintController/RawImage reference is missing");
+            Debug.LogWarning("PrintController/TargetImage reference is missing");
             return;
         }
 
         // -------- 이미지 교체 작업 --------
+        // RawImage 텍스처 복사 (공용)
         if (_changeRawImage != null && _currentRawImage != null)
         {
             if (_changeFakeRawImage != null)
                 _changeFakeRawImage.texture = _currentRawImage.texture; // 페이크 RawImage 텍스처 복사
+
             _changeRawImage.texture = _currentRawImage.texture;        // 출력용 RawImage 텍스처 복사
         }
 
+        // 썸네일 Sprite 복사 (공용)
         if (_currentImages != null && _changeImages != null)
         {
             int n = Mathf.Min(_currentImages.Length, _changeImages.Length);
@@ -173,50 +174,42 @@ public class PrintButtonHandler : MonoBehaviour
         if (_currentPanel) _currentPanel.SetActive(false);
         if (_changePanel) _changePanel.SetActive(true);
 
-        // -------- 출력 호출 --------
+        // -------- 출력 호출 준비 --------
         _busy = true;
         if (_outputButton) _outputButton.interactable = false;
 
-        // 이미지 교체 호출
-        _imageMapping.ImageMappingCallBack();
+        // 인쇄용 프레임/그리드 이미지 매핑
+        if (_imageMapping != null)
+        {
+            _imageMapping.ImageMappingCallBack();
+        }
 
-        // 이식해야함 ───────────────────────────────────────────────────────────────────
+        // -------- 실제 인쇄 호출 --------
         _printController.PrintRawImage(
-            _targetRawImage,
+            TargetImage,
             onDone: () =>
             {
-                // 인쇄 완료 후 후속 처리 지점
-                Debug.Log("완료");
+                Debug.Log("인쇄 완료");
                 _busy = false;
                 if (_outputButton) _outputButton.interactable = true;
                 SetCountdownText(string.Empty); // 완료 시 카운트 텍스트 클리어(선택)
             },
             toHideTemporarily: _hideWhileCapture
         );
+
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
-        // 이식해야함 ───────────────────────────────────────────────────────────────────
     }
 
     // ===== Countdown =====
 
-    /// <summary>
-    /// OutputEnableBroadcaster 이벤트에서 호출되는 코루틴 시작 함수
-    /// - 출력 화면이 열릴 때 카운트다운 시작
-    /// </summary>
     private void StartCorutineToEvent()
     {
         if (_countdownRoutine == null)
             _countdownRoutine = StartCoroutine(CountdownAndAutoPrint());
     }
 
-    /// <summary>
-    /// 카운트다운 코루틴
-    /// - 지정 시간 동안 1초 단위로 감소
-    /// - 시간이 0이 되면 자동으로 OnClickPrint() 호출 (단, 이미 인쇄 중이면 건너뜀)
-    /// </summary>
     private IEnumerator CountdownAndAutoPrint()
     {
-        //print("진입:::");
         _autoTriggered = false;
 
         float remain = _originTimerValue;
@@ -225,21 +218,19 @@ public class PrintButtonHandler : MonoBehaviour
         // 최초 표기
         UpdateCountdownLabel(remain, force: true);
 
-        // 1초 간격으로 표기(타임스케일 영향 없음)
+        // 1초 간격으로 표기
         while (remain > 0f)
         {
             yield return new WaitForSeconds(1f);
             remain = Mathf.Max(0f, remain - 1f);
 
-            // 같은 숫자 반복 갱신 방지
             if ((int)remain != lastShown)
             {
                 UpdateCountdownLabel(remain);
-                //print($"{remain}:::");
             }
         }
 
-        // 이미 바깥에서 인쇄가 시작됐다면(= _busy) 자동 호출 생략
+        // 이미 인쇄 중이면 자동 호출 생략
         if (!_busy && gameObject.activeInHierarchy)
         {
             _autoTriggered = true;
@@ -249,27 +240,17 @@ public class PrintButtonHandler : MonoBehaviour
         _countdownRoutine = null;
     }
 
-    /// <summary>
-    /// 남은 시간을 숫자로 변환해서 라벨 갱신
-    /// </summary>
     private void UpdateCountdownLabel(float remain, bool force = false)
     {
         int sec = Mathf.CeilToInt(remain);
-        SetCountdownText(sec.ToString()); // 필요하면 "초" 등의 접미사 추가 가능
+        SetCountdownText(sec.ToString());
     }
 
-    /// <summary>
-    /// 카운트다운 텍스트 설정 (TMP/UGUI 공용 처리 지점)
-    /// </summary>
-    private void SetCountdownText(string scond)
+    private void SetCountdownText(string second)
     {
-        if (_countdownTMP) _countdownTMP.text = scond;
-        //if (_countdownTextUGUI) _countdownTextUGUI.text = s;
+        if (_countdownTMP) _countdownTMP.text = second;
     }
 
-    /// <summary>
-    /// 카운트다운 코루틴 중단
-    /// </summary>
     private void StopCountdown()
     {
         if (_countdownRoutine != null)
@@ -278,73 +259,22 @@ public class PrintButtonHandler : MonoBehaviour
             _countdownRoutine = null;
         }
     }
-    // /// <summary>
-    // /// 선택된 번호로 프레임 이미지 변경
-    // /// </summary>
-    // private void SelectFrameApplicationToImage()
-    // {
-    //     int index = 0;
-    //     index = _framePanelScaleInCtrl._selectedIndex;
-
-    //     if (index == 0)
-    //     {
-    //         // 첫번째 프레임 선택
-    //         _frameApplicationImage.sprite = _selectFrames[0];
-    //     }
-    //     else if (index == 1)
-    //     {
-    //         // 두번째 프레임 선택
-    //         _frameApplicationImage.sprite = _selectFrames[1];
-    //     }
-    //     else if (index == 2)
-    //     {
-    //         // 세번째 프레임 선택
-    //         _frameApplicationImage.sprite = _selectFrames[2];
-    //     }
-    // }
-
-    /// <summary>
-    /// 외부에서 호출하는 리셋 함수
-    /// - 카운트다운 중지
-    /// - 카운트 텍스트 초기화
-    /// - 자동 호출 플래그 초기화
-    /// (구)
-    /// </summary>
-    // public void ResetPrintButtonHandler()
-    // {
-    //     StopCountdown();
-    //     SetCountdownText(string.Empty);
-    //     _autoTriggered = false;
-    // }
 
     /// <summary>
     /// 외부에서 호출하는 "타이머 리셋 + 처음부터 다시 시작" 함수
-    /// - 카운트다운 중지
-    /// - 텍스트 초기화
-    /// - 플래그/상태 초기화
-    /// - 다시 CountdownAndAutoPrint() 코루틴 시작
     /// </summary>
     public void ResetAndRestartCountdown()
     {
-        // 1) 기존 카운트다운 완전히 정지 + 텍스트/플래그 리셋
         StopCountdown();
         SetCountdownText(string.Empty);
         _autoTriggered = false;
 
-        // 인쇄 중 상태도 해제해줘야 다시 눌릴 수 있음
         _busy = false;
         if (_outputButton != null)
             _outputButton.interactable = true;
 
-        // 2) 오브젝트가 활성 상태일 때만 다시 카운트다운 시작
+        // 필요하면 여기서 다시 StartCoroutine 호출
         // if (gameObject.activeInHierarchy)
-        // {
         //     _countdownRoutine = StartCoroutine(CountdownAndAutoPrint());
-        // }
-        // else
-        // {
-        //     Debug.Log("[PrintButtonHandler] ResetAndRestartCountdown called, but GameObject is inactive.");
-        // }
     }
 }
-

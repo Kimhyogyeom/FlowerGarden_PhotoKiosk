@@ -1,10 +1,8 @@
 // PrintController.cs (Image + RawImage + Bridge 대응, 고화질 PNG 버전)
-// - RawImage: texture 복사(uvRect 반영, 페이드 영향 없음)
-// - Image(+자식): 화면에서 RectTransform 영역 캡처(자식 포함 가능)
-// - 캡처 순간에 toHideTemporarily 에 들어있는 오브젝트만 잠깐 비활성화
-// - PNG(무손실) 저장 후
-//   1) 가능하면 PhotoPrinterBridge.exe 호출(자동 인쇄, 대화창 없음)
-//   2) 실패 시 Windows printto / print 폴백
+// 가로 모드 좌우 반전 문제 해결
+// - KioskMode.Height -> 세로 모드 (4x6 패널 -> 4x6 용지)
+// - KioskMode.Width -> 가로 모드 (6x4 패널 -> 90도 회전 -> 좌우 반전 -> 4x6 용지)
+// - 캡처 시 화면 잘림 방지: RectTransform을 Canvas 중앙으로 임시 이동 후 캡처
 
 using System;
 using System.Collections;
@@ -16,14 +14,21 @@ using UnityEngine.UI;
 
 public class PrintController : MonoBehaviour
 {
+    [Header("Component Settings")]
+    [SerializeField] private FramePanelScaleInCtrl _framePanelScaleInCtrl;
+
+    [Header("Manual / Auto Confirm")]
+    [Tooltip("true 면 '사진 인쇄' 창에서 사용자가 직접 [인쇄]를 누르게 함 (자동 Enter 안 보냄)")]
+    [SerializeField] private bool _useManualPrintDialog = false;
+
     [Header("Bridge Settings")]
     [SerializeField] private bool _usePrinterBridge = true;
     [SerializeField] private string _bridgeExeName = "PhotoPrinterBridge.exe";
-    [SerializeField, Min(1)] private int _bridgeCopies = 1;      // Bridge에 넘길 기본 장수
-    [SerializeField] private float _bridgeTimeoutSeconds = 60f;  // Bridge 프로세스 최대 대기 시간
+    [SerializeField, Min(1)] private int _bridgeCopies = 1;
+    [SerializeField] private float _bridgeTimeoutSeconds = 60f;
 
     [Header("Timing")]
-    [SerializeField] private float _captureStartDelay = 1f;   // 기본 1초 딜레이
+    [SerializeField] private float _captureStartDelay = 1f;
 
     [Header("Compoment")]
     [SerializeField] private OutputSuccessCtrl _outputSuccessCtrl;
@@ -38,16 +43,18 @@ public class PrintController : MonoBehaviour
     [Header("Capture Source")]
     [Tooltip("target에 RawImage가 있을 때 texture를 직접 복사할지 여부")]
     [SerializeField] private bool _captureFromSourceTexture = true;
-    // true : target에 RawImage가 있으면 raw.texture 복사
-    // false: 항상 화면 ReadPixels 방식 사용
 
     [Tooltip("자식 UI까지 포함해 캡처")]
     [SerializeField] private bool _includeChildrenInCapture = true;
 
     public enum RotationMode { None, ForceCW, ForceCCW }
 
+    [Header("Landscape Rotation (가로 모드 회전 방향)")]
+    [Tooltip("가로 모드(KioskMode.Width)일 때 적용할 회전 방향")]
+    [SerializeField] private RotationMode _landscapeRotation = RotationMode.ForceCW;
+
     [Header("Transform")]
-    [Tooltip("저장 전에 회전 (세로/가로 변환 등)")]
+    [Tooltip("저장 전에 회전 (세로 모드일 때만 적용됨)")]
     [SerializeField] private RotationMode _rotation = RotationMode.None;
 
     [Tooltip("저장 전에 좌우(거울) 뒤집기")]
@@ -74,7 +81,7 @@ public class PrintController : MonoBehaviour
     [SerializeField, Range(-1f, 1f)] private float _coverBiasY = 0.08f;
     [SerializeField, Min(0)] private int _postCropInsetPx = 0;
 
-    [Header("Init - 초기화 : 백업 필드")]
+    // 초기화: 백업 필드
     private bool _initCaptureFromSourceTexture;
     private bool _initIncludeChildrenInCapture;
     private RotationMode _initRotation;
@@ -88,6 +95,7 @@ public class PrintController : MonoBehaviour
     private float _initCoverBiasY;
     private int _initPostCropInsetPx;
     private int _initPrintCount;
+    private RotationMode _initLandscapeRotation;
 
     private void Awake()
     {
@@ -104,6 +112,7 @@ public class PrintController : MonoBehaviour
         _initCoverBiasY = _coverBiasY;
         _initPostCropInsetPx = _postCropInsetPx;
         _initPrintCount = _printCount;
+        _initLandscapeRotation = _landscapeRotation;
     }
 
     public void ResetPrintState(bool deleteSavedPhotos = true)
@@ -124,6 +133,7 @@ public class PrintController : MonoBehaviour
         _coverBiasY = _initCoverBiasY;
         _postCropInsetPx = _initPostCropInsetPx;
         _printCount = _initPrintCount;
+        _landscapeRotation = _initLandscapeRotation;
 
         if (deleteSavedPhotos)
         {
@@ -201,8 +211,6 @@ public class PrintController : MonoBehaviour
         _outputSuccessCtrl.OutputSuccessObjChange();
     }
 
-    // ───────────────────────────────────────
-
     public void PrintUIArea(RectTransform target, Action onDone, params GameObject[] toHideTemporarily)
     {
         if (!target)
@@ -214,7 +222,7 @@ public class PrintController : MonoBehaviour
         StartCoroutine(CaptureAndPrintRoutine(target, onDone, toHideTemporarily));
     }
 
-    // ===== Main =====
+    // ===== Main Capture and Print Routine =====
 
     private IEnumerator CaptureAndPrintRoutine(RectTransform target, Action onDone, GameObject[] toHide)
     {
@@ -225,50 +233,53 @@ public class PrintController : MonoBehaviour
             yield break;
         }
 
-        // Timer
+        // 타이머
         if (_captureStartDelay > 0f)
             yield return new WaitForSeconds(_captureStartDelay);
 
-        // 0. 찍히면 안 되는 애들(검은 페이드 패널 등)은 미리 꺼두기
+        // 0. 찍히면 안 되는 오브젝트들 꺼두기 (검은 페이드 패널 등)
         ToggleObjects(toHide, false);
 
-        // ───────────────── 원래 RectTransform 상태 백업 ─────────────────
-        RectTransform rt = target;
+        // === [NEW] 원래 RectTransform 상태 백업 ===
+        Transform oldParent = target.parent;
+        Vector3 oldLocalPosition = target.localPosition;
+        Vector2 oldAnchoredPosition = target.anchoredPosition;
+        Vector3 oldLocalScale = target.localScale;
+        Quaternion oldLocalRotation = target.localRotation;
+        Vector2 oldPivot = target.pivot;
+        Vector2 oldAnchorMin = target.anchorMin;
+        Vector2 oldAnchorMax = target.anchorMax;
+        Vector2 oldSizeDelta = target.sizeDelta;
 
-        Vector2 oldAnchorMin = rt.anchorMin;
-        Vector2 oldAnchorMax = rt.anchorMax;
-        Vector2 oldAnchoredPos = rt.anchoredPosition;
-        Vector2 oldSizeDelta = rt.sizeDelta;
-        Vector2 oldPivot = rt.pivot;
-        Vector3 oldScale = rt.localScale;
-        int oldSiblingIdx = rt.GetSiblingIndex();
-
-        // 캔버스 찾기 (없으면 그냥 Screen 기준으로 간다고 가정)
-        Canvas canvas = rt.GetComponentInParent<Canvas>();
-
-        // ──────────────── 캡처용으로 잠깐 화면 중앙으로 이동 ────────────────
-        rt.pivot = new Vector2(0.5f, 0.5f);
-        rt.anchorMin = new Vector2(0.5f, 0.5f);
-        rt.anchorMax = new Vector2(0.5f, 0.5f);
-        rt.anchoredPosition = Vector2.zero;
-
-        // 필요하면 가장 위로 올려서 다른 UI에 가리지 않게
-        if (rt.parent != null)
+        Canvas canvas = target.GetComponentInParent<Canvas>();
+        if (canvas == null)
         {
-            rt.SetSiblingIndex(rt.parent.childCount - 1);
+            UnityEngine.Debug.LogError("[Print] Canvas를 찾을 수 없습니다.");
+            ToggleObjects(toHide, true);
+            onDone?.Invoke();
+            yield break;
         }
+
+        // === [NEW] 캡처용으로 Canvas 중앙으로 임시 이동 (잘림 방지) ===
+        target.SetParent(canvas.transform, false);
+        target.localScale = Vector3.one;
+        target.localRotation = Quaternion.identity;
+        target.pivot = new Vector2(0.5f, 0.5f);
+        target.anchorMin = new Vector2(0.5f, 0.5f);
+        target.anchorMax = new Vector2(0.5f, 0.5f);
+        target.anchoredPosition = Vector2.zero;
 
         // 레이아웃/캔버스 갱신
         Canvas.ForceUpdateCanvases();
         yield return new WaitForEndOfFrame();
 
-        // ───────────────── 1) 텍스처 생성 (RawImage 우선 → 화면 캡처 폴백) ─────────────────
+        // 1) 텍스처 생성 (RawImage 우선 -> 화면 캡처 폴백)
         Texture2D tex = null;
 
         // 1-1) target 밑에 RawImage가 있고, 그 텍스처를 그대로 쓰고 싶다면
         if (_captureFromSourceTexture && !_includeChildrenInCapture)
         {
-            var raw = rt.GetComponent<RawImage>();
+            var raw = target.GetComponent<RawImage>();
             if (raw && raw.texture)
             {
                 tex = CopyRawImageAsSeen(raw);
@@ -280,23 +291,25 @@ public class PrintController : MonoBehaviour
         if (tex == null)
         {
             tex = _includeChildrenInCapture
-                ? CaptureRectTransformAreaIncludingChildren(rt)
-                : CaptureRectTransformArea(rt);
+                ? CaptureRectTransformAreaIncludingChildren(target)
+                : CaptureRectTransformArea(target);
 
             if (tex != null)
                 UnityEngine.Debug.Log($"[Print] ReadPixels 기반 캡처 완료: {tex.width}x{tex.height}");
         }
 
-        // ──────────────── 캡처 끝났으니, RectTransform 원래대로 복구 ────────────────
-        rt.anchorMin = oldAnchorMin;
-        rt.anchorMax = oldAnchorMax;
-        rt.anchoredPosition = oldAnchoredPos;
-        rt.sizeDelta = oldSizeDelta;
-        rt.pivot = oldPivot;
-        rt.localScale = oldScale;
-        rt.SetSiblingIndex(oldSiblingIdx);
+        // === [NEW] 캡처 끝났으니, RectTransform 원래대로 복구 ===
+        target.SetParent(oldParent, false);
+        target.localPosition = oldLocalPosition;
+        target.anchoredPosition = oldAnchoredPosition;
+        target.localScale = oldLocalScale;
+        target.localRotation = oldLocalRotation;
+        target.pivot = oldPivot;
+        target.anchorMin = oldAnchorMin;
+        target.anchorMax = oldAnchorMax;
+        target.sizeDelta = oldSizeDelta;
 
-        // 찍히면 안 되었던 애들 다시 켜기
+        // 찍히면 안 되었던 오브젝트들 다시 켜기
         ToggleObjects(toHide, true);
 
         // 텍스처 실패 시 종료
@@ -307,25 +320,80 @@ public class PrintController : MonoBehaviour
             yield break;
         }
 
-        // ───────────────── 2) 미러 / 회전 / 커버 처리 ─────────────────
-        if (_mirrorHorizontally) tex = MirrorX(tex);
+        // 2) 미러 / 회전 / 커버 처리
+        if (_mirrorHorizontally)
+            tex = MirrorX(tex);
 
-        switch (_rotation)
+        // GameManager의 CurrentMode로 자동 판단
+        bool isLandscapeMode = false;
+        if (GameManager.Instance != null)
         {
-            case RotationMode.ForceCW: tex = Rotate90CW(tex); break;
-            case RotationMode.ForceCCW: tex = Rotate90CCW(tex); break;
+            isLandscapeMode = (GameManager.Instance.CurrentMode == KioskMode.Width);
+
+            if (isLandscapeMode)
+            {
+                UnityEngine.Debug.Log("[Print] KioskMode.Width 감지 -> 가로 모드 활성화");
+            }
+            else
+            {
+                UnityEngine.Debug.Log("[Print] KioskMode.Height 감지 -> 세로 모드 활성화");
+            }
+        }
+        else
+        {
+            UnityEngine.Debug.LogWarning("[Print] GameManager.Instance가 null입니다. 기본 세로 모드로 진행합니다.");
         }
 
-        if (_forcePortraitCover)
+        // 회전 처리
+        RotationMode effectiveRotation = _rotation;
+
+        if (isLandscapeMode)
+        {
+            // 가로 모드: landscapeRotation 적용
+            effectiveRotation = _landscapeRotation;
+            UnityEngine.Debug.Log($"[Print] 가로 모드 회전 적용: {effectiveRotation}");
+        }
+        else
+        {
+            // 세로 모드: 기존 _rotation 사용
+            UnityEngine.Debug.Log($"[Print] 세로 모드 회전 설정: {effectiveRotation}");
+        }
+
+        switch (effectiveRotation)
+        {
+            case RotationMode.ForceCW:
+                tex = Rotate90CW(tex);
+                UnityEngine.Debug.Log("[Print] 시계방향 90도 회전 완료");
+                break;
+            case RotationMode.ForceCCW:
+                tex = Rotate90CCW(tex);
+                UnityEngine.Debug.Log("[Print] 반시계방향 90도 회전 완료");
+                break;
+            case RotationMode.None:
+            default:
+                UnityEngine.Debug.Log("[Print] 회전 없음");
+                break;
+        }
+
+        // 가로 모드일 때 회전 후 좌우 반전 추가
+        if (isLandscapeMode)
+        {
+            tex = MirrorX(tex);
+            UnityEngine.Debug.Log("[Print] 가로 모드: 좌우 반전 적용 (한글 정상화)");
+        }
+
+        // 가로 모드일 때 자동으로 용지 크기에 맞게 리샘플링 (꽉 차게)
+        if (isLandscapeMode || _forcePortraitCover)
         {
             int w = Mathf.Max(8, _outputWidth);
             int h = Mathf.Max(8, _outputHeight);
             var portrait = MakePortraitCover(tex, w, h, _coverBiasX, _coverBiasY, _postCropInsetPx);
             UnityEngine.Object.Destroy(tex);
             tex = portrait;
+            UnityEngine.Debug.Log($"[Print] 용지 크기에 맞게 리샘플링 완료: {w}x{h}");
         }
 
-        // ───────────────── 3) 파일 저장 (PNG, 무손실) ─────────────────
+        // 3) 파일 저장 (PNG, 무손실)
         string folderPath = Application.persistentDataPath;
         Directory.CreateDirectory(folderPath);
         string filename = $"photo_raw_{DateTime.Now:yyyyMMdd_HHmmss}.png";
@@ -336,7 +404,7 @@ public class PrintController : MonoBehaviour
         UnityEngine.Debug.Log($"[Print] 저장 완료: {savePath} ({tex.width}x{tex.height})");
         UnityEngine.Object.Destroy(tex);
 
-        // ───────────────── 4) 인쇄 + 진행 UI ─────────────────
+        // 4) 인쇄 + 진행 UI
         StartProgressUI();
 
         if (_usePrinterBridge)
@@ -387,7 +455,7 @@ public class PrintController : MonoBehaviour
         return outTex;
     }
 
-    // ===== 화면 캡처(단일 영역) =====
+    // ===== 화면 캡처 (단일 영역) =====
 
     private Texture2D CaptureRectTransformArea(RectTransform target)
     {
@@ -424,8 +492,14 @@ public class PrintController : MonoBehaviour
         return tex;
     }
 
-    // ===== 화면 캡처(자식 포함) =====
+    // ===== 화면 캡처 (자식 포함) =====
+    /*
 
+     1.[Print] Bounds size=(543.95, 542.98, 0.00), center=(0.48, 0.00, 0.00), target=ImageMainWidth
+     2.[Print] Bunds size=(543.95, 542.98, 0.00), center=(0.48, 0.00, 0.00), target=ImageMainWidth
+     3.[Print] Bounds size=(543.95, 542.98, 0.00), center=(0.48, 0.00, 0.00), target=ImageMainWidth
+
+     */
     private Texture2D CaptureRectTransformAreaIncludingChildren(RectTransform target)
     {
         var canvas = target.GetComponentInParent<Canvas>();
@@ -436,6 +510,8 @@ public class PrintController : MonoBehaviour
         var bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(target);
         Vector3 worldMin = target.TransformPoint(bounds.min);
         Vector3 worldMax = target.TransformPoint(bounds.max);
+
+        UnityEngine.Debug.Log($"[Print] Bounds size={bounds.size}, center={bounds.center}, target={target.name}");  // 테스트용
 
         Vector2 s0 = RectTransformUtility.WorldToScreenPoint(cam, worldMin);
         Vector2 s1 = RectTransformUtility.WorldToScreenPoint(cam, new Vector3(worldMin.x, worldMax.y, worldMin.z));
@@ -468,8 +544,11 @@ public class PrintController : MonoBehaviour
         return tex;
     }
 
-    // ===== 미러/회전 =====
+    // ===== 미러/회전 함수 =====
 
+    /// <summary>
+    /// 좌우 반전 (미러)
+    /// </summary>
     private Texture2D MirrorX(Texture2D src)
     {
         int w = src.width;
@@ -492,6 +571,9 @@ public class PrintController : MonoBehaviour
         return dst;
     }
 
+    /// <summary>
+    /// 시계방향 90도 회전
+    /// </summary>
     private Texture2D Rotate90CW(Texture2D src)
     {
         int w = src.width;
@@ -502,13 +584,13 @@ public class PrintController : MonoBehaviour
 
         for (int y = 0; y < h; y++)
         {
-            int row = y * w;
             for (int x = 0; x < w; x++)
             {
-                int si = row + x;
-                int dx = h - 1 - y;
-                int dy = x;
-                d[dy * h + dx] = s[si];
+                int srcIndex = y * w + x;
+                int dstX = h - 1 - y;
+                int dstY = x;
+                int dstIndex = dstY * h + dstX;
+                d[dstIndex] = s[srcIndex];
             }
         }
 
@@ -518,6 +600,9 @@ public class PrintController : MonoBehaviour
         return dst;
     }
 
+    /// <summary>
+    /// 반시계방향 90도 회전
+    /// </summary>
     private Texture2D Rotate90CCW(Texture2D src)
     {
         int w = src.width;
@@ -528,13 +613,13 @@ public class PrintController : MonoBehaviour
 
         for (int y = 0; y < h; y++)
         {
-            int row = y * w;
             for (int x = 0; x < w; x++)
             {
-                int si = row + x;
-                int dx = y;
-                int dy = (w - 1) - x;
-                d[dy * h + dx] = s[si];
+                int srcIndex = y * w + x;
+                int dstX = y;
+                int dstY = w - 1 - x;
+                int dstIndex = dstY * h + dstX;
+                d[dstIndex] = s[srcIndex];
             }
         }
 
@@ -545,6 +630,7 @@ public class PrintController : MonoBehaviour
     }
 
     // ===== Bridge 인쇄 =====
+
     private IEnumerator PrintViaBridgeAndNotify(string imagePath)
     {
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
@@ -555,7 +641,7 @@ public class PrintController : MonoBehaviour
 
         if (!File.Exists(bridgePath))
         {
-            UnityEngine.Debug.LogWarning($"[Print] Bridge exe not found: {bridgePath} → legacy print로 폴백");
+            UnityEngine.Debug.LogWarning($"[Print] Bridge exe not found: {bridgePath} -> legacy print로 폴백");
             yield return StartCoroutine(PrintAndNotifyLegacy(imagePath));
             yield break;
         }
@@ -569,7 +655,6 @@ public class PrintController : MonoBehaviour
         Process proc = null;
         bool started = false;
 
-        // try 안에서는 yield 사용 안 함
         try
         {
             var psi = new ProcessStartInfo(bridgePath)
@@ -592,12 +677,12 @@ public class PrintController : MonoBehaviour
 
         if (!started)
         {
-            UnityEngine.Debug.LogWarning("[Print] Bridge 프로세스 시작 실패 → legacy print로 폴백");
+            UnityEngine.Debug.LogWarning("[Print] Bridge 프로세스 시작 실패 -> legacy print로 폴백");
             yield return StartCoroutine(PrintAndNotifyLegacy(imagePath));
             yield break;
         }
 
-        // 여기부터는 try 바깥이니까 yield 사용 가능
+        // Bridge 프로세스 대기
         float elapsed = 0f;
         while (!proc.HasExited && elapsed < timeout)
         {
@@ -650,7 +735,7 @@ public class PrintController : MonoBehaviour
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.LogError($"[Print] printto failed: {e.Message} → OS print fallback");
+                UnityEngine.Debug.LogError($"[Print] printto failed: {e.Message} -> OS print fallback");
             }
         }
 
@@ -668,7 +753,12 @@ public class PrintController : MonoBehaviour
                 UnityEngine.Debug.Log($"[Print] OS print: {psi.FileName}");
                 var proc = Process.Start(psi);
                 started = (proc != null);
-                if (started) needAutoConfirm = true;
+
+                // 수동/자동 모드 분기:
+                // - _useManualPrintDialog == false -> 기존처럼 자동 Enter
+                // - _useManualPrintDialog == true  -> 자동 Enter 안 보내고 사용자 수동
+                if (started && !_useManualPrintDialog)
+                    needAutoConfirm = true;
             }
             catch (Exception e)
             {
@@ -730,7 +820,7 @@ public class PrintController : MonoBehaviour
             IntPtr hwnd = FindWindow(null, targetTitle);
             if (hwnd != IntPtr.Zero)
             {
-                UnityEngine.Debug.Log("[Print] AutoConfirmPrintDialog: \"사진 인쇄\" 창 발견 → Enter 전송");
+                UnityEngine.Debug.Log("[Print] AutoConfirmPrintDialog: \"사진 인쇄\" 창 발견 -> Enter 전송");
                 SetForegroundWindow(hwnd);
 
                 keybd_event(VK_RETURN, 0, 0, 0);
@@ -779,6 +869,9 @@ public class PrintController : MonoBehaviour
             if (go) go.SetActive(active);
     }
 
+    /// <summary>
+    /// 세로 비율로 여백 없이 리샘플링 (Cover 모드)
+    /// </summary>
     private Texture2D MakePortraitCover(Texture2D src, int targetW, int targetH,
         float biasX, float biasY, int postCropInsetPx)
     {
@@ -837,8 +930,11 @@ public class PrintController : MonoBehaviour
         return outTex;
     }
 
-    // ────────────────────────────────── Test Print ──────────────────────────────────
+    // ===== Test Print =====
 
+    /// <summary>
+    /// 테스트 블랭크 인쇄 (흰색 이미지)
+    /// </summary>
     public void PrintTestBlank(Action onDone = null)
     {
         StartCoroutine(PrintTestBlankRoutine(onDone));
