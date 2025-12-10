@@ -26,7 +26,7 @@ MonoBehaviour:
   m_MinSize: {x: 400, y: 100}
   m_MaxSize: {x: 32384, y: 16192}
   vertical: 0
-  controlID: 14383
+  controlID: 29919
   draggingID: 0
 --- !u!114 &2
 MonoBehaviour:
@@ -99,7 +99,7 @@ MonoBehaviour:
     m_HSlider: 0
     m_VSlider: 0
     m_IgnoreScrollWheelUntilClicked: 0
-    m_EnableMouseInput: 0
+    m_EnableMouseInput: 1
     m_EnableSliderZoomHorizontal: 0
     m_EnableSliderZoomVertical: 0
     m_UniformScale: 1
@@ -155,7 +155,7 @@ MonoBehaviour:
   m_MinSize: {x: 100, y: 100}
   m_MaxSize: {x: 8096, y: 16192}
   vertical: 1
-  controlID: 14384
+  controlID: 29920
   draggingID: 0
 --- !u!114 &4
 MonoBehaviour:
@@ -176,8 +176,8 @@ MonoBehaviour:
     y: 0
     width: 1186
     height: 660
-  m_MinSize: {x: 201, y: 226}
-  m_MaxSize: {x: 4001, y: 4026}
+  m_MinSize: {x: 200, y: 200}
+  m_MaxSize: {x: 4000, y: 4000}
   m_ActualView: {fileID: 5}
   m_Panes:
   - {fileID: 5}
@@ -735,9 +735,9 @@ MonoBehaviour:
   m_AudioPlay: 0
   m_DebugDrawModesUseInteractiveLightBakingData: 0
   m_Position:
-    m_Target: {x: 2412.184, y: 678.1568, z: -3.4832501}
+    m_Target: {x: -599.0148, y: 340.09732, z: -1.3465006}
     speed: 2
-    m_Value: {x: 2416.8457, y: 673.2865, z: -3.060225}
+    m_Value: {x: -599.0148, y: 340.09732, z: -1.3465006}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -787,9 +787,9 @@ MonoBehaviour:
     speed: 2
     m_Value: {x: 0, y: 0, z: 0, w: 1}
   m_Size:
-    m_Target: 982.34766
+    m_Target: 768.673
     speed: 2
-    m_Value: 940.0456
+    m_Value: 768.673
   m_Ortho:
     m_Target: 1
     speed: 2
@@ -1036,10 +1036,10 @@ MonoBehaviour:
     m_OverlaysVisible: 1
   m_SceneHierarchy:
     m_TreeViewState:
-      scrollPos: {x: 0, y: 210}
-      m_SelectedIDs: 52b30000
-      m_LastClickedID: 45906
-      m_ExpandedIDs: 1afbffff02b20000cab2000052b30000e0b4000006b50000eeb6000046b7000064b70000b8b9000080bf00001cc00000
+      scrollPos: {x: 0, y: 914}
+      m_SelectedIDs: 38c20000
+      m_LastClickedID: 0
+      m_ExpandedIDs: 1afbffff5eb00000b6b0000022b1000002b200002ab2000066b20000cab2000052b30000eeb3000066b40000d0b40000dcb40000e0b4000006b500002eb500006eb60000eeb6000046b7000064b7000080b7000014b80000b8b90000c0bb000046bc000080bf00000ec000001cc000006ec00000
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -1153,7 +1153,7 @@ MonoBehaviour:
   m_LockTracker:
     m_IsLocked: 0
   m_FolderTreeState:
-    scrollPos: {x: 0, y: 61}
+    scrollPos: {x: 0, y: 241}
     m_SelectedIDs: 4ec60000
     m_LastClickedID: 50766
     m_ExpandedIDs: 000000008ec3000090c3000092c3000094c3000096c3000098c300009ac30000f4c5000000ca9a3bffffff7f
@@ -1211,10 +1211,10 @@ MonoBehaviour:
       m_Icon: {fileID: 0}
       m_ResourceFile: 
   m_ListAreaState:
-    m_SelectedInstanceIDs: 52b30000
-    m_LastClickedInstanceID: 45906
+    m_SelectedInstanceIDs: 38c20000
+    m_LastClickedInstanceID: 49720
     m_HadKeyboardFocusLastEvent: 1
-    m_ExpandedInstanceIDs: e4b400004cb500006cb500004a4601000cb70000c8b60000eeb6000054c70000feb60000fcb8000086b900002cb9000066b900006cb9000074b900007eb9000074be000074bd00008ed0000010bd000050be000056be0000ca92020070bd00008c5d010082bf00007abf000016be00009ebe00009e650100a06501009c65010036c20000
+    m_ExpandedInstanceIDs: e4b400004cb500006cb500004a4601000cb70000c8b60000eeb6000054c70000feb60000fcb8000086b900002cb9000066b900006cb9000074b900007eb9000074be000074bd00008ed0000010bd000050be000056be0000ca92020070bd00008c5d010082bf00007abf000016be00009ebe00009e650100a06501009c65010036c2000038c200003ac200002ac2000032c20000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1267,7 +1267,7 @@ MonoBehaviour:
   m_MinSize: {x: 100, y: 100}
   m_MaxSize: {x: 8096, y: 16192}
   vertical: 1
-  controlID: 14606
+  controlID: 30045
   draggingID: 0
 --- !u!114 &13
 MonoBehaviour:
@@ -1288,8 +1288,8 @@ MonoBehaviour:
     y: 0
     width: 612
     height: 678
-  m_MinSize: {x: 276, y: 76}
-  m_MaxSize: {x: 4001, y: 4026}
+  m_MinSize: {x: 275, y: 50}
+  m_MaxSize: {x: 4000, y: 4000}
   m_ActualView: {fileID: 14}
   m_Panes:
   - {fileID: 14}

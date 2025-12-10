@@ -61,7 +61,7 @@ public class GameManager : MonoBehaviour
     public KioskMode CurrentMode => _currentMode;
 
 #pragma warning disable CS0414
-    [Range(1f, 10f)]
+    [Range(1f, 30f)]
     [Header("TimeScale Value")]
     [Tooltip("기본 : 1, 최대 : 10 (테스트용 타임스케일 조절)")]
     [SerializeField] private float _timeScale = 1.0f;
@@ -128,6 +128,10 @@ public class GameManager : MonoBehaviour
         else if (newState == KioskState.Quantity)
         {
             SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._windowQuantitySound);
+        }
+        else if (newState == KioskState.Payment)
+        {
+            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._windowPayment);
         }
         else if (newState == KioskState.Filming)
         {

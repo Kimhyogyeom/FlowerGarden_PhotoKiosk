@@ -175,7 +175,7 @@ public class FadeAnimationCtrl : MonoBehaviour
             }
             else if (_isStateStep == 1)
             {
-                _isStateStep = 3;
+                _isStateStep = 2;
 
                 // 크로마키 영상 추가
                 if (_chromakeyPanelCtrl != null)
@@ -217,9 +217,9 @@ public class FadeAnimationCtrl : MonoBehaviour
                 // print("222222222222222");
                 _isStateStep = 3;
                 _quantityToPaymentCtrl.ObjectActiveCtrl();
-                _paymentToNextStageCtrl.OnPaymentCompleted();
-                if (_panelPayment.activeSelf) _panelPayment.SetActive(false);
-                if (_panelWaitingForPayment.activeSelf) _panelWaitingForPayment.SetActive(false);
+                // _paymentToNextStageCtrl.OnPaymentCompleted();
+                // if (_panelPayment.activeSelf) _panelPayment.SetActive(false);
+                // if (_panelWaitingForPayment.activeSelf) _panelWaitingForPayment.SetActive(false);
 
             }
             // ──────────────────────────────────────────────────────────────────────────────────────────────
@@ -302,6 +302,7 @@ public class FadeAnimationCtrl : MonoBehaviour
                 _isStateStep = -2;
                 _homeButtonCtrl.ObjectsActiveCtrlMod();
             }
+            // 셀렉트 패널 -> 모드 패널
             else if (_isStateStep == 200)
             {
                 _isStateStep = -1;
@@ -310,13 +311,13 @@ public class FadeAnimationCtrl : MonoBehaviour
             // 201단계 수량 화면에서 뒤로가기 버튼을 클릭했을 때 실행될거임 (수량 -> 선택 화면)
             else if (_isStateStep == 201)
             {
-                _isStateStep = 0;
+                _isStateStep = 1;
                 _homeButtonCtrl.ObjectsActiveCtrlQua();
             }
             // 202단계 결제 화면에서 뒤로가기 버튼
             else if (_isStateStep == 202)
             {
-                _isStateStep = 1;
+                _isStateStep = 2;
                 _homeButtonCtrl.ObjectsActiveCtrlPay();
             }
             // 203단계 크로마키 화면에서 뒤로가기 버튼을 클릭했을 때 실행될 것

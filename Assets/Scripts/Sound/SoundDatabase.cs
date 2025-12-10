@@ -16,6 +16,7 @@ public class SoundDatabase : ScriptableObject
     public AudioClip _windowSelectSound;
     public AudioClip _windowChromaSound;
     public AudioClip _windowQuantitySound;
+    public AudioClip _windowPayment;
     public AudioClip _windowCameraStartSound;
     public AudioClip _windowCamearaPlayingSound;
     public AudioClip _windowPhotoSelectSound;

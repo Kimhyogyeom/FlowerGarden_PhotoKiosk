@@ -3,6 +3,7 @@
 // - KioskMode.Height -> 세로 모드 (4x6 패널 -> 4x6 용지)
 // - KioskMode.Width -> 가로 모드 (6x4 패널 -> 90도 회전 -> 좌우 반전 -> 4x6 용지)
 // - 캡처 시 화면 잘림 방지: RectTransform을 Canvas 중앙으로 임시 이동 후 캡처
+// - 크기 강제 고정으로 모든 패널 동일 크기 보장
 
 using System;
 using System.Collections;
@@ -240,7 +241,7 @@ public class PrintController : MonoBehaviour
         // 0. 찍히면 안 되는 오브젝트들 꺼두기 (검은 페이드 패널 등)
         ToggleObjects(toHide, false);
 
-        // === [NEW] 원래 RectTransform 상태 백업 ===
+        // === 원래 RectTransform 상태 백업 ===
         Transform oldParent = target.parent;
         Vector3 oldLocalPosition = target.localPosition;
         Vector2 oldAnchoredPosition = target.anchoredPosition;
@@ -249,7 +250,7 @@ public class PrintController : MonoBehaviour
         Vector2 oldPivot = target.pivot;
         Vector2 oldAnchorMin = target.anchorMin;
         Vector2 oldAnchorMax = target.anchorMax;
-        Vector2 oldSizeDelta = target.sizeDelta;
+        Vector2 oldSizeDelta = target.sizeDelta;  // 원본 크기 백업
 
         Canvas canvas = target.GetComponentInParent<Canvas>();
         if (canvas == null)
@@ -260,7 +261,7 @@ public class PrintController : MonoBehaviour
             yield break;
         }
 
-        // === [NEW] 캡처용으로 Canvas 중앙으로 임시 이동 (잘림 방지) ===
+        // === 캡처용으로 Canvas 중앙으로 임시 이동 (잘림 방지) ===
         target.SetParent(canvas.transform, false);
         target.localScale = Vector3.one;
         target.localRotation = Quaternion.identity;
@@ -269,9 +270,20 @@ public class PrintController : MonoBehaviour
         target.anchorMax = new Vector2(0.5f, 0.5f);
         target.anchoredPosition = Vector2.zero;
 
-        // 레이아웃/캔버스 갱신
+        // === [핵심 수정] 크기 강제 고정 - 모든 패널 동일 크기 보장 ===
+        target.sizeDelta = oldSizeDelta;
+
+        // === 레이아웃/캔버스 갱신 (원본 그대로) ===
         Canvas.ForceUpdateCanvases();
         yield return new WaitForEndOfFrame();
+
+        // === [추가] 크기 검증 로그 ===
+        UnityEngine.Debug.Log($"[Print] ===== 캡처 시작 =====");
+        UnityEngine.Debug.Log($"[Print] Target: {target.name}");
+        UnityEngine.Debug.Log($"[Print] 원본 크기: {oldSizeDelta}");
+        UnityEngine.Debug.Log($"[Print] 현재 크기: {target.sizeDelta}");
+        UnityEngine.Debug.Log($"[Print] RectTransform size: {target.rect.size}");
+        UnityEngine.Debug.Log($"[Print] Position: {target.anchoredPosition}");
 
         // 1) 텍스처 생성 (RawImage 우선 -> 화면 캡처 폴백)
         Texture2D tex = null;
@@ -298,7 +310,7 @@ public class PrintController : MonoBehaviour
                 UnityEngine.Debug.Log($"[Print] ReadPixels 기반 캡처 완료: {tex.width}x{tex.height}");
         }
 
-        // === [NEW] 캡처 끝났으니, RectTransform 원래대로 복구 ===
+        // === 캡처 끝났으니, RectTransform 원래대로 복구 ===
         target.SetParent(oldParent, false);
         target.localPosition = oldLocalPosition;
         target.anchoredPosition = oldAnchoredPosition;
@@ -493,13 +505,7 @@ public class PrintController : MonoBehaviour
     }
 
     // ===== 화면 캡처 (자식 포함) =====
-    /*
 
-     1.[Print] Bounds size=(543.95, 542.98, 0.00), center=(0.48, 0.00, 0.00), target=ImageMainWidth
-     2.[Print] Bunds size=(543.95, 542.98, 0.00), center=(0.48, 0.00, 0.00), target=ImageMainWidth
-     3.[Print] Bounds size=(543.95, 542.98, 0.00), center=(0.48, 0.00, 0.00), target=ImageMainWidth
-
-     */
     private Texture2D CaptureRectTransformAreaIncludingChildren(RectTransform target)
     {
         var canvas = target.GetComponentInParent<Canvas>();
@@ -511,7 +517,7 @@ public class PrintController : MonoBehaviour
         Vector3 worldMin = target.TransformPoint(bounds.min);
         Vector3 worldMax = target.TransformPoint(bounds.max);
 
-        UnityEngine.Debug.Log($"[Print] Bounds size={bounds.size}, center={bounds.center}, target={target.name}");  // 테스트용
+        UnityEngine.Debug.Log($"[Print] Bounds size={bounds.size}, center={bounds.center}, target={target.name}");
 
         Vector2 s0 = RectTransformUtility.WorldToScreenPoint(cam, worldMin);
         Vector2 s1 = RectTransformUtility.WorldToScreenPoint(cam, new Vector3(worldMin.x, worldMax.y, worldMin.z));
@@ -661,7 +667,6 @@ public class PrintController : MonoBehaviour
             {
                 UseShellExecute = false,
                 CreateNoWindow = true,
-                // Program.cs에서 args: <imagePath> <copies> <timeoutSeconds> <printerName?> 라고 가정
                 Arguments = $"\"{imagePath}\" {totalCopies} {timeout} \"{_printerName}\""
             };
 
@@ -704,12 +709,11 @@ public class PrintController : MonoBehaviour
         _outputSuccessCtrl.OutputSuccessObjChange();
 
 #else
-        // 윈도우가 아니면 그냥 레거시 or 저장만
         yield return StartCoroutine(PrintAndNotifyLegacy(imagePath));
 #endif
     }
 
-    // ===== 레거시 Windows 인쇄 (사진 인쇄 창 + AutoConfirm 포함) =====
+    // ===== 레거시 Windows 인쇄 =====
 
     private IEnumerator PrintAndNotifyLegacy(string imagePath)
     {
@@ -754,9 +758,6 @@ public class PrintController : MonoBehaviour
                 var proc = Process.Start(psi);
                 started = (proc != null);
 
-                // 수동/자동 모드 분기:
-                // - _useManualPrintDialog == false -> 기존처럼 자동 Enter
-                // - _useManualPrintDialog == true  -> 자동 Enter 안 보내고 사용자 수동
                 if (started && !_useManualPrintDialog)
                     needAutoConfirm = true;
             }
@@ -768,7 +769,7 @@ public class PrintController : MonoBehaviour
 
         if (!started)
         {
-            UnityEngine.Debug.LogWarning("[Print] No print process started (check printer / associations)");
+            UnityEngine.Debug.LogWarning("[Print] No print process started");
             yield break;
         }
 
@@ -792,7 +793,7 @@ public class PrintController : MonoBehaviour
         _outputSuccessCtrl.OutputSuccessObjChange();
 
 #else
-        UnityEngine.Debug.Log("[Print] Non-Windows: saved only (no auto print)");
+        UnityEngine.Debug.Log("[Print] Non-Windows: saved only");
         yield return null;
 #endif
     }
@@ -820,7 +821,7 @@ public class PrintController : MonoBehaviour
             IntPtr hwnd = FindWindow(null, targetTitle);
             if (hwnd != IntPtr.Zero)
             {
-                UnityEngine.Debug.Log("[Print] AutoConfirmPrintDialog: \"사진 인쇄\" 창 발견 -> Enter 전송");
+                UnityEngine.Debug.Log("[Print] \"사진 인쇄\" 창 발견 -> Enter 전송");
                 SetForegroundWindow(hwnd);
 
                 keybd_event(VK_RETURN, 0, 0, 0);
@@ -833,7 +834,7 @@ public class PrintController : MonoBehaviour
             yield return new WaitForSeconds(0.2f);
         }
 
-        UnityEngine.Debug.LogWarning("[Print] AutoConfirmPrintDialog: \"사진 인쇄\" 창을 찾지 못함 (timeout)");
+        UnityEngine.Debug.LogWarning("[Print] \"사진 인쇄\" 창을 찾지 못함");
     }
 #endif
 

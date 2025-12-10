@@ -31,30 +31,30 @@ public class PaymentCtrl : MonoBehaviour
     private bool _isProcessing = false;        // 현재 결제 처리 중인지 여부
     private Coroutine _loadingCoroutine;       // 로딩 회전 코루틴 핸들
 
-    private void OnEnable()
-    {
-        // 결제 패널 활성화 브로드캐스터 이벤트 구독
-        PaymentPanelEnableBroadcaster.OnPaymentPanelEnabled += TryStartPayment;
+    // private void OnEnable()
+    // {
+    //     // 결제 패널 활성화 브로드캐스터 이벤트 구독
+    //     PaymentPanelEnableBroadcaster.OnPaymentPanelEnabled += TryStartPayment;
 
-        // 이미 PaymentPanel 이 활성화된 상태로 켜졌다면, 바로 결제 시도
-        if (_paymentPanel != null && _paymentPanel.activeInHierarchy)
-        {
-            TryStartPayment();
-        }
-    }
+    //     // 이미 PaymentPanel 이 활성화된 상태로 켜졌다면, 바로 결제 시도
+    //     if (_paymentPanel != null && _paymentPanel.activeInHierarchy)
+    //     {
+    //         TryStartPayment();
+    //     }
+    // }
 
-    private void OnDisable()
-    {
-        PaymentPanelEnableBroadcaster.OnPaymentPanelEnabled -= TryStartPayment;
-        // 오브젝트가 비활성화될 때 로딩 회전이 남아있지 않도록 정리
-        StopLoading();
-    }
+    // private void OnDisable()
+    // {
+    //     PaymentPanelEnableBroadcaster.OnPaymentPanelEnabled -= TryStartPayment;
+    //     // 오브젝트가 비활성화될 때 로딩 회전이 남아있지 않도록 정리
+    //     StopLoading();
+    // }
 
     /// <summary>
     /// 결제 시작을 시도하는 함수
     /// - PaymentPanelEnableBroadcaster 이벤트 및 OnEnable 에서 호출
     /// </summary>
-    private void TryStartPayment()
+    public void TryStartPayment()
     {
         // PaymentCtrl 이 비활성화 상태면 결제 시작하지 않음
         // (이벤트가 먼저 날아와도 여기서 막힘)
