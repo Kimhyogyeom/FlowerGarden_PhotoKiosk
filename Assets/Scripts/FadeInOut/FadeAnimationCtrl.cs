@@ -176,7 +176,7 @@ public class FadeAnimationCtrl : MonoBehaviour
             else if (_isStateStep == 1)
             {
                 // [251212 2에서 4으로 수정]
-                _isStateStep = 4;
+                _isStateStep = 2;
 
                 // 크로마키 영상 추가
                 if (_chromakeyPanelCtrl != null)

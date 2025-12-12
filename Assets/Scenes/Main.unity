@@ -2973,7 +2973,7 @@ RectTransform:
   m_GameObject: {fileID: 128521502}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1.012, y: 1.012, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 968181233}
@@ -10402,7 +10402,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _fadeAnimationCtrl: {fileID: 258928097}
   _currentPanel: {fileID: 2005971009}
-  _nextPanel: {fileID: 152201183}
+  _nextPanel: {fileID: 1281698409}
   _nextButton: {fileID: 1404071477}
 --- !u!1 &458137997
 GameObject:
@@ -15787,7 +15787,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _currentState: 0
   _currentMode: 0
-  _timeScale: 10
+  _timeScale: 1
   _paymentToReadyTimer: 0
   _readyToSelectTimer: 0
   _selectToFilmingTimer: 0
@@ -18294,9 +18294,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   webcamTarget: {fileID: 1153788932}
   preferredDeviceKeyword: C922
-  requestedWidth: 640
-  requestedHeight: 360
-  requestedFps: 24
+  requestedWidth: 1280
+  requestedHeight: 720
+  requestedFps: 40
   _mirrorHorizontal: 1
   _cameraPanel: {fileID: 0}
 --- !u!1 &827726899
@@ -29046,7 +29046,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _k1Url: http://127.0.0.1:6444/tPayDaemon/Auth
-  _backendUrl: https://6c038f8e8a65.ngrok-free.app/api/payment/complete
+  _backendUrl: https://3ebe2888a91f.ngrok-free.app/api/payment/complete
   _tid: 1004930001
   _posSerialNo: JTPOSDM16011E278
   _amount: 913
@@ -35064,14 +35064,13 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1574339011}
-  - component: {fileID: 1574339012}
   m_Layer: 0
   m_Name: PaymentCtrl
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1574339011
 Transform:
   m_ObjectHideFlags: 0
@@ -35087,18 +35086,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 396732654}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1574339012
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1574339010}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0b2ae9ba524a5484088872659ef5f0aa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1575230311
 GameObject:
   m_ObjectHideFlags: 0

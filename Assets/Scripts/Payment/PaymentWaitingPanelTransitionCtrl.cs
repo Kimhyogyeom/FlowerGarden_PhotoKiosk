@@ -35,7 +35,6 @@ public class PaymentWaitingPanelTransitionCtrl : MonoBehaviour
             Debug.LogWarning("[PaymentWaitingPanelTransitionCtrl] _goToPaymentButton reference is missing");
         }
     }
-
     private void OnDestroy()
     {
         if (_goToPaymentButton != null)
@@ -51,9 +50,9 @@ public class PaymentWaitingPanelTransitionCtrl : MonoBehaviour
     /// </summary>
     public void OnClickGoToPayment()
     {
-        // _paymentHttpTester.OnClickStartPayment();
+        _paymentHttpTester.OnClickStartPayment();
         // 여기서 결제가 완료되면 콜백 받아서 아래 코드 실행시킬거임 (1209)
-        _fadeAnimationCtrl.StartFade();
+        // _fadeAnimationCtrl.StartFade();
     }
     public void PaymentHttpTesterStart()
     {
