@@ -33,10 +33,10 @@ public class PaymentMethodSelector : MonoBehaviour
 
     [Header("Config")]
     [Tooltip("기본 결제 수단 (리셋 시 이 값으로 돌아감)")]
-    [SerializeField] private PaymentMethod _defaultMethod = PaymentMethod.Payco;
+    [SerializeField] private PaymentMethod _defaultMethod = PaymentMethod.Card;
 
     [Header("Runtime")]
-    [SerializeField] private PaymentMethod _selectedMethod = PaymentMethod.Payco;
+    [SerializeField] private PaymentMethod _selectedMethod = PaymentMethod.Card;
 
     /// <summary>
     /// 현재 선택된 결제 수단(외부에서 읽기용)

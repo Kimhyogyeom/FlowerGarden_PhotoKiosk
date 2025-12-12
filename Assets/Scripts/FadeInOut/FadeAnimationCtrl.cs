@@ -28,7 +28,7 @@ public class FadeAnimationCtrl : MonoBehaviour
 
     [SerializeField] private ChromakeyPanelCtrl _chromakeyPanelCtrl;
 
-    [SerializeField] private PaymentCtrl _paymentCtrl;
+    // [SerializeField] private PaymentCtrl _paymentCtrl;
     // 결제 완료 시스템
     [SerializeField] private QuantityToPaymentCtrl _quantityToPaymentCtrl;
     // 수량 -> 결제 컨트롤러
