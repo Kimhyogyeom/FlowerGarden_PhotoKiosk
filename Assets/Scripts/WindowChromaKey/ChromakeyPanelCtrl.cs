@@ -37,6 +37,7 @@ public class ChromakeyPanelCtrl : MonoBehaviour
         if (_nextPanel != null) _nextPanel.SetActive(true);
 
         // Payment로 상태 변경
-        GameManager.Instance.SetState(KioskState.Quantity);
+        // [251212 수량에서 카메라(필름)으로 변경]
+        GameManager.Instance.SetState(KioskState.Filming);
     }
 }

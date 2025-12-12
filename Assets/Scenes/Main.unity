@@ -10402,7 +10402,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _fadeAnimationCtrl: {fileID: 258928097}
   _currentPanel: {fileID: 2005971009}
-  _nextPanel: {fileID: 1281698409}
+  _nextPanel: {fileID: 152201183}
   _nextButton: {fileID: 1404071477}
 --- !u!1 &458137997
 GameObject:
@@ -14697,7 +14697,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 651200972}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -15787,7 +15787,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _currentState: 0
   _currentMode: 0
-  _timeScale: 1
+  _timeScale: 10
   _paymentToReadyTimer: 0
   _readyToSelectTimer: 0
   _selectToFilmingTimer: 0
@@ -33147,7 +33147,7 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
-  m_Interactable: 1
+  m_Interactable: 0
   m_TargetGraphic: {fileID: 1471785474}
   m_OnClick:
     m_PersistentCalls:
@@ -43684,7 +43684,7 @@ MonoBehaviour:
   _countdownTextParent: {fileID: 1952773250}
   _countdownText: {fileID: 934906761}
   _totalSteps: 8
-  _countdownSeconds: 30
+  _countdownSeconds: 5
   _stepImages:
   - {fileID: 1742524877}
   - {fileID: 2145821615}
