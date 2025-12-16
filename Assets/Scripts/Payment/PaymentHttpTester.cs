@@ -10,6 +10,7 @@ using UnityEngine.Events;
 /// <summary>
 /// 1차: tPayDaemon HTTP (K1) 승인 요청/응답
 /// 2차: 받은 K1 응답 JSON을 우리 서버로 그대로 POST 전송
+/// ⚠ _ignoreCertificateError = true 일 때 HTTPS 인증서 검증 우회 (테스트용)
 /// </summary>
 public class PaymentHttpTester : MonoBehaviour
 {
@@ -36,11 +37,26 @@ public class PaymentHttpTester : MonoBehaviour
     [Header("승인 성공 + 서버 연동 실패 시 자동 취소 시도 여부 (미구현 훅)")]
     [SerializeField] private bool _tryAutoCancelOnBackendFail = false;
 
+    [Header("⚠ HTTPS 인증서 검증 무시 (테스트용)")]
+    [SerializeField] private bool _ignoreCertificateError = false;
+
     private bool _isRequesting = false;
-    private long _msgNoCounter = 1;
+    private long _msgNoCounter = 3;
 
     // 결과 텍스트 자동 초기화용 코루틴 핸들
     private Coroutine _clearStatusCoroutine;
+
+    /// <summary>
+    /// HTTPS 인증서 검증 우회용 핸들러 (테스트 환경 전용)
+    /// </summary>
+    private class BypassCertificateHandler : CertificateHandler
+    {
+        protected override bool ValidateCertificate(byte[] certificateData)
+        {
+            // 무조건 신뢰 (매우 위험, 테스트/내부망에서만!)
+            return true;
+        }
+    }
 
     private void Start()
     {
@@ -118,6 +134,15 @@ public class PaymentHttpTester : MonoBehaviour
             request.uploadHandler   = new UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
+
+            // HTTPS 이고, 우회 옵션이 켜져 있으면 인증서 무시
+            if (_ignoreCertificateError &&
+                _k1Url.StartsWith("https", StringComparison.OrdinalIgnoreCase))
+            {
+                request.certificateHandler = new BypassCertificateHandler();
+                request.disposeCertificateHandlerOnDispose = true;
+                Debug.LogWarning("[PAY-HTTP] ⚠ K1 HTTPS 인증서 검증을 무시하고 요청합니다. (테스트 전용)");
+            }
 
             Debug.Log("[PAY-HTTP] K1 HTTP POST 보내는 중... " + _k1Url);
 
@@ -217,6 +242,15 @@ public class PaymentHttpTester : MonoBehaviour
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
 
+            // HTTPS + 우회 옵션
+            if (_ignoreCertificateError &&
+                _backendUrl.StartsWith("https", StringComparison.OrdinalIgnoreCase))
+            {
+                request.certificateHandler = new BypassCertificateHandler();
+                request.disposeCertificateHandlerOnDispose = true;
+                Debug.LogWarning("[PAY-HTTP] ⚠ Backend HTTPS 인증서 검증을 무시하고 요청합니다. (테스트 전용)");
+            }
+
             Debug.Log("[PAY-HTTP] Backend HTTP POST 보내는 중... " + _backendUrl);
             Debug.Log("[PAY-HTTP] Backend Request Body(K1 그대로) = " + k1Json);
 
@@ -314,7 +348,6 @@ public class PaymentHttpTester : MonoBehaviour
                 }
                 else
                 {
-                    // 이 케이스는 거의 안 들어오겠지만, 방어용으로 분기
                     uiMsg = "결제가 승인되지 않았습니다.\n" + serverMsg;
                 }
 
@@ -410,11 +443,6 @@ public class PaymentHttpTester : MonoBehaviour
             "실제 취소는 VAN / tPayDaemon 승인취소 API 스펙에 맞춰 별도 구현이 필요합니다.\n" +
             "참고용 K1 응답 데이터: " + k1Json
         );
-        // 여기서:
-        // - K1 응답에서 TID, TRANSTIME, 승인번호 등을 파싱해서
-        // - VAN 승인취소(당일 취소) API를 호출해야 함.
-        // 이 로직은 서버/백오피스에서 처리하는 것이 일반적이므로
-        // 서버팀과 협의해서 구현 위치를 정하는 게 좋음.
     }
 
     // ─────────────────────────────────────────────

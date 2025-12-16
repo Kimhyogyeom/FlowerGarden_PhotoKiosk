@@ -29049,7 +29049,7 @@ MonoBehaviour:
   _backendUrl: https://211.224.48.48:8443/api/payment/complete
   _tid: 8800011829
   _posSerialNo: JTPOSDM16011E278
-  _amount: 20
+  _amount: 10
   _tax: 0
   _statusText: {fileID: 1539729435}
   _onAllCompleted:
@@ -29067,7 +29067,8 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-  _tryAutoCancelOnBackendFail: 0
+  _tryAutoCancelOnBackendFail: 1
+  _ignoreCertificateError: 1
 --- !u!4 &1280154550
 Transform:
   m_ObjectHideFlags: 0
@@ -34495,7 +34496,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: -281}
-  m_SizeDelta: {x: 809.1251, y: 174.7606}
+  m_SizeDelta: {x: 1487.6779, y: 174.7606}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1539729434
 CanvasRenderer:
@@ -34552,21 +34553,21 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 50
-  m_fontSizeBase: 50
+  m_fontSize: 30
+  m_fontSizeBase: 30
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
-  m_characterSpacing: 0
-  m_wordSpacing: 0
+  m_characterSpacing: 15
+  m_wordSpacing: 4.8
   m_lineSpacing: 0
   m_lineSpacingMax: 0
-  m_paragraphSpacing: 0
+  m_paragraphSpacing: 1.71
   m_charWidthMaxAdj: 0
   m_TextWrappingMode: 1
   m_wordWrappingRatios: 0.4
@@ -45235,7 +45236,8 @@ MonoBehaviour:
   _landscapeRotation: 1
   _rotation: 1
   _mirrorHorizontally: 0
-  _forcePortraitCover: 0
+  _portraitResample: 0
+  _landscapeResample: 2
   _outputWidth: 2480
   _outputHeight: 3720
   _printerName: DS-RX1
