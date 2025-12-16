@@ -6,6 +6,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.Events;
+
 /// <summary>
 /// 1차: tPayDaemon HTTP (K1) 승인 요청/응답
 /// 2차: 받은 K1 응답 JSON을 우리 서버로 그대로 POST 전송
@@ -22,23 +23,39 @@ public class PaymentHttpTester : MonoBehaviour
 
     [Header("결제/가맹점 설정")]
     [SerializeField] private string _tid = "1004930001";               // TEST용 TID
-    [SerializeField] private string _posSerialNo = "JTPOSDM16011E278"; // 예시 시리얼
-    [SerializeField] private int _amount = 913;                        // 예시 금액
-    [SerializeField] private int _tax = 91;                         // 예시 세금
+    [SerializeField] private string _posSerialNo = "JTPOSDM16011E278"; // 단말 시리얼
+    [SerializeField] private int _amount = 100;                        // 결제 금액(원)
+    [SerializeField] private int _tax = 0;                             // 세금(원)
 
     [Header("UI (옵션)")]
     [SerializeField] private TextMeshProUGUI _statusText;
+
     [Header("모든 처리 완료 시 호출되는 이벤트")]
     [SerializeField] private UnityEvent _onAllCompleted;
 
+    [Header("승인 성공 + 서버 연동 실패 시 자동 취소 시도 여부 (미구현 훅)")]
+    [SerializeField] private bool _tryAutoCancelOnBackendFail = false;
+
     private bool _isRequesting = false;
     private long _msgNoCounter = 1;
+
+    // 결과 텍스트 자동 초기화용 코루틴 핸들
+    private Coroutine _clearStatusCoroutine;
 
     private void Start()
     {
         Debug.Log("[PAY-HTTP] PaymentHttpTester Start() 호출됨");
         Debug.Log("[PAY-HTTP] _k1Url = " + _k1Url);
         Debug.Log("[PAY-HTTP] _backendUrl = " + _backendUrl);
+
+        // 시작 시에도 한 번 초기화
+        ClearStatusTextImmediate();
+    }
+
+    private void OnDisable()
+    {
+        // 패널 비활성화될 때도 텍스트는 항상 비워두기
+        ClearStatusTextImmediate();
     }
 
     /// <summary>
@@ -98,7 +115,7 @@ public class PaymentHttpTester : MonoBehaviour
         byte[] bodyRaw = Encoding.UTF8.GetBytes(requestJson);
         using (UnityWebRequest request = new UnityWebRequest(_k1Url, "POST"))
         {
-            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            request.uploadHandler   = new UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
 
@@ -114,7 +131,13 @@ public class PaymentHttpTester : MonoBehaviour
             {
                 Debug.LogError($"[PAY-HTTP] K1 요청 실패: {request.error}");
                 Debug.LogError("[PAY-HTTP] K1 Response(에러) = " + request.downloadHandler.text);
-                SetStatus("K1 결제 요청 실패: " + request.error);
+
+                // ☆ 1) 네트워크/연결 문제
+                ShowResultMessageTemporary(
+                    "카드 승인 서버 연결에 실패했습니다.\n네트워크 상태를 확인 후 다시 시도해주세요.",
+                    2f
+                );
+
                 _isRequesting = false;
                 yield break;
             }
@@ -130,11 +153,36 @@ public class PaymentHttpTester : MonoBehaviour
             // 응답 필드 모두 출력
             LogAllJsonFields(k1Response, "[PAY-HTTP] K1 RESPONSE FIELD");
 
-            SetStatus("K1 결제 응답 수신\n서버로 전송 준비 중...");
+            // 에러 체크 필드들
+            string errorCheckResult  = ExtractJsonStringField(k1Response, "ERROR_CHECK_RESULT");
+            string errorCheckCode    = ExtractJsonStringField(k1Response, "ERROR_CHECK_CODE");
+            string errorCheckMessage = ExtractJsonStringField(k1Response, "ERROR_CHECK_MESSAGE");
+            string replyCode         = ExtractJsonStringField(k1Response, "REPLY");
 
-            // REPLY 코드 한번 뽑아보기 (0000 이면 승인)
-            string replyCode = ExtractJsonStringField(k1Response, "REPLY");
+            // ☆ 2) K1에서 자체 에러 리턴 (환경/설정 문제 등)
+            if (!string.IsNullOrEmpty(errorCheckResult) && errorCheckResult != "S")
+            {
+                string msg = $"카드 승인 중 오류가 발생했습니다.\n" +
+                             $"[코드 {errorCheckCode}] {errorCheckMessage}";
+                ShowResultMessageTemporary(msg, 2f);
+
+                _isRequesting = false;
+                yield break;
+            }
+
+            // ☆ 3) 카드사 측 승인 실패 (REPLY != 0000)
+            if (!string.IsNullOrEmpty(replyCode) && replyCode != "0000")
+            {
+                string msg = $"결제가 승인되지 않았습니다.\n응답 코드: {replyCode}";
+                ShowResultMessageTemporary(msg, 2f);
+
+                _isRequesting = false;
+                yield break;
+            }
+
+            // 여기까지 왔으면 카드 승인 성공
             Debug.Log("[PAY-HTTP] K1 REPLY 코드 = " + replyCode);
+            SetStatus("카드 승인 완료\n결과를 서버로 전송 중입니다...");
 
             // 2단계: 받은 JSON 그대로 우리 서버로 전송
             yield return StartCoroutine(ForwardK1ResponseToBackendCoroutine(k1Response, replyCode));
@@ -149,21 +197,23 @@ public class PaymentHttpTester : MonoBehaviour
 
     private IEnumerator ForwardK1ResponseToBackendCoroutine(string k1Json, string replyCode)
     {
+        bool k1Approved = replyCode == "0000";
+
         if (string.IsNullOrWhiteSpace(_backendUrl))
         {
             Debug.LogError("[PAY-HTTP] Backend URL 이 비어있습니다. 인스펙터에서 _backendUrl 설정 필요");
-            SetStatus("백엔드 URL 미설정");
+            ShowResultMessageTemporary("서버 URL 설정이 되어 있지 않습니다.\n관리자에게 문의해주세요.", 2f);
             yield break;
         }
 
         SetStatus("결제 결과를 서버로 전송 중...");
 
-        // ★ 요구사항: "받은 정보 모두 그대로" → k1Json 을 그대로 보냄
+        // 요구사항: "받은 정보 모두 그대로" → k1Json 을 그대로 보냄
         byte[] bodyRaw = Encoding.UTF8.GetBytes(k1Json);
 
         using (UnityWebRequest request = new UnityWebRequest(_backendUrl, "POST"))
         {
-            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            request.uploadHandler   = new UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
 
@@ -188,32 +238,93 @@ public class PaymentHttpTester : MonoBehaviour
             // 서버 응답 JSON도 필드별로 찍어보기
             LogAllJsonFields(backendResp, "[PAY-HTTP] Backend RESPONSE FIELD");
 
+            // 네트워크 레벨에서 실패 (서버가 안 떠있거나, 포트/방화벽 문제 등)
+            if (!netOk || statusCode == 0)
+            {
+                Debug.LogError("[PAY-HTTP] Backend request.error = " + request.error);
+
+                string uiMsg;
+
+                if (k1Approved)
+                {
+                    uiMsg =
+                        "결제는 승인되었으나 서버와 통신에 실패했습니다.\n" +
+                        "관리자에게 문의하시고 승인 취소 여부를 확인해주세요.";
+                }
+                else
+                {
+                    uiMsg =
+                        "서버와 통신 중 오류가 발생했습니다.\n" +
+                        "잠시 후 다시 시도해주세요.";
+                }
+
+                ShowResultMessageTemporary(uiMsg, 2f);
+
+                // (선택) 서버 연동 실패 + 승인됨 → 추후 자동 취소 구현 위치
+                if (_tryAutoCancelOnBackendFail && k1Approved)
+                {
+                    TryAutoCancelPayment(k1Json);
+                }
+
+                yield break;
+            }
+
+            // 여기서부터는 서버에서 응답은 줬음 (200, 400, 500 등)
             // 서버 스펙:
             // 200 + {"success": true, "receiptNo": "...", "message": "저장 완료"}
             // 400/500 + {"success": false, "message": "..."}
-            bool isSuccess = netOk && statusCode == 200;
 
-            // success 필드를 한번 더 확인 (true/false)
+            bool isSuccess = (statusCode == 200);
             bool? bodySuccess = ExtractJsonBoolField(backendResp, "success");
             if (bodySuccess.HasValue)
-                isSuccess = bodySuccess.Value && statusCode == 200;
+                isSuccess = isSuccess && bodySuccess.Value;
 
             string msg = ExtractJsonStringField(backendResp, "message");
 
             if (isSuccess)
             {
                 Debug.Log("[PAY-HTTP] ▶ 서버 저장 성공");
-                SetStatus("서버 저장 성공: " + (string.IsNullOrEmpty(msg) ? "저장 완료" : msg));
+
+                string finalMessage = string.IsNullOrEmpty(msg)
+                    ? "결제가 정상적으로 완료되었습니다."
+                    : msg;
+
+                ShowResultMessageTemporary(finalMessage, 2f);
 
                 // ★ 이 시점이 '모든 게 끝난 시점'
                 OnAllProcessCompleted();
             }
             else
             {
-                // 카드 승인 실패 케이스면 서버에서
-                // "카드 승인 실패: 9999" 이런 메시지를 내려준다고 했음
                 Debug.LogWarning("[PAY-HTTP] ▶ 서버 저장 실패");
-                SetStatus("서버 저장 실패: " + (string.IsNullOrEmpty(msg) ? "알 수 없는 오류" : msg));
+
+                string serverMsg = string.IsNullOrEmpty(msg)
+                    ? "서버에서 결제 결과 처리에 실패했습니다."
+                    : msg;
+
+                string uiMsg;
+
+                if (k1Approved)
+                {
+                    // ★ 결제는 됐는데 서버 처리만 실패한 케이스
+                    uiMsg =
+                        "결제는 승인되었으나 서버 연동에 실패했습니다.\n" +
+                        $"사유: {serverMsg}\n" +
+                        "관리자에게 문의하시고 승인 취소 여부를 확인해주세요.";
+                }
+                else
+                {
+                    // 이 케이스는 거의 안 들어오겠지만, 방어용으로 분기
+                    uiMsg = "결제가 승인되지 않았습니다.\n" + serverMsg;
+                }
+
+                ShowResultMessageTemporary(uiMsg, 2f);
+
+                // (선택) 승인 성공 + 서버 응답 실패 시 자동 취소 훅
+                if (_tryAutoCancelOnBackendFail && k1Approved)
+                {
+                    TryAutoCancelPayment(k1Json);
+                }
             }
         }
     }
@@ -226,8 +337,8 @@ public class PaymentHttpTester : MonoBehaviour
     {
         string transTime = DateTime.Now.ToString("yyMMddHHmmss");   // TRANSTIME
         string amountStr = Mathf.Max(0, _amount).ToString("D9");    // AMOUNT (9자리)
-        string taxStr = Mathf.Max(0, _tax).ToString("D9");       // TAX (9자리)
-        string msgNoStr = (_msgNoCounter++).ToString("D12");       // MSGNO (12자리)
+        string taxStr    = Mathf.Max(0, _tax).ToString("D9");       // TAX (9자리)
+        string msgNoStr  = (_msgNoCounter++).ToString("D12");       // MSGNO (12자리)
 
         var sb = new StringBuilder();
         sb.Append('{');
@@ -238,7 +349,7 @@ public class PaymentHttpTester : MonoBehaviour
         sb.AppendFormat("\"TRANSTIME\":\"{0}\",", transTime);
         sb.Append("\"INSTALLMENT\":\"00\",");      // 고정 (일시불)
         sb.AppendFormat("\"AMOUNT\":\"{0}\",", amountStr);
-        sb.AppendFormat("\"TAX\":\"{0}\",", taxStr);
+        sb.AppendFormat("\"TAX\":\"{0}\",",    taxStr);
         sb.Append("\"SERVICE\":\"000000000\",");   // 고정
         sb.Append("\"CURRENCY\":\"KRW\",");        // 고정
         sb.Append("\"NOTAX\":\"000000000\",");     // 고정
@@ -248,6 +359,62 @@ public class PaymentHttpTester : MonoBehaviour
         sb.Append('}');
 
         return sb.ToString();
+    }
+
+    // ─────────────────────────────────────────────
+    // 결과 텍스트를 잠깐 보여주고 자동 초기화하는 유틸
+    // ─────────────────────────────────────────────
+
+    private void ShowResultMessageTemporary(string msg, float duration)
+    {
+        if (_statusText != null)
+            _statusText.text = msg;
+
+        Debug.Log("[PAY-HTTP][UI] RESULT: " + msg);
+
+        if (_clearStatusCoroutine != null)
+        {
+            StopCoroutine(_clearStatusCoroutine);
+            _clearStatusCoroutine = null;
+        }
+
+        _clearStatusCoroutine = StartCoroutine(ClearStatusAfterDelay(duration));
+    }
+
+    private IEnumerator ClearStatusAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        ClearStatusTextImmediate();
+        _clearStatusCoroutine = null;
+    }
+
+    private void ClearStatusTextImmediate()
+    {
+        if (_statusText != null)
+            _statusText.text = string.Empty;
+    }
+
+    // ─────────────────────────────────────────────
+    // (미구현) 승인 취소 훅
+    // ─────────────────────────────────────────────
+
+    /// <summary>
+    /// TODO: K1 / VAN "승인 취소" 프로토콜 연결 시 여기서 호출.
+    /// 지금은 단순히 로그만 찍고 아무 것도 하지 않는다.
+    /// </summary>
+    private void TryAutoCancelPayment(string k1Json)
+    {
+        Debug.LogWarning(
+            "[PAY-HTTP] 자동 승인취소 시도를 해야 하는 상황입니다. " +
+            "실제 취소는 VAN / tPayDaemon 승인취소 API 스펙에 맞춰 별도 구현이 필요합니다.\n" +
+            "참고용 K1 응답 데이터: " + k1Json
+        );
+        // 여기서:
+        // - K1 응답에서 TID, TRANSTIME, 승인번호 등을 파싱해서
+        // - VAN 승인취소(당일 취소) API를 호출해야 함.
+        // 이 로직은 서버/백오피스에서 처리하는 것이 일반적이므로
+        // 서버팀과 협의해서 구현 위치를 정하는 게 좋음.
     }
 
     // ─────────────────────────────────────────────
@@ -265,7 +432,7 @@ public class PaymentHttpTester : MonoBehaviour
 
         foreach (Match m in matches)
         {
-            var key = m.Groups["key"].Value;
+            var key   = m.Groups["key"].Value;
             var value = m.Groups["value"].Value;
             Debug.Log($"{prefix} {key} = {value}");
         }

@@ -13,7 +13,7 @@ public class FilmingToSelectCtrl : MonoBehaviour
 
     [Header("Object Settings")]
     // [SerializeField] private Button _filmingToSelectButton;          // 촬영 → 선택 화면으로 돌아가는 버튼
-
+    
     [Header("Panel Settings")]
     [SerializeField] private GameObject _currentPanel;               // 현재(촬영) 패널
     [SerializeField] private GameObject _changePanel;                // 바뀔(프레임 선택) 패널
