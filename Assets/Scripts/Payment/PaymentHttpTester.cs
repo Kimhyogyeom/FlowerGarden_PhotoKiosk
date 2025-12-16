@@ -25,7 +25,7 @@ public class PaymentHttpTester : MonoBehaviour
     [Header("결제/가맹점 설정")]
     [SerializeField] private string _tid = "1004930001";               // TEST용 TID
     [SerializeField] private string _posSerialNo = "JTPOSDM16011E278"; // 단말 시리얼
-    [SerializeField] private int _amount = 100;                        // 결제 금액(원)
+    public int _amount = 100;                        // 결제 금액(원)
     [SerializeField] private int _tax = 0;                             // 세금(원)
 
     [Header("UI (옵션)")]

@@ -199,7 +199,7 @@ public class HomAndBackButtonCtrl : MonoBehaviour
             item.gameObject.SetActive(false);
         }
         _payChangePanel.SetActive(true);
-        GameManager.Instance.SetState(KioskState.Quantity);
+        GameManager.Instance.SetState(KioskState.Chroma);
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
     // ========================================Payment
