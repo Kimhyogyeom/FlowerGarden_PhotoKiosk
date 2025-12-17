@@ -41,11 +41,12 @@ public class PaymentHttpTester : MonoBehaviour
     [SerializeField] private bool _ignoreCertificateError = false;
 
     private bool _isRequesting = false;
-    private long _msgNoCounter = 3;
+    private long _msgNoCounter = 1;
 
     // 결과 텍스트 자동 초기화용 코루틴 핸들
     private Coroutine _clearStatusCoroutine;
 
+    [SerializeField] private float _messageTextTimer = 5f;
     /// <summary>
     /// HTTPS 인증서 검증 우회용 핸들러 (테스트 환경 전용)
     /// </summary>
@@ -131,7 +132,7 @@ public class PaymentHttpTester : MonoBehaviour
         byte[] bodyRaw = Encoding.UTF8.GetBytes(requestJson);
         using (UnityWebRequest request = new UnityWebRequest(_k1Url, "POST"))
         {
-            request.uploadHandler   = new UploadHandlerRaw(bodyRaw);
+            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
 
@@ -160,7 +161,7 @@ public class PaymentHttpTester : MonoBehaviour
                 // ☆ 1) 네트워크/연결 문제
                 ShowResultMessageTemporary(
                     "카드 승인 서버 연결에 실패했습니다.\n네트워크 상태를 확인 후 다시 시도해주세요.",
-                    2f
+                    _messageTextTimer
                 );
 
                 _isRequesting = false;
@@ -179,17 +180,17 @@ public class PaymentHttpTester : MonoBehaviour
             LogAllJsonFields(k1Response, "[PAY-HTTP] K1 RESPONSE FIELD");
 
             // 에러 체크 필드들
-            string errorCheckResult  = ExtractJsonStringField(k1Response, "ERROR_CHECK_RESULT");
-            string errorCheckCode    = ExtractJsonStringField(k1Response, "ERROR_CHECK_CODE");
+            string errorCheckResult = ExtractJsonStringField(k1Response, "ERROR_CHECK_RESULT");
+            string errorCheckCode = ExtractJsonStringField(k1Response, "ERROR_CHECK_CODE");
             string errorCheckMessage = ExtractJsonStringField(k1Response, "ERROR_CHECK_MESSAGE");
-            string replyCode         = ExtractJsonStringField(k1Response, "REPLY");
+            string replyCode = ExtractJsonStringField(k1Response, "REPLY");
 
             // ☆ 2) K1에서 자체 에러 리턴 (환경/설정 문제 등)
             if (!string.IsNullOrEmpty(errorCheckResult) && errorCheckResult != "S")
             {
                 string msg = $"카드 승인 중 오류가 발생했습니다.\n" +
                              $"[코드 {errorCheckCode}] {errorCheckMessage}";
-                ShowResultMessageTemporary(msg, 2f);
+                ShowResultMessageTemporary(msg, _messageTextTimer);
 
                 _isRequesting = false;
                 yield break;
@@ -199,7 +200,7 @@ public class PaymentHttpTester : MonoBehaviour
             if (!string.IsNullOrEmpty(replyCode) && replyCode != "0000")
             {
                 string msg = $"결제가 승인되지 않았습니다.\n응답 코드: {replyCode}";
-                ShowResultMessageTemporary(msg, 2f);
+                ShowResultMessageTemporary(msg, _messageTextTimer);
 
                 _isRequesting = false;
                 yield break;
@@ -227,7 +228,7 @@ public class PaymentHttpTester : MonoBehaviour
         if (string.IsNullOrWhiteSpace(_backendUrl))
         {
             Debug.LogError("[PAY-HTTP] Backend URL 이 비어있습니다. 인스펙터에서 _backendUrl 설정 필요");
-            ShowResultMessageTemporary("서버 URL 설정이 되어 있지 않습니다.\n관리자에게 문의해주세요.", 2f);
+            ShowResultMessageTemporary("서버 URL 설정이 되어 있지 않습니다.\n관리자에게 문의해주세요.", _messageTextTimer);
             yield break;
         }
 
@@ -238,7 +239,7 @@ public class PaymentHttpTester : MonoBehaviour
 
         using (UnityWebRequest request = new UnityWebRequest(_backendUrl, "POST"))
         {
-            request.uploadHandler   = new UploadHandlerRaw(bodyRaw);
+            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
 
@@ -292,7 +293,7 @@ public class PaymentHttpTester : MonoBehaviour
                         "잠시 후 다시 시도해주세요.";
                 }
 
-                ShowResultMessageTemporary(uiMsg, 2f);
+                ShowResultMessageTemporary(uiMsg, _messageTextTimer);
 
                 // (선택) 서버 연동 실패 + 승인됨 → 추후 자동 취소 구현 위치
                 if (_tryAutoCancelOnBackendFail && k1Approved)
@@ -323,7 +324,7 @@ public class PaymentHttpTester : MonoBehaviour
                     ? "결제가 정상적으로 완료되었습니다."
                     : msg;
 
-                ShowResultMessageTemporary(finalMessage, 2f);
+                ShowResultMessageTemporary(finalMessage, _messageTextTimer);
 
                 // ★ 이 시점이 '모든 게 끝난 시점'
                 OnAllProcessCompleted();
@@ -351,7 +352,7 @@ public class PaymentHttpTester : MonoBehaviour
                     uiMsg = "결제가 승인되지 않았습니다.\n" + serverMsg;
                 }
 
-                ShowResultMessageTemporary(uiMsg, 2f);
+                ShowResultMessageTemporary(uiMsg, _messageTextTimer);
 
                 // (선택) 승인 성공 + 서버 응답 실패 시 자동 취소 훅
                 if (_tryAutoCancelOnBackendFail && k1Approved)
@@ -370,8 +371,8 @@ public class PaymentHttpTester : MonoBehaviour
     {
         string transTime = DateTime.Now.ToString("yyMMddHHmmss");   // TRANSTIME
         string amountStr = Mathf.Max(0, _amount).ToString("D9");    // AMOUNT (9자리)
-        string taxStr    = Mathf.Max(0, _tax).ToString("D9");       // TAX (9자리)
-        string msgNoStr  = (_msgNoCounter++).ToString("D12");       // MSGNO (12자리)
+        string taxStr = Mathf.Max(0, _tax).ToString("D9");       // TAX (9자리)
+        string msgNoStr = (_msgNoCounter++).ToString("D12");       // MSGNO (12자리)
 
         var sb = new StringBuilder();
         sb.Append('{');
@@ -382,7 +383,7 @@ public class PaymentHttpTester : MonoBehaviour
         sb.AppendFormat("\"TRANSTIME\":\"{0}\",", transTime);
         sb.Append("\"INSTALLMENT\":\"00\",");      // 고정 (일시불)
         sb.AppendFormat("\"AMOUNT\":\"{0}\",", amountStr);
-        sb.AppendFormat("\"TAX\":\"{0}\",",    taxStr);
+        sb.AppendFormat("\"TAX\":\"{0}\",", taxStr);
         sb.Append("\"SERVICE\":\"000000000\",");   // 고정
         sb.Append("\"CURRENCY\":\"KRW\",");        // 고정
         sb.Append("\"NOTAX\":\"000000000\",");     // 고정
@@ -460,7 +461,7 @@ public class PaymentHttpTester : MonoBehaviour
 
         foreach (Match m in matches)
         {
-            var key   = m.Groups["key"].Value;
+            var key = m.Groups["key"].Value;
             var value = m.Groups["value"].Value;
             Debug.Log($"{prefix} {key} = {value}");
         }

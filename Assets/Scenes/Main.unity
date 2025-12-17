@@ -15788,7 +15788,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _currentState: 0
   _currentMode: 0
-  _timeScale: 10
+  _timeScale: 1
   _paymentToReadyTimer: 0
   _readyToSelectTimer: 0
   _selectToFilmingTimer: 0
@@ -17219,6 +17219,50 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 799798154}
   m_CullTransparentMesh: 1
+--- !u!1 &800168906
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 800168908}
+  - component: {fileID: 800168907}
+  m_Layer: 0
+  m_Name: ----------------HideCursor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &800168907
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 800168906}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06d379e348733e44ca3719354476dd76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &800168908
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 800168906}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 197.8282, y: 461.80554, z: -3.0060077}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &800449492
 GameObject:
   m_ObjectHideFlags: 0
@@ -35032,7 +35076,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1552794001}
   m_Layer: 0
-  m_Name: ----------------Test-----------------
+  m_Name: ----------------Test
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -42378,7 +42422,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1831144844}
   m_Layer: 0
-  m_Name: ----------------Helper-----------------
+  m_Name: ----------------Helper
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -49242,3 +49286,4 @@ SceneRoots:
   - {fileID: 340468920552723895}
   - {fileID: 1831144844}
   - {fileID: 1510076129}
+  - {fileID: 800168908}
