@@ -16,14 +16,22 @@ public class FiveClickStartWatcher : MonoBehaviour
     [Header("Target")]
     [SerializeField] private Button _targetButton;
 
+    [Header("받아온 이미지(활/비활 시킬 오브젝트)")]
+    [SerializeField] private GameObject _receivedImageObject;
+
     [Header("Settings")]
-    [SerializeField, Min(1)] private int _requiredClicks = 5;
-    [SerializeField] private bool _resetCountAfterStart = true;
+    [SerializeField, Min(1)] private int _requiredClicks = 10;
+
+    [Header("Amounts")]
+    [SerializeField] private int _amountOnFirstToggle = 10;
+    [SerializeField] private int _amountOnSecondToggle = 5000;
 
     [Header("Events (Optional)")]
-    [SerializeField] private UnityEvent _onStart;
+    [SerializeField] private UnityEvent _onFirstToggle;   // 이미지 ON 되었을 때
+    [SerializeField] private UnityEvent _onSecondToggle;  // 이미지 OFF 되었을 때
 
     private int _count = 0;
+    private bool _isImageOn = false; // 현재 이미지가 켜져있는 상태인지
     private readonly List<RaycastResult> _raycastResults = new List<RaycastResult>(32);
 
     private void Awake()
@@ -32,7 +40,10 @@ public class FiveClickStartWatcher : MonoBehaviour
             Debug.LogWarning("[FiveClickStartWatcher] Target Button is not assigned.");
 
         if (EventSystem.current == null)
-            Debug.LogWarning("[FiveClickStartWatcher] EventSystem이 씬에 없습니다. (UI가 Raycast 안될 수 있음)");
+            Debug.LogWarning("[FiveClickStartWatcher] EventSystem이 씬에 없습니다. (UI Raycast 안될 수 있음)");
+
+        if (_receivedImageObject != null)
+            _receivedImageObject.SetActive(false);
     }
 
     private void Update()
@@ -40,41 +51,63 @@ public class FiveClickStartWatcher : MonoBehaviour
         if (_targetButton == null) return;
         if (EventSystem.current == null) return;
 
-        // 입력(클릭/터치) 시작 프레임만 처리
         if (!IsPointerDownThisFrame(out Vector2 pointerPos))
             return;
 
         bool clickedTarget = IsPointerOverTargetButton(pointerPos);
 
-        if (clickedTarget)
+        if (!clickedTarget)
         {
-            _count++;
+            _count = 0;
+            return;
+        }
 
-            if (_count >= _requiredClicks)
+        _count++;
+
+        if (_count < _requiredClicks)
+            return;
+
+        // 10번 채움 => 토글 동작 실행
+        if (!_isImageOn)
+        {
+            // [1번째 10클릭] amount=10 + 이미지 ON
+            if (paymentHttpTester != null)
             {
-                Debug.Log("시작");
-
-                if (paymentHttpTester != null)
-                {
-                    // paymentHttpTester._amount 가 public이어야 함
-                    paymentHttpTester._amount = 10;
-                }
-                else
-                {
-                    Debug.LogWarning("[FiveClickStartWatcher] paymentHttpTester가 할당되지 않았습니다.");
-                }
-
-                _onStart?.Invoke();
-
-                if (_resetCountAfterStart)
-                    _count = 0;
+                // ⚠ paymentHttpTester._amount 가 public이어야 함
+                paymentHttpTester._amount = _amountOnFirstToggle;
             }
+            else
+            {
+                Debug.LogWarning("[FiveClickStartWatcher] paymentHttpTester가 할당되지 않았습니다.");
+            }
+
+            if (_receivedImageObject != null)
+                _receivedImageObject.SetActive(true);
+
+            _isImageOn = true;
+            _onFirstToggle?.Invoke();
         }
         else
         {
-            // 타겟 버튼이 아닌 다른 곳 클릭 => 초기화
-            _count = 0;
+            // [2번째 10클릭] amount=5000 + 이미지 OFF
+            if (paymentHttpTester != null)
+            {
+                paymentHttpTester._amount = _amountOnSecondToggle;
+            }
+            else
+            {
+                Debug.LogWarning("[FiveClickStartWatcher] paymentHttpTester가 할당되지 않았습니다.");
+            }
+
+            if (_receivedImageObject != null)
+                _receivedImageObject.SetActive(false);
+
+            _isImageOn = false;
+            _onSecondToggle?.Invoke();
         }
+
+        // 다음 10클릭을 위해 카운트 리셋
+        _count = 0;
     }
 
     private bool IsPointerDownThisFrame(out Vector2 pointerPos)
@@ -82,7 +115,6 @@ public class FiveClickStartWatcher : MonoBehaviour
         pointerPos = Vector2.zero;
 
 #if ENABLE_INPUT_SYSTEM
-        // 신 Input System
         if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
         {
             pointerPos = Mouse.current.position.ReadValue();
@@ -101,7 +133,6 @@ public class FiveClickStartWatcher : MonoBehaviour
 
         return false;
 #else
-        // 구 Input
         if (Input.GetMouseButtonDown(0))
         {
             pointerPos = Input.mousePosition;
@@ -133,10 +164,9 @@ public class FiveClickStartWatcher : MonoBehaviour
 
         EventSystem.current.RaycastAll(ped, _raycastResults);
 
-        if (_raycastResults == null || _raycastResults.Count == 0)
+        if (_raycastResults.Count == 0)
             return false;
 
-        // ✅ 핵심: "전부 검사"해서 타겟(또는 자식)이 하나라도 있으면 true
         Transform targetTf = _targetButton.transform;
         for (int i = 0; i < _raycastResults.Count; i++)
         {
