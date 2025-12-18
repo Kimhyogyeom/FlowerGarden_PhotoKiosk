@@ -3,9 +3,9 @@
 // - KioskMode.Height -> 세로 모드 (4x6 패널 -> 4x6 용지)
 // - KioskMode.Width  -> 가로 모드 (6x4 패널 -> 90도 회전 -> 좌우 반전 -> 6x4 용지)
 // - 캡처 시 화면 잘림 방지: RectTransform을 Canvas 중앙으로 임시 이동 후 캡처
-// - [수정] Stretch/레이아웃에서도 캡처 크기 안 깨지도록 rect.size 기반으로 고정
-// - [수정] 가로모드 확대(줌) 방지: Landscape 리샘플 모드 Fit/Cover 선택
-// - [수정] Bridge에 landscape 플래그 전달 + 가로모드 타겟 크기 스왑(1844x1240)
+// - Stretch/레이아웃에서도 캡처 크기 안 깨지도록 rect.size 기반으로 고정
+// - 가로모드 확대(줌) 방지: Landscape 리샘플 모드 Fit/Cover 선택
+// - Bridge에 landscape 플래그 전달 + 가로모드 타겟 크기 스왑(1844x1240)
 
 using System;
 using System.Collections;
@@ -14,6 +14,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.UI;
+using Debug = UnityEngine.Debug;
 
 public class PrintController : MonoBehaviour
 {
@@ -69,8 +70,9 @@ public class PrintController : MonoBehaviour
     [Tooltip("세로 모드에서 출력 크기에 맞춰 리샘플링 할지")]
     [SerializeField] private ResampleMode _portraitResample = ResampleMode.None;
 
-    [Tooltip("가로 모드에서 출력 크기에 맞춰 리샘플링 할지 (줌이 싫으면 Fit 추천)")]
-    [SerializeField] private ResampleMode _landscapeResample = ResampleMode.Fit;
+    [Tooltip("가로 모드에서 출력 크기에 맞춰 리샘플링 할지 (Fit이면 PNG에 흰 여백 생길 수 있음)")]
+    // ✅ 기본값: Fit -> Cover (가로모드 '여백' 문제를 없애려면 Cover가 맞음)
+    [SerializeField] private ResampleMode _landscapeResample = ResampleMode.Cover;
 
     [Header("Output Size (Printer Target)")]
     [Tooltip("세로 4x6 기준 해상도(1240x1844 권장). 가로모드는 자동으로 스왑(1844x1240).")]
@@ -161,34 +163,31 @@ public class PrintController : MonoBehaviour
                     foreach (var f in pngFiles)
                     {
                         try { File.Delete(f); }
-                        catch (Exception e) { UnityEngine.Debug.LogWarning($"[Print] Reset: delete failed for {f}: {e.Message}"); }
+                        catch (Exception e) { Debug.LogWarning($"[Print] Reset: delete failed for {f}: {e.Message}"); }
                     }
                     foreach (var f in jpgFiles)
                     {
                         try { File.Delete(f); }
-                        catch (Exception e) { UnityEngine.Debug.LogWarning($"[Print] Reset: delete failed for {f}: {e.Message}"); }
+                        catch (Exception e) { Debug.LogWarning($"[Print] Reset: delete failed for {f}: {e.Message}"); }
                     }
                 }
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.LogWarning($"[Print] Reset: delete photos error: {e.Message}");
+                Debug.LogWarning($"[Print] Reset: delete photos error: {e.Message}");
             }
         }
 
-        UnityEngine.Debug.Log("[Print] ResetPrintState: 초기화 완료");
+        Debug.Log("[Print] ResetPrintState: 초기화 완료");
     }
 
     // ===== 외부 API =====
 
-    /// <summary>
-    /// Image 기준 인쇄 요청 (TargetImage + 자식들 포함)
-    /// </summary>
     public void PrintRawImage(Image image, Action onDone, params GameObject[] toHideTemporarily)
     {
         if (!image)
         {
-            UnityEngine.Debug.LogError("[Print] Image is null");
+            Debug.LogError("[Print] Image is null");
             onDone?.Invoke();
             return;
         }
@@ -196,14 +195,11 @@ public class PrintController : MonoBehaviour
         PrintUIArea(image.rectTransform, onDone, toHideTemporarily);
     }
 
-    /// <summary>
-    /// RawImage 버전 (예전 코드 호환용)
-    /// </summary>
     public void PrintRawImage(RawImage rawImage, Action onDone, params GameObject[] toHideTemporarily)
     {
         if (!rawImage)
         {
-            UnityEngine.Debug.LogError("[Print] RawImage is null");
+            Debug.LogError("[Print] RawImage is null");
             onDone?.Invoke();
             return;
         }
@@ -215,7 +211,7 @@ public class PrintController : MonoBehaviour
     {
         if (!target)
         {
-            UnityEngine.Debug.LogError("[Print] target RectTransform is null");
+            Debug.LogError("[Print] target RectTransform is null");
             onDone?.Invoke();
             return;
         }
@@ -228,7 +224,7 @@ public class PrintController : MonoBehaviour
     {
         if (!target)
         {
-            UnityEngine.Debug.LogError("[Print] CaptureAndPrintRoutine: target is null");
+            Debug.LogError("[Print] CaptureAndPrintRoutine: target is null");
             onDone?.Invoke();
             yield break;
         }
@@ -236,10 +232,8 @@ public class PrintController : MonoBehaviour
         if (_captureStartDelay > 0f)
             yield return new WaitForSeconds(_captureStartDelay);
 
-        // 0. 찍히면 안 되는 오브젝트들 꺼두기
         ToggleObjects(toHide, false);
 
-        // === 원래 RectTransform 상태 백업 ===
         Transform oldParent = target.parent;
 
         Vector3 oldLocalPosition = target.localPosition;
@@ -251,47 +245,41 @@ public class PrintController : MonoBehaviour
         Vector2 oldAnchorMin = target.anchorMin;
         Vector2 oldAnchorMax = target.anchorMax;
 
-        // [중요] Stretch/레이아웃에서도 안전하게 "실제 크기"를 보존
         Vector2 oldRectSize = target.rect.size;
-
-        // offsetMin/offsetMax도 보존 (stretch 기반일 때 복원 안정성↑)
         Vector2 oldOffsetMin = target.offsetMin;
         Vector2 oldOffsetMax = target.offsetMax;
 
         Canvas canvas = target.GetComponentInParent<Canvas>();
         if (canvas == null)
         {
-            UnityEngine.Debug.LogError("[Print] Canvas를 찾을 수 없습니다.");
+            Debug.LogError("[Print] Canvas를 찾을 수 없습니다.");
             ToggleObjects(toHide, true);
             onDone?.Invoke();
             yield break;
         }
 
-        // === 캡처용으로 Canvas 중앙으로 임시 이동 (잘림 방지) ===
+        // 중앙으로 임시 이동
         target.SetParent(canvas.transform, false);
         target.localScale = Vector3.one;
         target.localRotation = Quaternion.identity;
 
-        // 중앙 고정 앵커로 변경
         target.pivot = new Vector2(0.5f, 0.5f);
         target.anchorMin = new Vector2(0.5f, 0.5f);
         target.anchorMax = new Vector2(0.5f, 0.5f);
         target.anchoredPosition = Vector2.zero;
 
-        // [핵심 수정] sizeDelta 대신 "실제 rect.size"를 고정
         target.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, oldRectSize.x);
         target.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, oldRectSize.y);
 
         Canvas.ForceUpdateCanvases();
         yield return new WaitForEndOfFrame();
 
-        UnityEngine.Debug.Log($"[Print] ===== 캡처 시작 =====");
-        UnityEngine.Debug.Log($"[Print] Target: {target.name}");
-        UnityEngine.Debug.Log($"[Print] oldRectSize: {oldRectSize}");
-        UnityEngine.Debug.Log($"[Print] nowRectSize: {target.rect.size}");
-        UnityEngine.Debug.Log($"[Print] Screen: {Screen.width}x{Screen.height}");
+        Debug.Log($"[Print] ===== 캡처 시작 =====");
+        Debug.Log($"[Print] Target: {target.name}");
+        Debug.Log($"[Print] oldRectSize: {oldRectSize}");
+        Debug.Log($"[Print] nowRectSize: {target.rect.size}");
+        Debug.Log($"[Print] Screen: {Screen.width}x{Screen.height}");
 
-        // 1) 텍스처 생성 (RawImage 우선 -> 화면 캡처 폴백)
         Texture2D tex = null;
 
         if (_captureFromSourceTexture && !_includeChildrenInCapture)
@@ -300,7 +288,7 @@ public class PrintController : MonoBehaviour
             if (raw && raw.texture)
             {
                 tex = CopyRawImageAsSeen(raw);
-                UnityEngine.Debug.Log("[Print] CopyRawImageAsSeen 사용 (RawImage.texture 기반)");
+                Debug.Log("[Print] CopyRawImageAsSeen 사용 (RawImage.texture 기반)");
             }
         }
 
@@ -311,10 +299,10 @@ public class PrintController : MonoBehaviour
                 : CaptureRectTransformArea(target);
 
             if (tex != null)
-                UnityEngine.Debug.Log($"[Print] ReadPixels 기반 캡처 완료: {tex.width}x{tex.height}");
+                Debug.Log($"[Print] ReadPixels 기반 캡처 완료: {tex.width}x{tex.height}");
         }
 
-        // === 캡처 끝났으니, RectTransform 원래대로 복구 ===
+        // 원복
         target.SetParent(oldParent, false);
 
         target.localPosition = oldLocalPosition;
@@ -326,7 +314,6 @@ public class PrintController : MonoBehaviour
         target.anchorMin = oldAnchorMin;
         target.anchorMax = oldAnchorMax;
 
-        // stretch 복원 안정성을 위해 offsetMin/offsetMax 먼저 복원
         target.offsetMin = oldOffsetMin;
         target.offsetMax = oldOffsetMax;
 
@@ -334,7 +321,7 @@ public class PrintController : MonoBehaviour
 
         if (tex == null)
         {
-            UnityEngine.Debug.LogError("[Print] Capture failed (null texture)");
+            Debug.LogError("[Print] Capture failed (null texture)");
             onDone?.Invoke();
             yield break;
         }
@@ -347,57 +334,49 @@ public class PrintController : MonoBehaviour
         if (GameManager.Instance != null)
         {
             isLandscapeMode = (GameManager.Instance.CurrentMode == KioskMode.Width);
-            UnityEngine.Debug.Log(isLandscapeMode
-                ? "[Print] KioskMode.Width 감지 -> 가로 모드"
-                : "[Print] KioskMode.Height 감지 -> 세로 모드");
+            Debug.Log(isLandscapeMode ? "[Print] KioskMode.Width 감지 -> 가로 모드" : "[Print] KioskMode.Height 감지 -> 세로 모드");
         }
         else
         {
-            UnityEngine.Debug.LogWarning("[Print] GameManager.Instance가 null입니다. 기본 세로 모드로 진행합니다.");
+            Debug.LogWarning("[Print] GameManager.Instance가 null입니다. 기본 세로 모드로 진행합니다.");
         }
 
-        // 회전 처리
         RotationMode effectiveRotation = isLandscapeMode ? _landscapeRotation : _rotation;
 
         switch (effectiveRotation)
         {
             case RotationMode.ForceCW:
                 tex = Rotate90CW(tex);
-                UnityEngine.Debug.Log("[Print] 시계방향 90도 회전 완료");
+                Debug.Log("[Print] 시계방향 90도 회전 완료");
                 break;
             case RotationMode.ForceCCW:
                 tex = Rotate90CCW(tex);
-                UnityEngine.Debug.Log("[Print] 반시계방향 90도 회전 완료");
+                Debug.Log("[Print] 반시계방향 90도 회전 완료");
                 break;
             case RotationMode.None:
             default:
-                UnityEngine.Debug.Log("[Print] 회전 없음");
+                Debug.Log("[Print] 회전 없음");
                 break;
         }
 
-        // 가로 모드일 때 회전 후 좌우 반전 추가
         if (isLandscapeMode)
         {
             tex = MirrorX(tex);
-            UnityEngine.Debug.Log("[Print] 가로 모드: 좌우 반전 적용");
+            Debug.Log("[Print] 가로 모드: 좌우 반전 적용");
         }
 
-        // 리샘플(출력 크기 맞춤)
         ResampleMode mode = isLandscapeMode ? _landscapeResample : _portraitResample;
         if (mode != ResampleMode.None)
         {
-            int w = Mathf.Max(8, _outputWidth);   // 기본: 1240
-            int h = Mathf.Max(8, _outputHeight);  // 기본: 1844
+            int w = Mathf.Max(8, _outputWidth);
+            int h = Mathf.Max(8, _outputHeight);
 
-            // ✅ 핵심: 가로모드는 6x4 타겟(1844x1240)로 스왑
             if (isLandscapeMode)
             {
-                int tmp = w;
-                w = h;
-                h = tmp;
+                int tmp = w; w = h; h = tmp; // 1844x1240
             }
 
-            UnityEngine.Debug.Log($"[Print] BEFORE RESAMPLE tex={tex.width}x{tex.height}, target={w}x{h}, mode={mode}, isLandscape={isLandscapeMode}");
+            Debug.Log($"[Print] BEFORE RESAMPLE tex={tex.width}x{tex.height}, target={w}x{h}, mode={mode}, isLandscape={isLandscapeMode}");
 
             Texture2D resampled = null;
 
@@ -406,13 +385,19 @@ public class PrintController : MonoBehaviour
             else if (mode == ResampleMode.Fit)
                 resampled = MakePortraitFit(tex, w, h);
 
-            UnityEngine.Object.Destroy(tex);
-            tex = resampled;
-
-            UnityEngine.Debug.Log($"[Print] AFTER RESAMPLE tex={tex.width}x{tex.height}");
+            if (resampled != null)
+            {
+                Destroy(tex);
+                tex = resampled;
+                Debug.Log($"[Print] AFTER RESAMPLE tex={tex.width}x{tex.height}");
+            }
+            else
+            {
+                Debug.LogWarning("[Print] RESAMPLE 결과가 null이라 원본 tex 유지");
+            }
         }
 
-        // 3) 파일 저장 (PNG, 무손실)
+        // 3) 파일 저장
         string folderPath = Application.persistentDataPath;
         Directory.CreateDirectory(folderPath);
         string filename = $"photo_raw_{DateTime.Now:yyyyMMdd_HHmmss}.png";
@@ -420,15 +405,14 @@ public class PrintController : MonoBehaviour
 
         byte[] bytes = tex.EncodeToPNG();
         File.WriteAllBytes(savePath, bytes);
-        UnityEngine.Debug.Log($"[Print] 저장 완료: {savePath} ({tex.width}x{tex.height})");
-        UnityEngine.Object.Destroy(tex);
+        Debug.Log($"[Print] 저장 완료: {savePath} ({tex.width}x{tex.height})");
+        Destroy(tex);
 
-        // 4) 인쇄 + 진행 UI
+        // 4) 인쇄
         StartProgressUI();
 
         if (_usePrinterBridge)
         {
-            // ✅ 핵심: 현재 모드를 같이 넘겨서 Bridge에 landscapeFlag 전달
             yield return StartCoroutine(PrintViaBridgeAndNotify(savePath, isLandscapeMode));
         }
         else
@@ -436,7 +420,7 @@ public class PrintController : MonoBehaviour
             int safeCount = Mathf.Max(1, _printCount);
             for (int i = 0; i < safeCount; i++)
             {
-                UnityEngine.Debug.Log($"[Print] (Legacy) {_printCount}장 중 {i + 1}번째 출력 시작");
+                Debug.Log($"[Print] (Legacy) {_printCount}장 중 {i + 1}번째 출력 시작");
                 yield return StartCoroutine(PrintAndNotifyLegacy(savePath));
             }
         }
@@ -446,7 +430,6 @@ public class PrintController : MonoBehaviour
     }
 
     // ===== RawImage를 '화면처럼'(uvRect 반영) 복사 =====
-
     private Texture2D CopyRawImageAsSeen(RawImage ri)
     {
         var src = ri.texture;
@@ -475,7 +458,6 @@ public class PrintController : MonoBehaviour
     }
 
     // ===== 화면 캡처 (단일 영역) =====
-
     private Texture2D CaptureRectTransformArea(RectTransform target)
     {
         var canvas = target.GetComponentInParent<Canvas>();
@@ -503,7 +485,7 @@ public class PrintController : MonoBehaviour
         int iw = Mathf.Max(1, Mathf.RoundToInt(w));
         int ih = Mathf.Max(1, Mathf.RoundToInt(h));
 
-        UnityEngine.Debug.Log($"[Print] CaptureRectTransformArea: {iw}x{ih} at ({ix},{iy})");
+        Debug.Log($"[Print] CaptureRectTransformArea: {iw}x{ih} at ({ix},{iy})");
 
         var tex = new Texture2D(iw, ih, TextureFormat.RGBA32, false);
         tex.ReadPixels(new Rect(ix, iy, iw, ih), 0, 0);
@@ -512,7 +494,6 @@ public class PrintController : MonoBehaviour
     }
 
     // ===== 화면 캡처 (자식 포함) =====
-
     private Texture2D CaptureRectTransformAreaIncludingChildren(RectTransform target)
     {
         var canvas = target.GetComponentInParent<Canvas>();
@@ -547,7 +528,7 @@ public class PrintController : MonoBehaviour
         int iw = Mathf.Max(1, Mathf.RoundToInt(w));
         int ih = Mathf.Max(1, Mathf.RoundToInt(h));
 
-        UnityEngine.Debug.Log($"[Print] CaptureRectTransformAreaIncludingChildren: {iw}x{ih} at ({ix},{iy})");
+        Debug.Log($"[Print] CaptureRectTransformAreaIncludingChildren: {iw}x{ih} at ({ix},{iy})");
 
         var tex = new Texture2D(iw, ih, TextureFormat.RGBA32, false);
         tex.ReadPixels(new Rect(ix, iy, iw, ih), 0, 0);
@@ -555,8 +536,7 @@ public class PrintController : MonoBehaviour
         return tex;
     }
 
-    // ===== 미러/회전 함수 =====
-
+    // ===== 미러/회전 =====
     private Texture2D MirrorX(Texture2D src)
     {
         int w = src.width;
@@ -575,7 +555,7 @@ public class PrintController : MonoBehaviour
 
         dst.SetPixels32(d);
         dst.Apply(false);
-        UnityEngine.Object.Destroy(src);
+        Destroy(src);
         return dst;
     }
 
@@ -601,7 +581,7 @@ public class PrintController : MonoBehaviour
 
         dst.SetPixels32(d);
         dst.Apply(false);
-        UnityEngine.Object.Destroy(src);
+        Destroy(src);
         return dst;
     }
 
@@ -627,12 +607,11 @@ public class PrintController : MonoBehaviour
 
         dst.SetPixels32(d);
         dst.Apply(false);
-        UnityEngine.Object.Destroy(src);
+        Destroy(src);
         return dst;
     }
 
     // ===== Bridge 인쇄 =====
-
     private IEnumerator PrintViaBridgeAndNotify(string imagePath, bool isLandscapeMode)
     {
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
@@ -641,7 +620,7 @@ public class PrintController : MonoBehaviour
 
         if (!File.Exists(bridgePath))
         {
-            UnityEngine.Debug.LogWarning($"[Print] Bridge exe not found: {bridgePath} -> legacy print로 폴백");
+            Debug.LogWarning($"[Print] Bridge exe not found: {bridgePath} -> legacy print로 폴백");
             yield return StartCoroutine(PrintAndNotifyLegacy(imagePath));
             yield break;
         }
@@ -655,7 +634,6 @@ public class PrintController : MonoBehaviour
         Process proc = null;
         bool started = false;
 
-        // ✅ 핵심: Bridge에 landscapeFlag 전달 (0/1)
         string landscapeFlag = isLandscapeMode ? "1" : "0";
 
         try
@@ -667,19 +645,19 @@ public class PrintController : MonoBehaviour
                 Arguments = $"\"{imagePath}\" {totalCopies} {timeout} \"{_printerName}\" {landscapeFlag}"
             };
 
-            UnityEngine.Debug.Log($"[Print] Bridge start: {psi.FileName} {psi.Arguments}");
+            Debug.Log($"[Print] Bridge start: {psi.FileName} {psi.Arguments}");
             proc = Process.Start(psi);
             started = (proc != null);
         }
         catch (Exception e)
         {
-            UnityEngine.Debug.LogError($"[Print] Bridge 예외 발생(시작 실패): {e.Message}");
+            Debug.LogError($"[Print] Bridge 예외 발생(시작 실패): {e.Message}");
             started = false;
         }
 
         if (!started)
         {
-            UnityEngine.Debug.LogWarning("[Print] Bridge 프로세스 시작 실패 -> legacy print로 폴백");
+            Debug.LogWarning("[Print] Bridge 프로세스 시작 실패 -> legacy print로 폴백");
             yield return StartCoroutine(PrintAndNotifyLegacy(imagePath));
             yield break;
         }
@@ -694,22 +672,21 @@ public class PrintController : MonoBehaviour
         if (!proc.HasExited)
         {
             try { proc.Kill(); } catch { }
-            UnityEngine.Debug.LogWarning("[Print] Bridge timeout 초과, 프로세스 강제 종료");
+            Debug.LogWarning("[Print] Bridge timeout 초과, 프로세스 강제 종료");
         }
         else
         {
-            UnityEngine.Debug.Log("[Print] Bridge 인쇄 완료 (또는 정상 종료)");
+            Debug.Log("[Print] Bridge 인쇄 완료 (또는 정상 종료)");
         }
 
-        UnityEngine.Debug.Log("출력 완료! (Bridge)");
-        _outputSuccessCtrl.OutputSuccessObjChange();
+        Debug.Log("출력 완료! (Bridge)");
+        if (_outputSuccessCtrl) _outputSuccessCtrl.OutputSuccessObjChange();
 #else
         yield return StartCoroutine(PrintAndNotifyLegacy(imagePath));
 #endif
     }
 
     // ===== 레거시 Windows 인쇄 =====
-
     private IEnumerator PrintAndNotifyLegacy(string imagePath)
     {
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
@@ -728,13 +705,13 @@ public class PrintController : MonoBehaviour
                     CreateNoWindow = true,
                     WindowStyle = ProcessWindowStyle.Hidden
                 };
-                UnityEngine.Debug.Log($"[Print] printto: {psi.FileName} {psi.Arguments}");
+                Debug.Log($"[Print] printto: {psi.FileName} {psi.Arguments}");
                 Process.Start(psi);
                 started = true;
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.LogError($"[Print] printto failed: {e.Message} -> OS print fallback");
+                Debug.LogError($"[Print] printto failed: {e.Message} -> OS print fallback");
             }
         }
 
@@ -749,7 +726,7 @@ public class PrintController : MonoBehaviour
                     CreateNoWindow = true,
                     WindowStyle = ProcessWindowStyle.Hidden
                 };
-                UnityEngine.Debug.Log($"[Print] OS print: {psi.FileName}");
+                Debug.Log($"[Print] OS print: {psi.FileName}");
                 var proc = Process.Start(psi);
                 started = (proc != null);
 
@@ -758,13 +735,13 @@ public class PrintController : MonoBehaviour
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.LogError($"[Print] OS print failed: {e.Message}");
+                Debug.LogError($"[Print] OS print failed: {e.Message}");
             }
         }
 
         if (!started)
         {
-            UnityEngine.Debug.LogWarning("[Print] No print process started");
+            Debug.LogWarning("[Print] No print process started");
             yield break;
         }
 
@@ -784,10 +761,10 @@ public class PrintController : MonoBehaviour
         }
         TickProgressUITo(1f);
 
-        UnityEngine.Debug.Log("출력 완료! (Legacy)");
-        _outputSuccessCtrl.OutputSuccessObjChange();
+        Debug.Log("출력 완료! (Legacy)");
+        if (_outputSuccessCtrl) _outputSuccessCtrl.OutputSuccessObjChange();
 #else
-        UnityEngine.Debug.Log("[Print] Non-Windows: saved only");
+        Debug.Log("[Print] Non-Windows: saved only");
         yield return null;
 #endif
     }
@@ -815,7 +792,7 @@ public class PrintController : MonoBehaviour
             IntPtr hwnd = FindWindow(null, targetTitle);
             if (hwnd != IntPtr.Zero)
             {
-                UnityEngine.Debug.Log("[Print] \"사진 인쇄\" 창 발견 -> Enter 전송");
+                Debug.Log("[Print] \"사진 인쇄\" 창 발견 -> Enter 전송");
                 SetForegroundWindow(hwnd);
 
                 keybd_event(VK_RETURN, 0, 0, 0);
@@ -828,12 +805,11 @@ public class PrintController : MonoBehaviour
             yield return new WaitForSeconds(0.2f);
         }
 
-        UnityEngine.Debug.LogWarning("[Print] \"사진 인쇄\" 창을 찾지 못함");
+        Debug.LogWarning("[Print] \"사진 인쇄\" 창을 찾지 못함");
     }
 #endif
 
     // ===== Progress UI =====
-
     private void StartProgressUI()
     {
         if (_progressRoot) _progressRoot.SetActive(true);
@@ -856,7 +832,6 @@ public class PrintController : MonoBehaviour
     }
 
     // ===== Util / Resample =====
-
     private void ToggleObjects(GameObject[] objs, bool active)
     {
         if (objs == null) return;
@@ -864,9 +839,6 @@ public class PrintController : MonoBehaviour
             if (go) go.SetActive(active);
     }
 
-    /// <summary>
-    /// 세로 비율로 여백 없이 리샘플링 (Cover 모드) - 크롭 발생 가능
-    /// </summary>
     private Texture2D MakePortraitCover(Texture2D src, int targetW, int targetH,
         float biasX, float biasY, int postCropInsetPx)
     {
@@ -925,9 +897,6 @@ public class PrintController : MonoBehaviour
         return outTex;
     }
 
-    /// <summary>
-    /// 비율 유지 + 여백 허용 (Fit 모드) - 확대/크롭(줌) 방지
-    /// </summary>
     private Texture2D MakePortraitFit(Texture2D src, int targetW, int targetH)
     {
         float srcW = src.width;
@@ -967,7 +936,6 @@ public class PrintController : MonoBehaviour
     }
 
     // ===== Test Print =====
-
     public void PrintTestBlank(Action onDone = null)
     {
         StartCoroutine(PrintTestBlankRoutine(onDone));
@@ -975,7 +943,6 @@ public class PrintController : MonoBehaviour
 
     private IEnumerator PrintTestBlankRoutine(Action onDone)
     {
-        // 현재 모드 확인
         bool isLandscapeMode = false;
         if (GameManager.Instance != null)
             isLandscapeMode = (GameManager.Instance.CurrentMode == KioskMode.Width);
@@ -983,7 +950,6 @@ public class PrintController : MonoBehaviour
         int w = Mathf.Max(8, _outputWidth);
         int h = Mathf.Max(8, _outputHeight);
 
-        // ✅ 가로모드면 6x4로 스왑
         if (isLandscapeMode)
         {
             int tmp = w;
@@ -1003,14 +969,13 @@ public class PrintController : MonoBehaviour
         string filename = $"photo_testblank_{DateTime.Now:yyyyMMdd_HHmmss}.png";
         string savePath = Path.Combine(folderPath, filename);
         File.WriteAllBytes(savePath, tex.EncodeToPNG());
-        UnityEngine.Object.Destroy(tex);
-        UnityEngine.Debug.Log($"[Print] test blank saved: {savePath} ({w}x{h})");
+        Destroy(tex);
+        Debug.Log($"[Print] test blank saved: {savePath} ({w}x{h})");
 
         StartProgressUI();
 
         if (_usePrinterBridge)
         {
-            // ✅ blank도 landscapeFlag 전달
             yield return StartCoroutine(PrintViaBridgeAndNotify(savePath, isLandscapeMode));
         }
         else
@@ -1018,7 +983,7 @@ public class PrintController : MonoBehaviour
             int safeCount = Mathf.Max(1, _printCount);
             for (int i = 0; i < safeCount; i++)
             {
-                UnityEngine.Debug.Log($"[Print] 테스트 블랭크 {_printCount}장 중 {i + 1}번째 출력 시작 (Legacy)");
+                Debug.Log($"[Print] 테스트 블랭크 {_printCount}장 중 {i + 1}번째 출력 시작 (Legacy)");
                 yield return StartCoroutine(PrintAndNotifyLegacy(savePath));
             }
         }
