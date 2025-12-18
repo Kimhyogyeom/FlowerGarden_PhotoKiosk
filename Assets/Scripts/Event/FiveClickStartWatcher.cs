@@ -11,6 +11,9 @@ using UnityEngine.InputSystem;
 public class FiveClickStartWatcher : MonoBehaviour
 {
     [Header("Refs")]
+    [SerializeField] private PaymentWaitingPanelTransitionCtrl _paymentWaitingPanelTransitionCtrl;
+
+    [Header("Refs")]
     [SerializeField] private PaymentHttpTester paymentHttpTester;
 
     [Header("Target")]
@@ -82,7 +85,10 @@ public class FiveClickStartWatcher : MonoBehaviour
             }
 
             if (_receivedImageObject != null)
+            {
                 _receivedImageObject.SetActive(true);
+                _paymentWaitingPanelTransitionCtrl._isAdmin = true;
+            }
 
             _isImageOn = true;
             _onFirstToggle?.Invoke();
@@ -100,7 +106,10 @@ public class FiveClickStartWatcher : MonoBehaviour
             }
 
             if (_receivedImageObject != null)
+            {
                 _receivedImageObject.SetActive(false);
+                _paymentWaitingPanelTransitionCtrl._isAdmin = false;
+            }
 
             _isImageOn = false;
             _onSecondToggle?.Invoke();

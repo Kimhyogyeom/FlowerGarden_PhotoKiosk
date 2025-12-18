@@ -825,7 +825,7 @@ GameObject:
   - component: {fileID: 23078280}
   - component: {fileID: 23078282}
   - component: {fileID: 23078281}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectUpLeft
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1142,7 +1142,7 @@ GameObject:
   - component: {fileID: 41464083}
   - component: {fileID: 41464085}
   - component: {fileID: 41464084}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectDownLeft
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1356,6 +1356,81 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 47720933}
   m_CullTransparentMesh: 1
+--- !u!1 &48231552
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 48231553}
+  - component: {fileID: 48231555}
+  - component: {fileID: 48231554}
+  m_Layer: 5
+  m_Name: ImageQR
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &48231553
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 48231552}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 530645028}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 837, y: 419.8166}
+  m_SizeDelta: {x: 200, y: 200}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &48231554
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 48231552}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 0}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!222 &48231555
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 48231552}
+  m_CullTransparentMesh: 1
 --- !u!1 &52109979
 GameObject:
   m_ObjectHideFlags: 0
@@ -1367,7 +1442,7 @@ GameObject:
   - component: {fileID: 52109980}
   - component: {fileID: 52109982}
   - component: {fileID: 52109981}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageBackground_2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1939,7 +2014,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 534.1439, y: -168.40337}
+  m_AnchoredPosition: {x: 534.1439, y: -168.40338}
   m_SizeDelta: {x: 273.7778, y: 186.69443}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &61841645
@@ -3383,7 +3458,7 @@ GameObject:
   - component: {fileID: 134059858}
   - component: {fileID: 134059857}
   - component: {fileID: 134059856}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageMaskDownLeft
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5092,7 +5167,7 @@ GameObject:
   - component: {fileID: 241543173}
   - component: {fileID: 241543175}
   - component: {fileID: 241543174}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectUpRight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -8315,7 +8390,7 @@ GameObject:
   m_Component:
   - component: {fileID: 369700207}
   - component: {fileID: 369700208}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: GameObjectGridBlack
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -8557,7 +8632,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 376087581}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: GameObjectGridBlue
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9397,7 +9472,7 @@ GameObject:
   - component: {fileID: 414466700}
   - component: {fileID: 414466702}
   - component: {fileID: 414466701}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectDownLeft
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9603,7 +9678,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -689.185, y: -182}
+  m_AnchoredPosition: {x: -689.18494, y: -182}
   m_SizeDelta: {x: -2178.663, y: -534.36005}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &423521393
@@ -9655,7 +9730,7 @@ GameObject:
   - component: {fileID: 424243260}
   - component: {fileID: 424243262}
   - component: {fileID: 424243261}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageMain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10081,7 +10156,7 @@ GameObject:
   - component: {fileID: 445786947}
   - component: {fileID: 445786946}
   - component: {fileID: 445786945}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageMaskDownRight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10171,7 +10246,7 @@ GameObject:
   - component: {fileID: 449442991}
   - component: {fileID: 449442990}
   - component: {fileID: 449442989}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageMaskDownLeft
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10545,7 +10620,7 @@ Canvas:
   m_Enabled: 1
   serializedVersion: 3
   m_RenderMode: 0
-  m_Camera: {fileID: 0}
+  m_Camera: {fileID: 330585545}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
@@ -11706,7 +11781,7 @@ GameObject:
   - component: {fileID: 514854243}
   - component: {fileID: 514854245}
   - component: {fileID: 514854244}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectUpRight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -11866,7 +11941,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &530645028
 RectTransform:
   m_ObjectHideFlags: 0
@@ -11883,6 +11958,7 @@ RectTransform:
   - {fileID: 1532088762}
   - {fileID: 944522310}
   - {fileID: 1248055868}
+  - {fileID: 48231553}
   m_Father: {fileID: 461705813}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -12204,7 +12280,7 @@ GameObject:
   - component: {fileID: 535021735}
   - component: {fileID: 535021737}
   - component: {fileID: 535021736}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectUpLeft
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -13299,7 +13375,7 @@ GameObject:
   - component: {fileID: 585661910}
   - component: {fileID: 585661912}
   - component: {fileID: 585661911}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectUpLeft
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -13322,7 +13398,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 54.4, y: -191.9}
+  m_AnchoredPosition: {x: 54.399994, y: -191.9}
   m_SizeDelta: {x: 220.8, y: 161.82}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &585661911
@@ -13706,7 +13782,7 @@ GameObject:
   - component: {fileID: 600889017}
   - component: {fileID: 600889019}
   - component: {fileID: 600889018}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectUpLeft
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -15072,7 +15148,7 @@ GameObject:
   - component: {fileID: 664633565}
   - component: {fileID: 664633567}
   - component: {fileID: 664633566}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectUpLeft
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -15336,7 +15412,7 @@ GameObject:
   - component: {fileID: 701209107}
   - component: {fileID: 701209106}
   - component: {fileID: 701209105}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectDownRight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -15788,7 +15864,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _currentState: 0
   _currentMode: 0
-  _timeScale: 1
+  _timeScale: 15
   _paymentToReadyTimer: 0
   _readyToSelectTimer: 0
   _selectToFilmingTimer: 0
@@ -16052,7 +16128,7 @@ GameObject:
   - component: {fileID: 747865407}
   - component: {fileID: 747865409}
   - component: {fileID: 747865408}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectDownRight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -17619,7 +17695,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -836.39667, y: -489.25958}
+  m_AnchoredPosition: {x: -836.3966, y: -489.25958}
   m_SizeDelta: {x: 1672.7933, y: 978.51917}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &815033367
@@ -19100,7 +19176,7 @@ GameObject:
   - component: {fileID: 852907732}
   - component: {fileID: 852907734}
   - component: {fileID: 852907733}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectDownLeft
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -19772,6 +19848,7 @@ MonoBehaviour:
   _goToPaymentButton: {fileID: 1008371420}
   _currentPanel: {fileID: 1708603835}
   _waitingForPaymentPanel: {fileID: 1393010138}
+  _isAdmin: 0
 --- !u!1 &871435991
 GameObject:
   m_ObjectHideFlags: 0
@@ -19783,7 +19860,7 @@ GameObject:
   - component: {fileID: 871435992}
   - component: {fileID: 871435994}
   - component: {fileID: 871435993}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectUpRight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -20385,7 +20462,7 @@ GameObject:
   - component: {fileID: 896273246}
   - component: {fileID: 896273248}
   - component: {fileID: 896273247}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectDownRight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -21550,7 +21627,7 @@ GameObject:
   - component: {fileID: 944522310}
   - component: {fileID: 944522312}
   - component: {fileID: 944522311}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageMainWidth
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -26239,7 +26316,7 @@ GameObject:
   - component: {fileID: 1152091542}
   - component: {fileID: 1152091544}
   - component: {fileID: 1152091543}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageBackground
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -27494,7 +27571,7 @@ GameObject:
   - component: {fileID: 1194541438}
   - component: {fileID: 1194541437}
   - component: {fileID: 1194541436}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageMaskDownRight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -28110,7 +28187,7 @@ GameObject:
   - component: {fileID: 1222032488}
   - component: {fileID: 1222032487}
   - component: {fileID: 1222032486}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageMaskUpRight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -31445,7 +31522,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -696.99896, y: 64.90927}
+  m_AnchoredPosition: {x: -696.9989, y: 64.90927}
   m_SizeDelta: {x: -1479.6207, y: -155.72064}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1381086551
@@ -32144,7 +32221,7 @@ GameObject:
   - component: {fileID: 1410064113}
   - component: {fileID: 1410064115}
   - component: {fileID: 1410064114}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectDownLeft
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -33557,7 +33634,7 @@ GameObject:
   - component: {fileID: 1481263464}
   - component: {fileID: 1481263466}
   - component: {fileID: 1481263465}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectDownRight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -33680,7 +33757,7 @@ GameObject:
   - component: {fileID: 1493835044}
   - component: {fileID: 1493835043}
   - component: {fileID: 1493835045}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectDownRight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -33843,7 +33920,7 @@ GameObject:
   - component: {fileID: 1505166747}
   - component: {fileID: 1505166749}
   - component: {fileID: 1505166748}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: Image
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -34008,6 +34085,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0609f993426fa374bbbab6f9e2330aa6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _paymentWaitingPanelTransitionCtrl: {fileID: 866139197}
   paymentHttpTester: {fileID: 1280154549}
   _targetButton: {fileID: 2024000901}
   _receivedImageObject: {fileID: 837180559}
@@ -34379,7 +34457,7 @@ GameObject:
   - component: {fileID: 1532088762}
   - component: {fileID: 1532088764}
   - component: {fileID: 1532088763}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageMainHight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -34395,7 +34473,7 @@ RectTransform:
   m_GameObject: {fileID: 1532088761}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1.9, y: 1.95, z: 1.9}
+  m_LocalScale: {x: 3.8, y: 3.9, z: 3.8}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1873722847}
@@ -34406,7 +34484,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -1413.0002, y: -3.9995117}
+  m_AnchoredPosition: {x: -1946, y: -3.9995117}
   m_SizeDelta: {x: 378.1142, y: 542.976}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1532088763
@@ -34943,7 +35021,7 @@ GameObject:
   - component: {fileID: 1546010846}
   - component: {fileID: 1546010848}
   - component: {fileID: 1546010847}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectDownRight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -35184,7 +35262,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1556538713}
   - component: {fileID: 1556538714}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: GameObjectGridBlue
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -37065,7 +37143,7 @@ GameObject:
   - component: {fileID: 1622095073}
   - component: {fileID: 1622095072}
   - component: {fileID: 1622095071}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageMaskUpLeft
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -38884,7 +38962,7 @@ GameObject:
   - component: {fileID: 1687454231}
   - component: {fileID: 1687454233}
   - component: {fileID: 1687454232}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectUpRight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -39058,7 +39136,7 @@ GameObject:
   - component: {fileID: 1692863259}
   - component: {fileID: 1692863258}
   - component: {fileID: 1692863257}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageMaskUpRight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -39555,7 +39633,7 @@ GameObject:
   - component: {fileID: 1712002946}
   - component: {fileID: 1712002948}
   - component: {fileID: 1712002947}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectDownLeft
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -40083,7 +40161,7 @@ GameObject:
   - component: {fileID: 1738172985}
   - component: {fileID: 1738172987}
   - component: {fileID: 1738172986}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectDownLeft
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -40349,7 +40427,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -696.99896, y: 64.90927}
+  m_AnchoredPosition: {x: -696.9989, y: 64.90927}
   m_SizeDelta: {x: -1479.6207, y: -155.72064}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1750984393
@@ -41439,7 +41517,7 @@ GameObject:
   - component: {fileID: 1793585575}
   - component: {fileID: 1793585577}
   - component: {fileID: 1793585576}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectUpRight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -42023,7 +42101,7 @@ GameObject:
   - component: {fileID: 1816930203}
   - component: {fileID: 1816930205}
   - component: {fileID: 1816930204}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectUpLeft
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -42137,7 +42215,7 @@ GameObject:
   - component: {fileID: 1819277951}
   - component: {fileID: 1819277953}
   - component: {fileID: 1819277952}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: Image_1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -43029,7 +43107,7 @@ GameObject:
   - component: {fileID: 1864834592}
   - component: {fileID: 1864834594}
   - component: {fileID: 1864834593}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageSelectUpRight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -43263,7 +43341,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1873722847}
   - component: {fileID: 1873722848}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: GameObjectGridRed
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -44452,7 +44530,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -698.102, y: 129}
+  m_AnchoredPosition: {x: -698.1019, y: 129}
   m_SizeDelta: {x: -1955.2559, y: -565.7003}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1947941711
@@ -45026,7 +45104,7 @@ GameObject:
   - component: {fileID: 1976417435}
   - component: {fileID: 1976417437}
   - component: {fileID: 1976417436}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageMain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -45178,7 +45256,7 @@ GameObject:
   - component: {fileID: 1986593481}
   - component: {fileID: 1986593480}
   - component: {fileID: 1986593479}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageMaskUpLeft
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -45550,6 +45628,13 @@ MonoBehaviour:
   _coverBiasX: 0
   _coverBiasY: 0.1
   _postCropInsetPx: 12
+  _captureMode: 1
+  _captureCamera: {fileID: 0}
+  _captureLayerMask:
+    serializedVersion: 2
+    m_Bits: 64
+  _captureClearColor: {r: 1, g: 1, b: 1, a: 1}
+  _forceSolidColorClear: 1
 --- !u!1 &2005925584
 GameObject:
   m_ObjectHideFlags: 0
@@ -45737,7 +45822,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 241.8561, y: -168.40337}
+  m_AnchoredPosition: {x: 241.8561, y: -168.40338}
   m_SizeDelta: {x: 273.7778, y: 186.69443}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2008912018
@@ -45960,7 +46045,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2013855073}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: GameObjectGridRed
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -46722,7 +46807,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0.00012207031, y: -62.1}
+  m_AnchoredPosition: {x: 0.00012207031, y: -62.100006}
   m_SizeDelta: {x: 0.00012207031, y: -1.6184692}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2042016728
@@ -47941,7 +48026,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2097821033}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: GameObjectGridBlack
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -48992,7 +49077,7 @@ GameObject:
   - component: {fileID: 2143559696}
   - component: {fileID: 2143559698}
   - component: {fileID: 2143559697}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: ImageBackground_1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -49275,6 +49360,10 @@ PrefabInstance:
     - target: {fileID: 3362932501018730144, guid: 786d922614390024aabb5dd7579ee6d3, type: 3}
       propertyPath: m_Name
       value: PaymentHttpTester
+      objectReference: {fileID: 0}
+    - target: {fileID: 3362932501018730144, guid: 786d922614390024aabb5dd7579ee6d3, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5657948161618109902, guid: 786d922614390024aabb5dd7579ee6d3, type: 3}
       propertyPath: _amount

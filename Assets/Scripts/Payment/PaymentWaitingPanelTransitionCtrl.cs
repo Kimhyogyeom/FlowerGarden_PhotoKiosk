@@ -20,6 +20,8 @@ public class PaymentWaitingPanelTransitionCtrl : MonoBehaviour
     // 수량 선택 + 결제수단 선택 같은 “결제 설정 화면” 패널
 
     [SerializeField] private GameObject _waitingForPaymentPanel;
+
+    public bool _isAdmin = false;
     // 실제 결제 진행 패널 (여기에 PaymentPanelEnableBroadcaster 가 붙어 있으면
     // SetActive(true) 되는 순간 OnPaymentPanelEnabled 이벤트가 날아감)
 
@@ -50,9 +52,16 @@ public class PaymentWaitingPanelTransitionCtrl : MonoBehaviour
     /// </summary>
     public void OnClickGoToPayment()
     {
-        _paymentHttpTester.OnClickStartPayment();
-        // 여기서 결제가 완료되면 콜백 받아서 아래 코드 실행시킬거임 (1209)
-        // _fadeAnimationCtrl.StartFade();
+        if (!_isAdmin)
+        {
+            _paymentHttpTester.OnClickStartPayment();
+        }
+        else
+        {
+            // 여기서 결제가 완료되면 콜백 받아서 아래 코드 실행시킬거임 (1209)
+            _fadeAnimationCtrl.StartFade();
+        }
+
     }
     public void PaymentHttpTesterStart()
     {
