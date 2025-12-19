@@ -1,17 +1,16 @@
-// PrintController.cs (Image + RawImage + Bridge 대응, 고화질 PNG 버전)
-// 가로 모드 좌우 반전 문제 해결
-// - KioskMode.Height -> 세로 모드 (4x6 패널 -> 4x6 용지)
-// - KioskMode.Width  -> 가로 모드 (6x4 패널 -> 90도 회전 -> 좌우 반전 -> 6x4 용지)
-// - 캡처 시 화면 잘림 방지: RectTransform을 Canvas 중앙으로 임시 이동 후 캡처
-// - Stretch/레이아웃에서도 캡처 크기 안 깨지도록 rect.size 기반으로 고정
-// - 가로모드 확대(줌) 방지: Landscape 리샘플 모드 Fit/Cover 선택
-// - Bridge에 landscape 플래그 전달 + 가로모드 타겟 크기 스왑(1844x1240)
+// PrintController.cs (Image + RawImage + Bridge 대응, 고화질 PNG + 캡처 임시 스케일 업 + NCP Upload + QR 버전)
+// ✅ 포함 기능
+// - 캡처 순간에만 RectTransform 임시 확대(x2 등)해서 더 큰 픽셀로 캡처 → 최종 다운샘플 품질 개선
+// - 확대 시 화면 밖으로 나가면 자동으로 스케일을 줄여 화면 안에 들어오게(옵션)
+// - HiRes(ScreenCapture) 우선, 없으면 ReadPixels 폴백
+// - NCP Object Storage 업로드 + 업로드 URL로 QR 생성 후 UI에 표시(옵션)
 
 using System;
 using System.Collections;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Debug = UnityEngine.Debug;
@@ -34,7 +33,7 @@ public class PrintController : MonoBehaviour
     [Header("Timing")]
     [SerializeField] private float _captureStartDelay = 1f;
 
-    [Header("Compoment")]
+    [Header("Component")]
     [SerializeField] private OutputSuccessCtrl _outputSuccessCtrl;
     [SerializeField] private GameObject _background1;
     [SerializeField] private GameObject _background2;
@@ -45,11 +44,37 @@ public class PrintController : MonoBehaviour
     [SerializeField, Min(1)] public int _printCount = 2;
 
     [Header("Capture Source")]
-    [Tooltip("target에 RawImage가 있을 때 texture를 직접 복사할지 여부")]
+    [Tooltip("target에 RawImage가 있을 때 texture를 직접 복사할지 여부 (단, 자식 포함 캡처에서는 사용 불가)")]
     [SerializeField] private bool _captureFromSourceTexture = true;
 
     [Tooltip("자식 UI까지 포함해 캡처")]
     [SerializeField] private bool _includeChildrenInCapture = true;
+
+    [Header("High-Res Capture (Recommended)")]
+    [Tooltip("true면 ScreenCapture.CaptureScreenshot(superSize)로 고해상도 캡처 후 잘라냄 (화질 개선)")]
+    [SerializeField] private bool _useHiResScreenshotCapture = true;
+
+    [Tooltip("스크린샷 배율(1=기존 화면해상도). 6~10도 가능하지만 느려질 수 있음")]
+    [SerializeField, Range(1, 10)] private int _screenshotSuperSize = 2;
+
+    [Tooltip("스크린샷 파일 생성 대기 타임아웃(초)")]
+    [SerializeField] private float _screenshotTimeoutSeconds = 3f;
+
+    [Tooltip("캡처 후 임시 스크린샷 파일 삭제")]
+    [SerializeField] private bool _deleteTempScreenshotFile = true;
+
+    [Header("Capture Temp Scale (네가 원하는 기능)")]
+    [Tooltip("캡처 직전에만 target을 임시로 확대해서 더 큰 픽셀로 캡처")]
+    [SerializeField] private bool _useTempScaleDuringCapture = true;
+
+    [Tooltip("임시 확대 배수 (예: 2 = x2)")]
+    [SerializeField, Range(1f, 4f)] private float _tempCaptureScale = 2f;
+
+    [Tooltip("임시 확대 시 화면 밖으로 나가면 자동으로 스케일을 줄여서 화면에 맞춤")]
+    [SerializeField] private bool _autoFitTempScaleToScreen = true;
+
+    [Tooltip("화면에 딱 맞추면 가장자리 살짝 잘릴 수 있어서 여유(0.95~0.99 추천)")]
+    [SerializeField, Range(0.8f, 1f)] private float _fitScreenMargin = 0.98f;
 
     public enum RotationMode { None, ForceCW, ForceCCW }
 
@@ -71,7 +96,6 @@ public class PrintController : MonoBehaviour
     [SerializeField] private ResampleMode _portraitResample = ResampleMode.None;
 
     [Tooltip("가로 모드에서 출력 크기에 맞춰 리샘플링 할지 (Fit이면 PNG에 흰 여백 생길 수 있음)")]
-    // ✅ 기본값: Fit -> Cover (가로모드 '여백' 문제를 없애려면 Cover가 맞음)
     [SerializeField] private ResampleMode _landscapeResample = ResampleMode.Cover;
 
     [Header("Output Size (Printer Target)")]
@@ -87,13 +111,40 @@ public class PrintController : MonoBehaviour
     [SerializeField] private GameObject _progressRoot;
     [SerializeField] private Image _progressFill;
 
-    [Header("Cover 옵션")]
+    [Header("Cover 옵션 (Portrait/Landscape 공용)")]
     [SerializeField, Range(1f, 1.1f)] private float _coverBleed = 1.02f;
     [SerializeField, Range(-1f, 1f)] private float _coverBiasX = 0f;
     [SerializeField, Range(-1f, 1f)] private float _coverBiasY = 0.08f;
     [SerializeField, Min(0)] private int _postCropInsetPx = 0;
 
-    // 초기화: 백업 필드
+    [Header("Orientation Safety (Optional)")]
+    [Tooltip("모드(가로/세로)와 결과 텍스처의 방향이 다르면 자동으로 90도 회전 보정")]
+    [SerializeField] private bool _autoFixOrientationByAspect = true;
+
+    [Tooltip("자동 보정 회전 방향")]
+    [SerializeField] private RotationMode _autoFixRotationDir = RotationMode.ForceCW;
+
+    // ==========================
+    // ✅ NCP Upload + QR
+    // ==========================
+    [Header("NCP Upload + QR (Optional)")]
+    [SerializeField] private bool _enableUploadAndQr = true;
+    [SerializeField] private NcpObjectStorageUploader _ncpUploader;
+
+    [SerializeField] private string _ncpObjectKeyPrefix = "photos/kiosk/";
+    [SerializeField] private bool _ncpPublicRead = true;
+
+    [SerializeField] private RawImage _qrRawImage;
+    [SerializeField] private TextMeshProUGUI _qrUrlText;
+    [SerializeField] private GameObject _qrPanel;
+    [SerializeField] private int _qrSize = 512;
+
+    public enum QrTiming { AfterSave_BeforePrint, AfterPrintDone }
+    [SerializeField] private QrTiming _qrTiming = QrTiming.AfterSave_BeforePrint;
+
+    // ==========================
+    // 초기값 백업
+    // ==========================
     private bool _initCaptureFromSourceTexture;
     private bool _initIncludeChildrenInCapture;
     private RotationMode _initRotation;
@@ -110,6 +161,20 @@ public class PrintController : MonoBehaviour
     private ResampleMode _initPortraitResample;
     private ResampleMode _initLandscapeResample;
 
+    private bool _initUseHiRes;
+    private int _initSuperSize;
+    private float _initShotTimeout;
+    private bool _initDeleteTemp;
+    private bool _initAutoFixAspect;
+    private RotationMode _initAutoFixDir;
+
+    private bool _initUseTempScale;
+    private float _initTempScale;
+    private bool _initAutoFitTempScale;
+    private float _initFitMargin;
+
+    [Header("Save Transform")]
+    [SerializeField] private bool _rotate180OnSave = true;
     private void Awake()
     {
         _initCaptureFromSourceTexture = _captureFromSourceTexture;
@@ -127,6 +192,20 @@ public class PrintController : MonoBehaviour
         _initLandscapeRotation = _landscapeRotation;
         _initPortraitResample = _portraitResample;
         _initLandscapeResample = _landscapeResample;
+
+        _initUseHiRes = _useHiResScreenshotCapture;
+        _initSuperSize = _screenshotSuperSize;
+        _initShotTimeout = _screenshotTimeoutSeconds;
+        _initDeleteTemp = _deleteTempScreenshotFile;
+        _initAutoFixAspect = _autoFixOrientationByAspect;
+        _initAutoFixDir = _autoFixRotationDir;
+
+        _initUseTempScale = _useTempScaleDuringCapture;
+        _initTempScale = _tempCaptureScale;
+        _initAutoFitTempScale = _autoFitTempScaleToScreen;
+        _initFitMargin = _fitScreenMargin;
+
+        if (_qrPanel) _qrPanel.SetActive(false);
     }
 
     public void ResetPrintState(bool deleteSavedPhotos = true)
@@ -150,6 +229,20 @@ public class PrintController : MonoBehaviour
         _portraitResample = _initPortraitResample;
         _landscapeResample = _initLandscapeResample;
 
+        _useHiResScreenshotCapture = _initUseHiRes;
+        _screenshotSuperSize = _initSuperSize;
+        _screenshotTimeoutSeconds = _initShotTimeout;
+        _deleteTempScreenshotFile = _initDeleteTemp;
+        _autoFixOrientationByAspect = _initAutoFixAspect;
+        _autoFixRotationDir = _initAutoFixDir;
+
+        _useTempScaleDuringCapture = _initUseTempScale;
+        _tempCaptureScale = _initTempScale;
+        _autoFitTempScaleToScreen = _initAutoFitTempScale;
+        _fitScreenMargin = _initFitMargin;
+
+        if (_qrPanel) _qrPanel.SetActive(false);
+
         if (deleteSavedPhotos)
         {
             try
@@ -160,16 +253,8 @@ public class PrintController : MonoBehaviour
                     var pngFiles = Directory.GetFiles(dir, "photo_raw_*.png");
                     var jpgFiles = Directory.GetFiles(dir, "photo_raw_*.jpg");
 
-                    foreach (var f in pngFiles)
-                    {
-                        try { File.Delete(f); }
-                        catch (Exception e) { Debug.LogWarning($"[Print] Reset: delete failed for {f}: {e.Message}"); }
-                    }
-                    foreach (var f in jpgFiles)
-                    {
-                        try { File.Delete(f); }
-                        catch (Exception e) { Debug.LogWarning($"[Print] Reset: delete failed for {f}: {e.Message}"); }
-                    }
+                    foreach (var f in pngFiles) { try { File.Delete(f); } catch { } }
+                    foreach (var f in jpgFiles) { try { File.Delete(f); } catch { } }
                 }
             }
             catch (Exception e)
@@ -185,49 +270,27 @@ public class PrintController : MonoBehaviour
 
     public void PrintRawImage(Image image, Action onDone, params GameObject[] toHideTemporarily)
     {
-        if (!image)
-        {
-            Debug.LogError("[Print] Image is null");
-            onDone?.Invoke();
-            return;
-        }
-
+        if (!image) { Debug.LogError("[Print] Image is null"); onDone?.Invoke(); return; }
         PrintUIArea(image.rectTransform, onDone, toHideTemporarily);
     }
 
     public void PrintRawImage(RawImage rawImage, Action onDone, params GameObject[] toHideTemporarily)
     {
-        if (!rawImage)
-        {
-            Debug.LogError("[Print] RawImage is null");
-            onDone?.Invoke();
-            return;
-        }
-
+        if (!rawImage) { Debug.LogError("[Print] RawImage is null"); onDone?.Invoke(); return; }
         PrintUIArea(rawImage.rectTransform, onDone, toHideTemporarily);
     }
 
     public void PrintUIArea(RectTransform target, Action onDone, params GameObject[] toHideTemporarily)
     {
-        if (!target)
-        {
-            Debug.LogError("[Print] target RectTransform is null");
-            onDone?.Invoke();
-            return;
-        }
+        if (!target) { Debug.LogError("[Print] target RectTransform is null"); onDone?.Invoke(); return; }
         StartCoroutine(CaptureAndPrintRoutine(target, onDone, toHideTemporarily));
     }
 
-    // ===== Main Capture and Print Routine =====
+    // ===== Main Routine =====
 
     private IEnumerator CaptureAndPrintRoutine(RectTransform target, Action onDone, GameObject[] toHide)
     {
-        if (!target)
-        {
-            Debug.LogError("[Print] CaptureAndPrintRoutine: target is null");
-            onDone?.Invoke();
-            yield break;
-        }
+        if (!target) { Debug.LogError("[Print] CaptureAndPrintRoutine: target is null"); onDone?.Invoke(); yield break; }
 
         if (_captureStartDelay > 0f)
             yield return new WaitForSeconds(_captureStartDelay);
@@ -260,7 +323,6 @@ public class PrintController : MonoBehaviour
 
         // 중앙으로 임시 이동
         target.SetParent(canvas.transform, false);
-        target.localScale = Vector3.one;
         target.localRotation = Quaternion.identity;
 
         target.pivot = new Vector2(0.5f, 0.5f);
@@ -271,17 +333,40 @@ public class PrintController : MonoBehaviour
         target.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, oldRectSize.x);
         target.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, oldRectSize.y);
 
+        // ✅ 캡처 직전에만 스케일 업
+        float appliedScale = 1f;
+        if (_useTempScaleDuringCapture && _tempCaptureScale > 1.001f)
+        {
+            appliedScale = Mathf.Max(1f, _tempCaptureScale);
+            target.localScale = Vector3.one * appliedScale;
+
+            if (_autoFitTempScaleToScreen)
+            {
+                appliedScale = FitTempScaleToScreen(target, canvas, appliedScale, _fitScreenMargin);
+                target.localScale = Vector3.one * appliedScale;
+            }
+
+            Debug.Log($"[Print] TempScale applied: x{appliedScale:0.###}");
+        }
+        else
+        {
+            target.localScale = Vector3.one;
+        }
+
+        Canvas.ForceUpdateCanvases();
+        yield return new WaitForEndOfFrame();
         Canvas.ForceUpdateCanvases();
         yield return new WaitForEndOfFrame();
 
         Debug.Log($"[Print] ===== 캡처 시작 =====");
         Debug.Log($"[Print] Target: {target.name}");
         Debug.Log($"[Print] oldRectSize: {oldRectSize}");
-        Debug.Log($"[Print] nowRectSize: {target.rect.size}");
+        Debug.Log($"[Print] nowRectSize: {target.rect.size}, tempScale=x{appliedScale:0.###}");
         Debug.Log($"[Print] Screen: {Screen.width}x{Screen.height}");
 
         Texture2D tex = null;
 
+        // (1) RawImage 단독(자식 미포함)일 때만: 소스 텍스처 복사
         if (_captureFromSourceTexture && !_includeChildrenInCapture)
         {
             var raw = target.GetComponent<RawImage>();
@@ -292,14 +377,25 @@ public class PrintController : MonoBehaviour
             }
         }
 
+        // (2) 캡처
         if (tex == null)
         {
-            tex = _includeChildrenInCapture
-                ? CaptureRectTransformAreaIncludingChildren(target)
-                : CaptureRectTransformArea(target);
+            if (_useHiResScreenshotCapture && _screenshotSuperSize > 1)
+            {
+                Texture2D hiResTex = null;
+                yield return StartCoroutine(CaptureByHiResScreenshot(target, canvas, t => hiResTex = t));
+                tex = hiResTex;
+            }
 
-            if (tex != null)
-                Debug.Log($"[Print] ReadPixels 기반 캡처 완료: {tex.width}x{tex.height}");
+            if (tex == null)
+            {
+                tex = _includeChildrenInCapture
+                    ? CaptureRectTransformAreaIncludingChildren(target)
+                    : CaptureRectTransformArea(target);
+
+                if (tex != null)
+                    Debug.Log($"[Print] ReadPixels 기반 캡처 완료: {tex.width}x{tex.height}");
+            }
         }
 
         // 원복
@@ -345,24 +441,27 @@ public class PrintController : MonoBehaviour
 
         switch (effectiveRotation)
         {
-            case RotationMode.ForceCW:
-                tex = Rotate90CW(tex);
-                Debug.Log("[Print] 시계방향 90도 회전 완료");
-                break;
-            case RotationMode.ForceCCW:
-                tex = Rotate90CCW(tex);
-                Debug.Log("[Print] 반시계방향 90도 회전 완료");
-                break;
-            case RotationMode.None:
-            default:
-                Debug.Log("[Print] 회전 없음");
-                break;
+            case RotationMode.ForceCW: tex = Rotate90CW(tex); Debug.Log("[Print] 시계방향 90도 회전 완료"); break;
+            case RotationMode.ForceCCW: tex = Rotate90CCW(tex); Debug.Log("[Print] 반시계방향 90도 회전 완료"); break;
+            default: Debug.Log("[Print] 회전 없음"); break;
         }
 
         if (isLandscapeMode)
         {
             tex = MirrorX(tex);
             Debug.Log("[Print] 가로 모드: 좌우 반전 적용");
+        }
+
+        if (_autoFixOrientationByAspect)
+        {
+            bool wantLandscape = isLandscapeMode;
+            bool isTexLandscape = tex.width >= tex.height;
+
+            if (wantLandscape != isTexLandscape)
+            {
+                Debug.LogWarning($"[Print] 방향 불일치 감지 (wantLandscape={wantLandscape}, tex={tex.width}x{tex.height}) -> 자동 보정 회전");
+                tex = (_autoFixRotationDir == RotationMode.ForceCCW) ? Rotate90CCW(tex) : Rotate90CW(tex);
+            }
         }
 
         ResampleMode mode = isLandscapeMode ? _landscapeResample : _portraitResample;
@@ -373,17 +472,14 @@ public class PrintController : MonoBehaviour
 
             if (isLandscapeMode)
             {
-                int tmp = w; w = h; h = tmp; // 1844x1240
+                int tmp = w; w = h; h = tmp;
             }
 
             Debug.Log($"[Print] BEFORE RESAMPLE tex={tex.width}x{tex.height}, target={w}x{h}, mode={mode}, isLandscape={isLandscapeMode}");
 
             Texture2D resampled = null;
-
-            if (mode == ResampleMode.Cover)
-                resampled = MakePortraitCover(tex, w, h, _coverBiasX, _coverBiasY, _postCropInsetPx);
-            else if (mode == ResampleMode.Fit)
-                resampled = MakePortraitFit(tex, w, h);
+            if (mode == ResampleMode.Cover) resampled = MakePortraitCover(tex, w, h, _coverBiasX, _coverBiasY, _postCropInsetPx);
+            else if (mode == ResampleMode.Fit) resampled = MakePortraitFit(tex, w, h);
 
             if (resampled != null)
             {
@@ -397,16 +493,39 @@ public class PrintController : MonoBehaviour
             }
         }
 
-        // 3) 파일 저장
+        // 3) 180도 회전 + 좌우반전 (옵션)
+        if (_rotate180OnSave)
+        {
+            tex = Rotate180(tex);
+            tex = MirrorX(tex);
+
+            // 가로모드일 때 추가 좌우반전
+            if (isLandscapeMode)
+            {
+                tex = MirrorX(tex);
+                Debug.Log("[Print] 180도 회전 + 좌우반전 + 가로모드 추가 반전 적용 완료");
+            }
+            else
+            {
+                Debug.Log("[Print] 180도 회전 + 좌우반전 적용 완료 (세로모드)");
+            }
+        }
+
+        // 4) 파일 저장
         string folderPath = Application.persistentDataPath;
         Directory.CreateDirectory(folderPath);
         string filename = $"photo_raw_{DateTime.Now:yyyyMMdd_HHmmss}.png";
         string savePath = Path.Combine(folderPath, filename);
 
-        byte[] bytes = tex.EncodeToPNG();
-        File.WriteAllBytes(savePath, bytes);
+        File.WriteAllBytes(savePath, tex.EncodeToPNG());
         Debug.Log($"[Print] 저장 완료: {savePath} ({tex.width}x{tex.height})");
         Destroy(tex);
+
+        // ✅ 저장 직후 업로드+QR (옵션)
+        if (_enableUploadAndQr && _ncpUploader != null && _qrTiming == QrTiming.AfterSave_BeforePrint)
+        {
+            StartCoroutine(UploadAndShowQrRoutine(savePath));
+        }
 
         // 4) 인쇄
         StartProgressUI();
@@ -425,8 +544,193 @@ public class PrintController : MonoBehaviour
             }
         }
 
+        // ✅ 인쇄 끝난 뒤 업로드+QR (옵션)
+        if (_enableUploadAndQr && _ncpUploader != null && _qrTiming == QrTiming.AfterPrintDone)
+        {
+            yield return StartCoroutine(UploadAndShowQrRoutine(savePath));
+        }
+
         StopProgressUI();
         onDone?.Invoke();
+    }
+
+    // ==========================
+    // ✅ Upload + QR routine
+    // ==========================
+    private IEnumerator UploadAndShowQrRoutine(string localPngPath)
+    {
+        if (string.IsNullOrWhiteSpace(localPngPath) || !File.Exists(localPngPath))
+        {
+            Debug.LogWarning("[QR] local png not found: " + localPngPath);
+            yield break;
+        }
+
+        if (_ncpUploader == null)
+        {
+            Debug.LogWarning("[QR] uploader is null");
+            yield break;
+        }
+
+        byte[] pngBytes = null;
+        try
+        {
+            pngBytes = File.ReadAllBytes(localPngPath);
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("[QR] file read fail: " + e.Message);
+            yield break;
+        }
+
+        string fileName = Path.GetFileName(localPngPath);
+        string prefix = _ncpObjectKeyPrefix.TrimStart('/').TrimEnd('/');
+        string objectKey = (string.IsNullOrEmpty(prefix) ? "" : (prefix + "/")) + fileName;
+
+        string url = null;
+        string err = null;
+
+        yield return StartCoroutine(_ncpUploader.UploadPngBytesRoutine(
+            pngBytes,
+            objectKey,
+            onSuccess: u => url = u,
+            onError: e => err = e,
+            makePublicReadOverride: _ncpPublicRead
+        ));
+
+        if (!string.IsNullOrEmpty(err))
+        {
+            Debug.LogError("[QR] 업로드 실패:\n" + err);
+            yield break;
+        }
+
+        Debug.Log("[QR] 업로드 성공 URL: " + url);
+
+        // QR 생성 (너 프로젝트에 이미 있는 걸 사용)
+        Texture2D qrTex = QrCodeGenerator_ZXing.Generate(url, _qrSize, 1);
+
+        if (_qrRawImage) _qrRawImage.texture = qrTex;
+        if (_qrUrlText) _qrUrlText.text = url;
+        if (_qrPanel) _qrPanel.SetActive(true);
+    }
+
+    /// <summary>
+    /// 임시 스케일이 너무 커서 화면 밖으로 나가면, 화면 안에 들어오게 스케일을 자동으로 줄임
+    /// </summary>
+    private float FitTempScaleToScreen(RectTransform target, Canvas canvas, float desiredScale, float margin01)
+    {
+        margin01 = Mathf.Clamp(margin01, 0.8f, 1f);
+
+        Rect r = _includeChildrenInCapture
+            ? GetScreenRectIncludingChildren(target, canvas)
+            : GetScreenRect(target, canvas);
+
+        if (r.width <= 0.01f || r.height <= 0.01f)
+            return desiredScale;
+
+        float maxW = Screen.width * margin01;
+        float maxH = Screen.height * margin01;
+
+        if (r.width <= maxW && r.height <= maxH)
+            return desiredScale;
+
+        float ratioW = maxW / r.width;
+        float ratioH = maxH / r.height;
+        float mul = Mathf.Min(ratioW, ratioH);
+
+        float fitted = Mathf.Max(1f, desiredScale * mul);
+        Debug.LogWarning($"[Print] TempScale too big -> fitted x{fitted:0.###} (from x{desiredScale:0.###}) rect={r.width:0.0}x{r.height:0.0}");
+        return fitted;
+    }
+
+    // ===== 고해상도 스크린샷 기반 캡처 (콜백 방식) =====
+    private IEnumerator CaptureByHiResScreenshot(RectTransform target, Canvas canvas, Action<Texture2D> onDone)
+    {
+        Rect captureRect = _includeChildrenInCapture
+            ? GetScreenRectIncludingChildren(target, canvas)
+            : GetScreenRect(target, canvas);
+
+        if (captureRect.width < 2 || captureRect.height < 2)
+        {
+            Debug.LogWarning($"[Print] HiResCapture: invalid rect {captureRect}");
+            onDone?.Invoke(null);
+            yield break;
+        }
+
+        int superSize = Mathf.Clamp(_screenshotSuperSize, 1, 10);
+        string tempPath = Path.Combine(Application.persistentDataPath, $"__tmp_capture_{DateTime.Now:HHmmssfff}.png");
+
+        ScreenCapture.CaptureScreenshot(tempPath, superSize);
+        yield return new WaitForEndOfFrame();
+
+        float waited = 0f;
+        float timeout = Mathf.Max(0.2f, _screenshotTimeoutSeconds);
+        while (!File.Exists(tempPath) && waited < timeout)
+        {
+            waited += 0.05f;
+            yield return new WaitForSeconds(0.05f);
+        }
+
+        if (!File.Exists(tempPath))
+        {
+            Debug.LogWarning("[Print] HiResCapture: screenshot file not found -> fallback to ReadPixels");
+            onDone?.Invoke(null);
+            yield break;
+        }
+
+        Texture2D full = null;
+        Texture2D cropped = null;
+
+        try
+        {
+            byte[] png = File.ReadAllBytes(tempPath);
+
+            full = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            if (!full.LoadImage(png, false))
+            {
+                Debug.LogWarning("[Print] HiResCapture: LoadImage failed");
+                onDone?.Invoke(null);
+                yield break;
+            }
+
+            int x = Mathf.RoundToInt(captureRect.x * superSize);
+            int y = Mathf.RoundToInt(captureRect.y * superSize);
+            int w = Mathf.RoundToInt(captureRect.width * superSize);
+            int h = Mathf.RoundToInt(captureRect.height * superSize);
+
+            x = Mathf.Clamp(x, 0, full.width - 1);
+            y = Mathf.Clamp(y, 0, full.height - 1);
+            w = Mathf.Clamp(w, 1, full.width - x);
+            h = Mathf.Clamp(h, 1, full.height - y);
+
+            Debug.Log($"[Print] HiResCapture(full={full.width}x{full.height}, superSize={superSize}) crop={w}x{h} at ({x},{y})");
+
+            Color32[] src = full.GetPixels32();
+            cropped = new Texture2D(w, h, TextureFormat.RGBA32, false);
+            Color32[] dst = new Color32[w * h];
+
+            for (int yy = 0; yy < h; yy++)
+            {
+                int srcRow = (y + yy) * full.width;
+                int dstRow = yy * w;
+                for (int xx = 0; xx < w; xx++)
+                    dst[dstRow + xx] = src[srcRow + (x + xx)];
+            }
+
+            cropped.SetPixels32(dst);
+            cropped.Apply(false);
+
+            onDone?.Invoke(cropped);
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"[Print] HiResCapture exception: {e.Message}");
+            onDone?.Invoke(null);
+        }
+        finally
+        {
+            if (full) Destroy(full);
+            if (_deleteTempScreenshotFile) { try { File.Delete(tempPath); } catch { } }
+        }
     }
 
     // ===== RawImage를 '화면처럼'(uvRect 반영) 복사 =====
@@ -534,6 +838,63 @@ public class PrintController : MonoBehaviour
         tex.ReadPixels(new Rect(ix, iy, iw, ih), 0, 0);
         tex.Apply(false);
         return tex;
+    }
+
+    // ===== 화면 좌표 Rect 계산 (HiRes crop용) =====
+    private Rect GetScreenRect(RectTransform target, Canvas canvas)
+    {
+        Camera cam = (canvas && canvas.renderMode != RenderMode.ScreenSpaceOverlay)
+            ? (canvas.worldCamera ? canvas.worldCamera : Camera.main)
+            : null;
+
+        Vector3[] wc = new Vector3[4];
+        target.GetWorldCorners(wc);
+
+        Vector2 s0 = RectTransformUtility.WorldToScreenPoint(cam, wc[0]);
+        Vector2 s2 = RectTransformUtility.WorldToScreenPoint(cam, wc[2]);
+
+        float x = Mathf.Min(s0.x, s2.x);
+        float y = Mathf.Min(s0.y, s2.y);
+        float w = Mathf.Abs(s2.x - s0.x);
+        float h = Mathf.Abs(s2.y - s0.y);
+
+        x = Mathf.Clamp(x, 0, Screen.width);
+        y = Mathf.Clamp(y, 0, Screen.height);
+        w = Mathf.Clamp(w, 1, Screen.width - x);
+        h = Mathf.Clamp(h, 1, Screen.height - y);
+
+        return new Rect(x, y, w, h);
+    }
+
+    private Rect GetScreenRectIncludingChildren(RectTransform target, Canvas canvas)
+    {
+        Camera cam = (canvas && canvas.renderMode != RenderMode.ScreenSpaceOverlay)
+            ? (canvas.worldCamera ? canvas.worldCamera : Camera.main)
+            : null;
+
+        var bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(target);
+        Vector3 worldMin = target.TransformPoint(bounds.min);
+        Vector3 worldMax = target.TransformPoint(bounds.max);
+
+        Vector2 s0 = RectTransformUtility.WorldToScreenPoint(cam, worldMin);
+        Vector2 s1 = RectTransformUtility.WorldToScreenPoint(cam, new Vector3(worldMin.x, worldMax.y, worldMin.z));
+        Vector2 s2 = RectTransformUtility.WorldToScreenPoint(cam, worldMax);
+        Vector2 s3 = RectTransformUtility.WorldToScreenPoint(cam, new Vector3(worldMax.x, worldMin.y, worldMin.z));
+
+        float minX = Mathf.Min(s0.x, s1.x, s2.x, s3.x);
+        float maxX = Mathf.Max(s0.x, s1.x, s2.x, s3.x);
+        float minY = Mathf.Min(s0.y, s1.y, s2.y, s3.y);
+        float maxY = Mathf.Max(s0.y, s1.y, s2.y, s3.y);
+
+        float w = maxX - minX;
+        float h = maxY - minY;
+
+        minX = Mathf.Clamp(minX, 0, Screen.width);
+        minY = Mathf.Clamp(minY, 0, Screen.height);
+        w = Mathf.Clamp(w, 1, Screen.width - minX);
+        h = Mathf.Clamp(h, 1, Screen.height - minY);
+
+        return new Rect(minX, minY, w, h);
     }
 
     // ===== 미러/회전 =====
@@ -972,23 +1333,46 @@ public class PrintController : MonoBehaviour
         Destroy(tex);
         Debug.Log($"[Print] test blank saved: {savePath} ({w}x{h})");
 
+        if (_enableUploadAndQr && _ncpUploader != null)
+        {
+            // 테스트 블랭크도 QR 테스트 해보고 싶으면 true
+            StartCoroutine(UploadAndShowQrRoutine(savePath));
+        }
+
         StartProgressUI();
 
         if (_usePrinterBridge)
-        {
             yield return StartCoroutine(PrintViaBridgeAndNotify(savePath, isLandscapeMode));
-        }
         else
-        {
-            int safeCount = Mathf.Max(1, _printCount);
-            for (int i = 0; i < safeCount; i++)
-            {
-                Debug.Log($"[Print] 테스트 블랭크 {_printCount}장 중 {i + 1}번째 출력 시작 (Legacy)");
-                yield return StartCoroutine(PrintAndNotifyLegacy(savePath));
-            }
-        }
+            yield return StartCoroutine(PrintAndNotifyLegacy(savePath));
 
         StopProgressUI();
         onDone?.Invoke();
+    }
+    private Texture2D Rotate180(Texture2D src)
+    {
+        int w = src.width;
+        int h = src.height;
+
+        var s = src.GetPixels32();
+        var d = new Color32[s.Length];
+
+        // 180도: (x,y) -> (w-1-x, h-1-y)
+        for (int y = 0; y < h; y++)
+        {
+            int srcRow = y * w;
+            int dstRow = (h - 1 - y) * w;
+            for (int x = 0; x < w; x++)
+            {
+                d[dstRow + (w - 1 - x)] = s[srcRow + x];
+            }
+        }
+
+        var dst = new Texture2D(w, h, TextureFormat.RGBA32, false);
+        dst.SetPixels32(d);
+        dst.Apply(false);
+
+        Destroy(src);   // 원본 해제
+        return dst;
     }
 }

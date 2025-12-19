@@ -26,3 +26,7 @@ sysinfo.txt
 # IDE 설정 폴더
 .vscode/
 .idea/
+
+# NCP 인증 키 (절대 커밋하지 마세요!)
+Assets/StreamingAssets/ncp_secrets.json
+Assets/StreamingAssets/ncp_secrets.json.meta
