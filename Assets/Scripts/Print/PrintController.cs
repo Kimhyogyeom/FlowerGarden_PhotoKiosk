@@ -560,17 +560,18 @@ public class PrintController : MonoBehaviour
         if (_rotate180OnSave)
         {
             tex = Rotate180(tex);
+            tex = MirrorX(tex);
 
-            // 가로모드일 때만 MirrorX (472라인에서 이미 MirrorX 적용됨 → 상쇄)
-            // 세로모드는 MirrorX 없음 (472라인 MirrorX가 없으므로 QR과 동일)
             if (isLandscapeMode)
             {
-                // 472라인 MirrorX + 여기서 MirrorX = 원래대로 (QR과 동일)
-                Debug.Log("[Print] 180도 회전 적용 완료 (가로모드, QR과 동일)");
+                // 가로모드: 472라인 MirrorX + 여기 MirrorX = 2번 → 추가 MirrorX로 QR과 동일하게
+                tex = MirrorX(tex);
+                Debug.Log("[Print] 180도 회전 + 좌우반전x2 적용 완료 (가로모드, QR과 동일)");
             }
             else
             {
-                Debug.Log("[Print] 180도 회전 적용 완료 (세로모드, QR과 동일)");
+                // 세로모드: Rotate180 + MirrorX (QR과 동일)
+                Debug.Log("[Print] 180도 회전 + 좌우반전 적용 완료 (세로모드, QR과 동일)");
             }
         }
 

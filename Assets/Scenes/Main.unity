@@ -16070,7 +16070,7 @@ MonoBehaviour:
   _selectToFilmingTimer: 0
   _filmingToPhotoTimer: 0
   _photoSelectToPrintTimer: 180
-  _printToSuccessTimer: 180
+  _printToSuccessTimer: 120
 --- !u!1 &735786253
 GameObject:
   m_ObjectHideFlags: 0
@@ -46496,7 +46496,7 @@ MonoBehaviour:
   _qrPanel: {fileID: 0}
   _qrSize: 512
   _qrTiming: 0
-  _rotate180OnSave: 0
+  _rotate180OnSave: 1
 --- !u!1 &2005925584
 GameObject:
   m_ObjectHideFlags: 0
