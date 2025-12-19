@@ -89,14 +89,14 @@ public class PrintController : MonoBehaviour
     [Tooltip("저장 전에 좌우(거울) 뒤집기")]
     [SerializeField] private bool _mirrorHorizontally = false;
 
-    public enum ResampleMode { None, Cover, Fit }
+    public enum ResampleMode { None, Cover, Fit, ExactCrop, Stretch, ScaleUp }
 
     [Header("Resample Mode")]
-    [Tooltip("세로 모드에서 출력 크기에 맞춰 리샘플링 할지")]
-    [SerializeField] private ResampleMode _portraitResample = ResampleMode.None;
+    [Tooltip("세로 모드에서 출력 크기에 맞춰 리샘플링 할지 (Stretch 권장: 크롭/여백 없이 강제 리사이즈)")]
+    [SerializeField] private ResampleMode _portraitResample = ResampleMode.Stretch;
 
-    [Tooltip("가로 모드에서 출력 크기에 맞춰 리샘플링 할지 (Fit이면 PNG에 흰 여백 생길 수 있음)")]
-    [SerializeField] private ResampleMode _landscapeResample = ResampleMode.Cover;
+    [Tooltip("가로 모드에서 출력 크기에 맞춰 리샘플링 할지 (Stretch 권장: 크롭/여백 없이 강제 리사이즈)")]
+    [SerializeField] private ResampleMode _landscapeResample = ResampleMode.Stretch;
 
     [Header("Output Size (Printer Target)")]
     [Tooltip("세로 4x6 기준 해상도. 1800x2400(400DPI급) 권장. 가로모드는 자동으로 스왑.")]
@@ -116,6 +116,27 @@ public class PrintController : MonoBehaviour
     [SerializeField, Range(-1f, 1f)] private float _coverBiasX = 0f;
     [SerializeField, Range(-1f, 1f)] private float _coverBiasY = 0.08f;
     [SerializeField, Min(0)] private int _postCropInsetPx = 0;
+
+    [Header("ExactCrop 비율 조정 (잘림 방지)")]
+    [Tooltip("세로 모드: 상하가 더 보이게 비율 조정 (0.05 = 약 1cm 더 보임)")]
+    [SerializeField, Range(0f, 0.15f)] private float _exactCropPortraitExtra = 0.05f;
+
+    [Tooltip("가로 모드: 좌우가 더 보이게 비율 조정 (0.05 = 약 1cm 더 보임)")]
+    [SerializeField, Range(0f, 0.15f)] private float _exactCropLandscapeExtra = 0.05f;
+
+    [Header("Stretch 비율 조정")]
+    [Tooltip("세로 모드: 상하를 살짝 더 길게 (0.02 = 2% 더 김)")]
+    [SerializeField, Range(0f, 0.1f)] private float _stretchPortraitExtraHeight = 0.02f;
+
+    [Tooltip("가로 모드: 좌우를 살짝 더 길게 (0.02 = 2% 더 김)")]
+    [SerializeField, Range(0f, 0.1f)] private float _stretchLandscapeExtraWidth = 0.02f;
+
+    [Header("ScaleUp 비율 조정 (여백 제거용)")]
+    [Tooltip("세로 모드: Y축 확대 비율 (0.03 = 3% 확대, 상하 여백 제거)")]
+    [SerializeField, Range(0f, 0.15f)] private float _scaleUpPortraitY = 0.03f;
+
+    [Tooltip("가로 모드: X축 확대 비율 (0.03 = 3% 확대, 좌우 여백 제거)")]
+    [SerializeField, Range(0f, 0.15f)] private float _scaleUpLandscapeX = 0.03f;
 
     [Header("Orientation Safety (Optional)")]
     [Tooltip("모드(가로/세로)와 결과 텍스처의 방향이 다르면 자동으로 90도 회전 보정")]
@@ -252,9 +273,11 @@ public class PrintController : MonoBehaviour
                 {
                     var pngFiles = Directory.GetFiles(dir, "photo_raw_*.png");
                     var jpgFiles = Directory.GetFiles(dir, "photo_raw_*.jpg");
+                    var qrPngFiles = Directory.GetFiles(dir, "photo_qr_*.png");
 
                     foreach (var f in pngFiles) { try { File.Delete(f); } catch { } }
                     foreach (var f in jpgFiles) { try { File.Delete(f); } catch { } }
+                    foreach (var f in qrPngFiles) { try { File.Delete(f); } catch { } }
                 }
             }
             catch (Exception e)
@@ -480,6 +503,21 @@ public class PrintController : MonoBehaviour
             Texture2D resampled = null;
             if (mode == ResampleMode.Cover) resampled = MakePortraitCover(tex, w, h, _coverBiasX, _coverBiasY, _postCropInsetPx);
             else if (mode == ResampleMode.Fit) resampled = MakePortraitFit(tex, w, h);
+            else if (mode == ResampleMode.ExactCrop)
+            {
+                float extra = isLandscapeMode ? _exactCropLandscapeExtra : _exactCropPortraitExtra;
+                resampled = MakeExactCrop(tex, w, h, extra, isLandscapeMode);
+            }
+            else if (mode == ResampleMode.Stretch)
+            {
+                float extraRatio = isLandscapeMode ? _stretchLandscapeExtraWidth : _stretchPortraitExtraHeight;
+                resampled = MakeStretch(tex, w, h, extraRatio, isLandscapeMode);
+            }
+            else if (mode == ResampleMode.ScaleUp)
+            {
+                float scaleRatio = isLandscapeMode ? _scaleUpLandscapeX : _scaleUpPortraitY;
+                resampled = MakeScaleUp(tex, w, h, scaleRatio, isLandscapeMode);
+            }
 
             if (resampled != null)
             {
@@ -493,7 +531,32 @@ public class PrintController : MonoBehaviour
             }
         }
 
-        // 3) 180도 회전 + 좌우반전 (옵션)
+        // 4) 파일 저장
+        string folderPath = Application.persistentDataPath;
+        Directory.CreateDirectory(folderPath);
+        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
+        // QR용 이미지 저장 (캡처가 뒤집혀 있으므로 180도+좌우반전으로 정방향 만들기)
+        string qrSavePath = null;
+        if (_enableUploadAndQr && _ncpUploader != null)
+        {
+            // QR용: 정방향으로 만들기 위해 180도 회전 + 좌우반전
+            Texture2D qrTex = CopyTexture(tex);
+            qrTex = Rotate180(qrTex);
+            qrTex = MirrorX(qrTex);
+            if (isLandscapeMode)
+            {
+                qrTex = MirrorX(qrTex);
+            }
+
+            string qrFilename = $"photo_qr_{timestamp}.png";
+            qrSavePath = Path.Combine(folderPath, qrFilename);
+            File.WriteAllBytes(qrSavePath, qrTex.EncodeToPNG());
+            Destroy(qrTex);
+            Debug.Log($"[Print] QR용 저장 완료 (정방향): {qrSavePath}");
+        }
+
+        // 프린터용: 180도 회전 + 좌우반전 (프린터가 뒤집어서 출력하므로 미리 뒤집어둠)
         if (_rotate180OnSave)
         {
             tex = Rotate180(tex);
@@ -511,20 +574,18 @@ public class PrintController : MonoBehaviour
             }
         }
 
-        // 4) 파일 저장
-        string folderPath = Application.persistentDataPath;
-        Directory.CreateDirectory(folderPath);
-        string filename = $"photo_raw_{DateTime.Now:yyyyMMdd_HHmmss}.png";
+        // 프린터용 이미지 저장
+        string filename = $"photo_raw_{timestamp}.png";
         string savePath = Path.Combine(folderPath, filename);
 
         File.WriteAllBytes(savePath, tex.EncodeToPNG());
-        Debug.Log($"[Print] 저장 완료: {savePath} ({tex.width}x{tex.height})");
+        Debug.Log($"[Print] 프린터용 저장 완료: {savePath} ({tex.width}x{tex.height})");
         Destroy(tex);
 
-        // ✅ 저장 직후 업로드+QR (옵션)
-        if (_enableUploadAndQr && _ncpUploader != null && _qrTiming == QrTiming.AfterSave_BeforePrint)
+        // ✅ 저장 직후 업로드+QR (옵션) - QR용 파일 사용
+        if (_enableUploadAndQr && _ncpUploader != null && _qrTiming == QrTiming.AfterSave_BeforePrint && qrSavePath != null)
         {
-            StartCoroutine(UploadAndShowQrRoutine(savePath));
+            StartCoroutine(UploadAndShowQrRoutine(qrSavePath));
         }
 
         // 4) 인쇄
@@ -544,10 +605,10 @@ public class PrintController : MonoBehaviour
             }
         }
 
-        // ✅ 인쇄 끝난 뒤 업로드+QR (옵션)
-        if (_enableUploadAndQr && _ncpUploader != null && _qrTiming == QrTiming.AfterPrintDone)
+        // ✅ 인쇄 끝난 뒤 업로드+QR (옵션) - QR용 파일 사용
+        if (_enableUploadAndQr && _ncpUploader != null && _qrTiming == QrTiming.AfterPrintDone && qrSavePath != null)
         {
-            yield return StartCoroutine(UploadAndShowQrRoutine(savePath));
+            yield return StartCoroutine(UploadAndShowQrRoutine(qrSavePath));
         }
 
         StopProgressUI();
@@ -1296,6 +1357,230 @@ public class PrintController : MonoBehaviour
         return outTex;
     }
 
+    /// <summary>
+    /// 4:6 (또는 6:4) 비율에 정확히 맞게 중앙 크롭 후 출력 크기로 리사이즈
+    /// extra: 더 보이게 할 비율 (0.05 = 약 1cm 더 보임)
+    /// isLandscape: true면 좌우를, false면 상하를 더 보이게
+    /// </summary>
+    private Texture2D MakeExactCrop(Texture2D src, int targetW, int targetH, float extra, bool isLandscape)
+    {
+        float srcW = src.width;
+        float srcH = src.height;
+
+        // 타겟 비율 (4:6 세로 = 0.666..., 6:4 가로 = 1.5)
+        float targetRatio = (float)targetW / targetH;
+
+        // extra 적용: 세로모드면 세로를, 가로모드면 가로를 더 보이게
+        // 세로모드: 상하를 더 보이게 → 비율을 더 길게 (targetRatio 감소)
+        // 가로모드: 좌우를 더 보이게 → 비율을 더 넓게 (targetRatio 증가)
+        if (isLandscape)
+            targetRatio *= (1f + extra);  // 가로모드: 좌우를 더 보이게
+        else
+            targetRatio *= (1f - extra);  // 세로모드: 상하를 더 보이게
+
+        float srcRatio = srcW / srcH;
+
+        int cropW, cropH;
+        int cropX, cropY;
+
+        if (srcRatio > targetRatio)
+        {
+            // 소스가 더 넓음 → 좌우를 크롭
+            cropH = (int)srcH;
+            cropW = Mathf.RoundToInt(srcH * targetRatio);
+            cropX = (int)((srcW - cropW) * 0.5f);
+            cropY = 0;
+        }
+        else
+        {
+            // 소스가 더 높음 → 상하를 크롭
+            cropW = (int)srcW;
+            cropH = Mathf.RoundToInt(srcW / targetRatio);
+            cropX = 0;
+            cropY = (int)((srcH - cropH) * 0.5f);
+        }
+
+        // 범위 보정
+        cropX = Mathf.Clamp(cropX, 0, (int)srcW - 1);
+        cropY = Mathf.Clamp(cropY, 0, (int)srcH - 1);
+        cropW = Mathf.Clamp(cropW, 1, (int)srcW - cropX);
+        cropH = Mathf.Clamp(cropH, 1, (int)srcH - cropY);
+
+        Debug.Log($"[Print] ExactCrop: src={srcW}x{srcH}, crop={cropW}x{cropH} at ({cropX},{cropY}), target={targetW}x{targetH}");
+
+        // 1) 크롭된 영역 추출
+        Color32[] srcPixels = src.GetPixels32();
+        Color32[] croppedPixels = new Color32[cropW * cropH];
+
+        for (int y = 0; y < cropH; y++)
+        {
+            int srcRow = (cropY + y) * (int)srcW;
+            int dstRow = y * cropW;
+            for (int x = 0; x < cropW; x++)
+            {
+                croppedPixels[dstRow + x] = srcPixels[srcRow + (cropX + x)];
+            }
+        }
+
+        var croppedTex = new Texture2D(cropW, cropH, TextureFormat.RGBA32, false);
+        croppedTex.SetPixels32(croppedPixels);
+        croppedTex.Apply(false);
+
+        // 2) 타겟 크기로 리사이즈 (Bilinear)
+        var rt = RenderTexture.GetTemporary(targetW, targetH, 0,
+            RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+        var prevRT = RenderTexture.active;
+        RenderTexture.active = rt;
+
+        GL.PushMatrix();
+        GL.LoadPixelMatrix(0, targetW, 0, targetH);
+        GL.Clear(true, true, Color.white);
+
+        croppedTex.filterMode = FilterMode.Bilinear;
+        Graphics.DrawTexture(new Rect(0, 0, targetW, targetH), croppedTex);
+
+        var outTex = new Texture2D(targetW, targetH, TextureFormat.RGBA32, false);
+        outTex.ReadPixels(new Rect(0, 0, targetW, targetH), 0, 0);
+        outTex.Apply(false);
+
+        GL.PopMatrix();
+        RenderTexture.active = prevRT;
+        RenderTexture.ReleaseTemporary(rt);
+
+        Destroy(croppedTex);
+
+        return outTex;
+    }
+
+    /// <summary>
+    /// 크롭/여백 없이 강제로 타겟 크기에 맞춤 (약간 찌그러질 수 있음)
+    /// extraRatio: 세로모드면 상하를, 가로모드면 좌우를 더 길게
+    /// </summary>
+    private Texture2D MakeStretch(Texture2D src, int targetW, int targetH, float extraRatio, bool isLandscape)
+    {
+        // extra 적용: 출력 크기를 살짝 조정
+        int finalW = targetW;
+        int finalH = targetH;
+
+        if (isLandscape)
+        {
+            // 가로모드: 좌우를 더 길게 → width 증가
+            finalW = Mathf.RoundToInt(targetW * (1f + extraRatio));
+        }
+        else
+        {
+            // 세로모드: 상하를 더 길게 → height 증가
+            finalH = Mathf.RoundToInt(targetH * (1f + extraRatio));
+        }
+
+        float srcRatio = (float)src.width / src.height;
+        float finalRatio = (float)finalW / finalH;
+        float stretchPercent = Mathf.Abs(srcRatio - finalRatio) / finalRatio * 100f;
+
+        Debug.Log($"[Print] Stretch: src={src.width}x{src.height} (ratio={srcRatio:0.###}), final={finalW}x{finalH} (ratio={finalRatio:0.###}), stretch={stretchPercent:0.#}%, extra={extraRatio:0.##}");
+
+        var rt = RenderTexture.GetTemporary(finalW, finalH, 0,
+            RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+        var prevRT = RenderTexture.active;
+        RenderTexture.active = rt;
+
+        GL.PushMatrix();
+        GL.LoadPixelMatrix(0, finalW, 0, finalH);
+        GL.Clear(true, true, Color.white);
+
+        src.filterMode = FilterMode.Bilinear;
+        Graphics.DrawTexture(new Rect(0, 0, finalW, finalH), src);
+
+        var outTex = new Texture2D(finalW, finalH, TextureFormat.RGBA32, false);
+        outTex.ReadPixels(new Rect(0, 0, finalW, finalH), 0, 0);
+        outTex.Apply(false);
+
+        GL.PopMatrix();
+        RenderTexture.active = prevRT;
+        RenderTexture.ReleaseTemporary(rt);
+
+        return outTex;
+    }
+
+    /// <summary>
+    /// 이미지를 살짝 확대한 후 정확히 타겟 크기로 크롭
+    /// 프린터가 센터링할 때 여백이 생기지 않도록 함
+    /// scaleRatio: 세로모드면 Y축, 가로모드면 X축 확대 비율 (0.03 = 3%)
+    /// </summary>
+    private Texture2D MakeScaleUp(Texture2D src, int targetW, int targetH, float scaleRatio, bool isLandscape)
+    {
+        float srcW = src.width;
+        float srcH = src.height;
+
+        // 확대 비율 적용: 세로모드면 높이를 더 크게, 가로모드면 너비를 더 크게
+        int scaledW, scaledH;
+        if (isLandscape)
+        {
+            // 가로모드: X축 확대 → 너비를 더 크게 만들어서 좌우 여백 제거
+            scaledW = Mathf.RoundToInt(targetW * (1f + scaleRatio));
+            scaledH = targetH;
+        }
+        else
+        {
+            // 세로모드: Y축 확대 → 높이를 더 크게 만들어서 상하 여백 제거
+            scaledW = targetW;
+            scaledH = Mathf.RoundToInt(targetH * (1f + scaleRatio));
+        }
+
+        Debug.Log($"[Print] ScaleUp: src={srcW}x{srcH}, scaled={scaledW}x{scaledH}, target={targetW}x{targetH}, ratio={scaleRatio:0.##}");
+
+        // 2) 소스를 확대된 크기로 Stretch
+        var rt = RenderTexture.GetTemporary(scaledW, scaledH, 0,
+            RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+        var prevRT = RenderTexture.active;
+        RenderTexture.active = rt;
+
+        GL.PushMatrix();
+        GL.LoadPixelMatrix(0, scaledW, 0, scaledH);
+        GL.Clear(true, true, Color.white);
+
+        src.filterMode = FilterMode.Bilinear;
+        Graphics.DrawTexture(new Rect(0, 0, scaledW, scaledH), src);
+
+        var scaledTex = new Texture2D(scaledW, scaledH, TextureFormat.RGBA32, false);
+        scaledTex.ReadPixels(new Rect(0, 0, scaledW, scaledH), 0, 0);
+        scaledTex.Apply(false);
+
+        GL.PopMatrix();
+        RenderTexture.active = prevRT;
+        RenderTexture.ReleaseTemporary(rt);
+
+        // 3) 중앙 크롭으로 정확히 타겟 크기 추출
+        int cropX = (scaledW - targetW) / 2;
+        int cropY = (scaledH - targetH) / 2;
+
+        cropX = Mathf.Clamp(cropX, 0, scaledW - targetW);
+        cropY = Mathf.Clamp(cropY, 0, scaledH - targetH);
+
+        Color32[] scaledPixels = scaledTex.GetPixels32();
+        Color32[] croppedPixels = new Color32[targetW * targetH];
+
+        for (int y = 0; y < targetH; y++)
+        {
+            int srcRow = (cropY + y) * scaledW;
+            int dstRow = y * targetW;
+            for (int x = 0; x < targetW; x++)
+            {
+                croppedPixels[dstRow + x] = scaledPixels[srcRow + (cropX + x)];
+            }
+        }
+
+        Destroy(scaledTex);
+
+        var outTex = new Texture2D(targetW, targetH, TextureFormat.RGBA32, false);
+        outTex.SetPixels32(croppedPixels);
+        outTex.Apply(false);
+
+        Debug.Log($"[Print] ScaleUp 완료: 최종={targetW}x{targetH} (crop offset: {cropX},{cropY})");
+
+        return outTex;
+    }
+
     // ===== Test Print =====
     public void PrintTestBlank(Action onDone = null)
     {
@@ -1349,6 +1634,14 @@ public class PrintController : MonoBehaviour
         StopProgressUI();
         onDone?.Invoke();
     }
+    private Texture2D CopyTexture(Texture2D src)
+    {
+        var copy = new Texture2D(src.width, src.height, src.format, false);
+        copy.SetPixels32(src.GetPixels32());
+        copy.Apply(false);
+        return copy;
+    }
+
     private Texture2D Rotate180(Texture2D src)
     {
         int w = src.width;
