@@ -467,15 +467,15 @@ public class StepCountdownUI : MonoBehaviour
         int ix = Mathf.RoundToInt(capX);
         int iy = Mathf.RoundToInt(capY);
 
-        var tex = new Texture2D(iw, ih, TextureFormat.RGB24, false);
+        var tex = new Texture2D(iw, ih, TextureFormat.RGBA32, false);
         tex.ReadPixels(new Rect(ix, iy, iw, ih), 0, 0);
         tex.Apply();
 
         string folderPath = Application.persistentDataPath;
         Directory.CreateDirectory(folderPath);
-        string filename = $"photo_raw_{stepIndex + 1}_{DateTime.Now:yyyyMMdd_HHmmss}.jpg";
+        string filename = $"photo_raw_{stepIndex + 1}_{DateTime.Now:yyyyMMdd_HHmmss}.png";
         string savePath = Path.Combine(folderPath, filename);
-        File.WriteAllBytes(savePath, tex.EncodeToJPG(95));
+        File.WriteAllBytes(savePath, tex.EncodeToPNG());
         Debug.Log($"[찰칵] 저장 완료: {savePath} ({iw}x{ih} from {ix},{iy})");
 
         // === 내부 배열에 항상 저장 ===
@@ -489,10 +489,11 @@ public class StepCountdownUI : MonoBehaviour
                 if (oldTex != null) Destroy(oldTex);
             }
 
+            // pixelsPerUnit을 1로 설정하면 1:1 픽셀 매핑으로 최대 선명도 유지
             var spr = Sprite.Create(tex,
                 new Rect(0, 0, tex.width, tex.height),
                 new Vector2(0.5f, 0.5f),
-                100f);
+                1f);
 
             spr.name = $"Captured_{stepIndex + 1}_{DateTime.Now:HHmmssfff}";
             _capturedSprites[stepIndex] = spr;

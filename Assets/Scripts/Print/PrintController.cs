@@ -54,8 +54,8 @@ public class PrintController : MonoBehaviour
     [Tooltip("true면 ScreenCapture.CaptureScreenshot(superSize)로 고해상도 캡처 후 잘라냄 (화질 개선)")]
     [SerializeField] private bool _useHiResScreenshotCapture = true;
 
-    [Tooltip("스크린샷 배율(1=기존 화면해상도). 6~10도 가능하지만 느려질 수 있음")]
-    [SerializeField, Range(1, 10)] private int _screenshotSuperSize = 2;
+    [Tooltip("스크린샷 배율(1=기존 화면해상도). 6 이상 권장 (고화질)")]
+    [SerializeField, Range(1, 10)] private int _screenshotSuperSize = 6;
 
     [Tooltip("스크린샷 파일 생성 대기 타임아웃(초)")]
     [SerializeField] private float _screenshotTimeoutSeconds = 3f;
@@ -67,14 +67,14 @@ public class PrintController : MonoBehaviour
     [Tooltip("캡처 직전에만 target을 임시로 확대해서 더 큰 픽셀로 캡처")]
     [SerializeField] private bool _useTempScaleDuringCapture = true;
 
-    [Tooltip("임시 확대 배수 (예: 2 = x2)")]
+    [Tooltip("임시 확대 배수 (예: 2 = x2). 고화질 원하면 3 권장")]
     [SerializeField, Range(1f, 4f)] private float _tempCaptureScale = 2f;
 
     [Tooltip("임시 확대 시 화면 밖으로 나가면 자동으로 스케일을 줄여서 화면에 맞춤")]
     [SerializeField] private bool _autoFitTempScaleToScreen = true;
 
     [Tooltip("화면에 딱 맞추면 가장자리 살짝 잘릴 수 있어서 여유(0.95~0.99 추천)")]
-    [SerializeField, Range(0.8f, 1f)] private float _fitScreenMargin = 0.98f;
+    [SerializeField, Range(0.8f, 1f)] private float _fitScreenMargin = 0.92f;
 
     public enum RotationMode { None, ForceCW, ForceCCW }
 
@@ -99,9 +99,9 @@ public class PrintController : MonoBehaviour
     [SerializeField] private ResampleMode _landscapeResample = ResampleMode.Cover;
 
     [Header("Output Size (Printer Target)")]
-    [Tooltip("세로 4x6 기준 해상도(1240x1844 권장). 가로모드는 자동으로 스왑(1844x1240).")]
-    [SerializeField] private int _outputWidth = 1240;
-    [SerializeField] private int _outputHeight = 1844;
+    [Tooltip("세로 4x6 기준 해상도. 1800x2400(400DPI급) 권장. 가로모드는 자동으로 스왑.")]
+    [SerializeField] private int _outputWidth = 1800;
+    [SerializeField] private int _outputHeight = 2400;
 
     [Header("Windows Print Target (레거시 폴백용)")]
     [Tooltip("printto에 사용할 프린터 이름 (비우면 OS 기본 print 사용)")]

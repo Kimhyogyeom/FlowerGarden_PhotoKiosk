@@ -105,12 +105,15 @@ Shader "Custom/PersonBackgroundComposite"
                 // 배경 이미지 (반전된 UV 사용)
                 fixed4 background = tex2D(_BackgroundTex, uv);
                 
-                // 부드러운 경계
-                float alpha = smoothstep(_Threshold - _Smoothness, _Threshold + _Smoothness, mask);
-                
-                // 중간톤 제거 (회색 테두리 감소)
-                alpha = pow(alpha, 1.2);
-                
+                // 부드러운 경계 (더 선명하게 조정)
+                float alpha = smoothstep(_Threshold - _Smoothness * 0.5, _Threshold + _Smoothness * 0.5, mask);
+
+                // 중간톤 제거 + 선명도 강화 (흐릿함 감소)
+                alpha = saturate(pow(alpha, 1.5) * 1.1);
+
+                // 경계 더 확실하게 (0.1 이하는 0으로, 0.9 이상은 1로)
+                alpha = alpha < 0.1 ? 0.0 : (alpha > 0.9 ? 1.0 : alpha);
+
                 // 최종 합성
                 return lerp(background, person, alpha);
             }

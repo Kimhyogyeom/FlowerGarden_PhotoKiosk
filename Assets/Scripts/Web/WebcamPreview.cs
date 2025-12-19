@@ -18,8 +18,8 @@ public class WebcamPreview : MonoBehaviour
     [SerializeField] private string preferredDeviceKeyword = "C922";
     // 우선적으로 사용할 카메라 이름에 포함되었으면 하는 키워드 (예: "C922")
 
-    [SerializeField] private int requestedWidth = 1280;  // 1920 → 1280으로 조금 낮춰서 테스트 권장
-    [SerializeField] private int requestedHeight = 720;   // 1080 → 720
+    [SerializeField] private int requestedWidth = 1280;  // 1280x720 권장 (1920x1080은 렉 발생)
+    [SerializeField] private int requestedHeight = 720;   // 프리뷰용이므로 720p면 충분
     [SerializeField] private int requestedFps = 30;    // 요청 프레임 수
 
     [Header("Mirror Settings")]

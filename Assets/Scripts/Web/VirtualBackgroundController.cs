@@ -21,16 +21,16 @@ public class VirtualBackgroundController : MonoBehaviour
     [SerializeField] private RawImage _outputImage;
 
     [Header("Performance Settings")]
-    [SerializeField] private int _processingWidth = 256;
-    [SerializeField] private int _processingHeight = 144;
-    [SerializeField] private int _processEveryNFrames = 2;
+    [SerializeField] private int _processingWidth = 512;      // 256→512 (해상도 2배 증가로 세밀한 경계 인식)
+    [SerializeField] private int _processingHeight = 288;     // 144→288 (16:9 비율 유지)
+    [SerializeField] private int _processEveryNFrames = 1;    // 2→1 (매 프레임 처리로 부드러움 향상)
 
     [Header("Quality Settings")]
-    [SerializeField] private float _maskThreshold = 0.6f;
-    [SerializeField] private float _edgeSmoothness = 0.05f;
-    [SerializeField] private float _temporalStability = 0.7f;
-    [SerializeField] private float _dilateAmount = 0.1f;
-    [SerializeField] private float _fillHolesAmount = 0.9f;
+    [SerializeField] private float _maskThreshold = 0.4f;     // 더 낮춰서 경계 보존 강화
+    [SerializeField] private float _edgeSmoothness = 0.03f;   // 낮춰서 선명한 경계 (흐릿함 감소)
+    [SerializeField] private float _temporalStability = 0.2f; // 낮춰서 빠른 반응 (잔상 감소)
+    [SerializeField] private float _dilateAmount = 0.12f;     // 적당히 확장
+    [SerializeField] private float _fillHolesAmount = 0.85f;  // 구멍 채우기 (너무 높으면 배경도 채워짐)
 
     [Header("Mirror Settings")]
     [SerializeField] private bool _mirrorHorizontal = true;
@@ -78,11 +78,16 @@ public class VirtualBackgroundController : MonoBehaviour
         Debug.Log("[VirtualBackground] 세그멘테이션 모델 로드 완료 (Resources)");
     }
 
+    [Header("Output Resolution (화질 개선)")]
+    [Tooltip("출력 RenderTexture 해상도. 1920x1080 권장 (더 높으면 렉 가능)")]
+    [SerializeField] private int _outputResWidth = 1920;
+    [SerializeField] private int _outputResHeight = 1080;
+
     private void CreateRenderTextures()
     {
         _maskTexture = new RenderTexture(_processingWidth, _processingHeight, 0, RenderTextureFormat.RFloat);
-        _previousMaskTexture = new RenderTexture(_processingWidth, _processingHeight, 0, RenderTextureFormat.RFloat); // ← 추가!
-        _outputTexture = new RenderTexture(1280, 720, 0, RenderTextureFormat.ARGB32);
+        _previousMaskTexture = new RenderTexture(_processingWidth, _processingHeight, 0, RenderTextureFormat.RFloat);
+        _outputTexture = new RenderTexture(_outputResWidth, _outputResHeight, 0, RenderTextureFormat.ARGB32);
 
         if (_outputImage != null)
         {
