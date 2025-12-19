@@ -556,21 +556,21 @@ public class PrintController : MonoBehaviour
             Debug.Log($"[Print] QR용 저장 완료 (정방향): {qrSavePath}");
         }
 
-        // 프린터용: 180도 회전 + 좌우반전 (프린터가 뒤집어서 출력하므로 미리 뒤집어둠)
+        // 프린터용: QR과 동일하게 정방향으로 저장
         if (_rotate180OnSave)
         {
             tex = Rotate180(tex);
-            tex = MirrorX(tex);
 
-            // 가로모드일 때 추가 좌우반전
+            // 가로모드일 때만 MirrorX (472라인에서 이미 MirrorX 적용됨 → 상쇄)
+            // 세로모드는 MirrorX 없음 (472라인 MirrorX가 없으므로 QR과 동일)
             if (isLandscapeMode)
             {
-                tex = MirrorX(tex);
-                Debug.Log("[Print] 180도 회전 + 좌우반전 + 가로모드 추가 반전 적용 완료");
+                // 472라인 MirrorX + 여기서 MirrorX = 원래대로 (QR과 동일)
+                Debug.Log("[Print] 180도 회전 적용 완료 (가로모드, QR과 동일)");
             }
             else
             {
-                Debug.Log("[Print] 180도 회전 + 좌우반전 적용 완료 (세로모드)");
+                Debug.Log("[Print] 180도 회전 적용 완료 (세로모드, QR과 동일)");
             }
         }
 

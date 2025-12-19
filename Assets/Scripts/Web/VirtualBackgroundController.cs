@@ -21,16 +21,16 @@ public class VirtualBackgroundController : MonoBehaviour
     [SerializeField] private RawImage _outputImage;
 
     [Header("Performance Settings")]
-    [SerializeField] private int _processingWidth = 512;      // 256→512 (해상도 2배 증가로 세밀한 경계 인식)
-    [SerializeField] private int _processingHeight = 288;     // 144→288 (16:9 비율 유지)
-    [SerializeField] private int _processEveryNFrames = 1;    // 2→1 (매 프레임 처리로 부드러움 향상)
+    [SerializeField] private int _processingWidth = 1024;     // 512→1024 (도트 감소를 위해 고해상도)
+    [SerializeField] private int _processingHeight = 576;     // 288→576 (16:9 비율 유지)
+    [SerializeField] private int _processEveryNFrames = 1;    // 매 프레임 처리
 
     [Header("Quality Settings")]
-    [SerializeField] private float _maskThreshold = 0.4f;     // 더 낮춰서 경계 보존 강화
-    [SerializeField] private float _edgeSmoothness = 0.03f;   // 낮춰서 선명한 경계 (흐릿함 감소)
-    [SerializeField] private float _temporalStability = 0.2f; // 낮춰서 빠른 반응 (잔상 감소)
-    [SerializeField] private float _dilateAmount = 0.12f;     // 적당히 확장
-    [SerializeField] private float _fillHolesAmount = 0.85f;  // 구멍 채우기 (너무 높으면 배경도 채워짐)
+    [SerializeField] private float _maskThreshold = 0.35f;    // 0.4→0.35 (경계 더 부드럽게)
+    [SerializeField] private float _edgeSmoothness = 0.08f;   // 0.03→0.08 (안티앨리어싱 강화, 도트 감소)
+    [SerializeField] private float _temporalStability = 0.3f; // 0.2→0.3 (프레임간 안정성 향상)
+    [SerializeField] private float _dilateAmount = 0.08f;     // 0.12→0.08 (과도한 확장 방지)
+    [SerializeField] private float _fillHolesAmount = 0.80f;  // 0.85→0.80 (자연스러운 경계)
 
     [Header("Mirror Settings")]
     [SerializeField] private bool _mirrorHorizontal = true;
