@@ -22,6 +22,9 @@ public class ChromaKeyBackgroundSelector : MonoBehaviour
     [SerializeField] private Texture _backgroundB;   // mode = 1
     [SerializeField] private Texture _backgroundC;   // mode = 2
 
+    [Header("임시 비활성화 (true면 A는 일반 카메라처럼 동작)")]
+    [SerializeField] private bool _disableBackgroundA = false;
+
     [Header("현재 모드 (0=A, 1=B, 2=C)")]
     [Range(0, 2)]
     [SerializeField] private int _mode = 0;
@@ -99,7 +102,7 @@ public class ChromaKeyBackgroundSelector : MonoBehaviour
         switch (_mode)
         {
             case 0:
-                selectedBackground = _backgroundA;
+                selectedBackground = _disableBackgroundA ? null : _backgroundA;
                 break;
             case 1:
                 selectedBackground = _backgroundB;

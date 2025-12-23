@@ -99,8 +99,8 @@ public class PrintController : MonoBehaviour
     [SerializeField] private ResampleMode _landscapeResample = ResampleMode.Stretch;
 
     [Header("Output Size (Printer Target)")]
-    [Tooltip("세로 4x6 기준 해상도. 1800x2400(400DPI급) 권장. 가로모드는 자동으로 스왑.")]
-    [SerializeField] private int _outputWidth = 1800;
+    [Tooltip("세로 4x6 기준 해상도. 4:6 비율(1600x2400) 권장. 가로모드는 자동으로 스왑.")]
+    [SerializeField] private int _outputWidth = 1600;
     [SerializeField] private int _outputHeight = 2400;
 
     [Header("Windows Print Target (레거시 폴백용)")]

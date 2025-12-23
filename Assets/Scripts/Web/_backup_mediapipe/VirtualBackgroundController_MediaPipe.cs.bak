@@ -4,7 +4,6 @@ using Unity.Barracuda;
 
 /// <summary>
 /// 웹캠에서 사람만 분리하고 배경을 3장의 이미지로 교체
-/// MediaPipe Selfie Segmentation 기반
 /// </summary>
 public class VirtualBackgroundController : MonoBehaviour
 {
@@ -18,42 +17,31 @@ public class VirtualBackgroundController : MonoBehaviour
     [SerializeField] private Texture2D[] _backgroundTextures;
     private int _currentBackgroundIndex = 0;
 
-    [Header("임시 비활성화 (true면 index 0은 원본 웹캠 출력)")]
-    [SerializeField] private bool _disableBackgroundA = false;
-
     [Header("Output")]
     [SerializeField] private RawImage _outputImage;
 
     [Header("Performance Settings")]
-    [Tooltip("모델 입력 해상도 (256x144 landscape 모델 권장)")]
-    [SerializeField] private int _modelInputWidth = 256;
-    [SerializeField] private int _modelInputHeight = 144;
-    [Tooltip("마스크 업스케일 해상도 (높을수록 경계 부드러움)")]
-    [SerializeField] private int _maskUpscaleWidth = 512;
-    [SerializeField] private int _maskUpscaleHeight = 288;
-    [SerializeField] private int _processEveryNFrames = 1;
+    [SerializeField] private int _processingWidth = 1920;     // 1024→1920 (마스크 정밀도 향상)
+    [SerializeField] private int _processingHeight = 1080;    // 576→1080 (16:9 비율 유지)
+    [SerializeField] private int _processEveryNFrames = 1;    // 매 프레임 처리
 
     [Header("Quality Settings")]
-    [SerializeField] private float _maskThreshold = 0.35f;
-    [SerializeField] private float _edgeSmoothness = 0.08f;
-    [SerializeField] private float _temporalStability = 0.3f;
-    [SerializeField] private float _dilateAmount = 0.08f;
-    [SerializeField] private float _fillHolesAmount = 0.80f;
-    [SerializeField, Range(0f, 0.05f)] private float _edgeInset = 0.015f;
+    [SerializeField] private float _maskThreshold = 0.35f;    // 0.4→0.35 (경계 더 부드럽게)
+    [SerializeField] private float _edgeSmoothness = 0.08f;   // 0.03→0.08 (안티앨리어싱 강화, 도트 감소)
+    [SerializeField] private float _temporalStability = 0.3f; // 0.2→0.3 (프레임간 안정성 향상)
+    [SerializeField] private float _dilateAmount = 0.08f;     // 0.12→0.08 (과도한 확장 방지)
+    [SerializeField] private float _fillHolesAmount = 0.80f;  // 0.85→0.80 (자연스러운 경계)
+    [SerializeField, Range(0f, 0.05f)] private float _edgeInset = 0.015f;  // 테두리 제거
 
     [Header("Mirror Settings")]
     [SerializeField] private bool _mirrorHorizontal = true;
 
-    [Header("Output Resolution")]
-    [SerializeField] private int _outputResWidth = 1920;
-    [SerializeField] private int _outputResHeight = 1080;
+    [Header("Mirror Settings")]
 
     // 내부 변수
     private IWorker _worker;
     private Material _compositeMaterial;
-    private Material _maskBlurMaterial;
-    private RenderTexture _rawMaskTexture;      // 모델 출력 (저해상도)
-    private RenderTexture _maskTexture;         // 업스케일 + 블러된 마스크
+    private RenderTexture _maskTexture;
     private RenderTexture _previousMaskTexture;
     private RenderTexture _outputTexture;
     private int _frameCounter = 0;
@@ -68,41 +56,38 @@ public class VirtualBackgroundController : MonoBehaviour
 
     private void InitializeModel()
     {
-        // Inspector에서 연결된 경우
+        // 방법 1: Inspector에서 연결된 경우
         if (_modelAsset != null)
         {
-            var model = ModelLoader.Load(_modelAsset);
-            _worker = WorkerFactory.CreateWorker(WorkerFactory.Type.Compute, model);
+            var _model = ModelLoader.Load(_modelAsset);
+            _worker = WorkerFactory.CreateWorker(WorkerFactory.Type.Compute, _model);
             Debug.Log("[VirtualBackground] 세그멘테이션 모델 로드 완료 (Inspector)");
             return;
         }
 
-        // Resources에서 직접 로드
-        NNModel runtimeModel = Resources.Load<NNModel>("selfie_segmentation_landscape");
+        // 방법 2: Resources에서 직접 로드 (빌드 대비)
+        NNModel runtimeModel = Resources.Load<NNModel>("Models/selfie_segmentation_landscape");
         if (runtimeModel == null)
         {
-            Debug.LogError("[VirtualBackground] Resources/selfie_segmentation_landscape 모델을 찾을 수 없습니다!");
+            Debug.LogError("[VirtualBackground] Resources/Models/selfie_segmentation_landscape 모델을 찾을 수 없습니다!");
             enabled = false;
             return;
         }
 
-        var loadedModel = ModelLoader.Load(runtimeModel);
-        _worker = WorkerFactory.CreateWorker(WorkerFactory.Type.Compute, loadedModel);
+        var model = ModelLoader.Load(runtimeModel);
+        _worker = WorkerFactory.CreateWorker(WorkerFactory.Type.Compute, model);
         Debug.Log("[VirtualBackground] 세그멘테이션 모델 로드 완료 (Resources)");
     }
 
+    [Header("Output Resolution (화질 개선)")]
+    [Tooltip("출력 RenderTexture 해상도. 1920x1080 권장 (더 높으면 렉 가능)")]
+    [SerializeField] private int _outputResWidth = 1920;
+    [SerializeField] private int _outputResHeight = 1080;
+
     private void CreateRenderTextures()
     {
-        // 모델 출력용 (저해상도)
-        _rawMaskTexture = new RenderTexture(_modelInputWidth, _modelInputHeight, 0, RenderTextureFormat.RFloat);
-
-        // 업스케일된 마스크 (고해상도)
-        _maskTexture = new RenderTexture(_maskUpscaleWidth, _maskUpscaleHeight, 0, RenderTextureFormat.RFloat);
-        _maskTexture.filterMode = FilterMode.Bilinear;  // 부드러운 업스케일
-
-        _previousMaskTexture = new RenderTexture(_maskUpscaleWidth, _maskUpscaleHeight, 0, RenderTextureFormat.RFloat);
-        _previousMaskTexture.filterMode = FilterMode.Bilinear;
-
+        _maskTexture = new RenderTexture(_processingWidth, _processingHeight, 0, RenderTextureFormat.RFloat);
+        _previousMaskTexture = new RenderTexture(_processingWidth, _processingHeight, 0, RenderTextureFormat.RFloat);
         _outputTexture = new RenderTexture(_outputResWidth, _outputResHeight, 0, RenderTextureFormat.ARGB32);
 
         if (_outputImage != null)
@@ -128,13 +113,18 @@ public class VirtualBackgroundController : MonoBehaviour
     {
         if (_worker == null || _compositeMaterial == null) return;
 
+        // 프레임 스킵
         _frameCounter++;
         if (_frameCounter % _processEveryNFrames != 0) return;
 
+        // 웹캠 텍스처 가져오기
         WebCamTexture webcamTex = GetWebcamTexture();
         if (webcamTex == null || !webcamTex.isPlaying) return;
 
+        // 1. 사람 세그멘테이션 실행
         ProcessSegmentation(webcamTex);
+
+        // 2. 배경과 합성
         CompositeWithBackground(webcamTex);
     }
 
@@ -151,36 +141,38 @@ public class VirtualBackgroundController : MonoBehaviour
             _worker.Execute(tensor);
             var output = _worker.PeekOutput();
 
-            // 모델 출력을 저해상도 텍스처에 저장
-            TensorToRenderTexture(output, _rawMaskTexture);
-
-            // 저해상도 마스크를 고해상도로 업스케일 (Bilinear 필터링)
-            RenderTexture upscaledMask = RenderTexture.GetTemporary(
-                _maskUpscaleWidth, _maskUpscaleHeight, 0, RenderTextureFormat.RFloat);
-            upscaledMask.filterMode = FilterMode.Bilinear;
-            Graphics.Blit(_rawMaskTexture, upscaledMask);
+            // 임시 텍스처에 현재 마스크 저장
+            RenderTexture tempMask = RenderTexture.GetTemporary(
+                _processingWidth, _processingHeight, 0, RenderTextureFormat.RFloat);
+            TensorToRenderTexture(output, tempMask);
 
             // 시간적 안정화 적용
             if (!_isFirstFrame && _temporalStability > 0.01f)
             {
-                ApplyTemporalSmoothing(upscaledMask, _maskTexture);
+                ApplyTemporalSmoothing(tempMask, _maskTexture);
             }
             else
             {
-                Graphics.Blit(upscaledMask, _maskTexture);
+                Graphics.Blit(tempMask, _maskTexture);
             }
 
+            // 다음 프레임을 위해 저장
             Graphics.Blit(_maskTexture, _previousMaskTexture);
-            RenderTexture.ReleaseTemporary(upscaledMask);
+
+            RenderTexture.ReleaseTemporary(tempMask);
             _isFirstFrame = false;
         }
     }
 
     private void ApplyTemporalSmoothing(RenderTexture current, RenderTexture output)
     {
+        // 이전 프레임과 현재 프레임을 가중 평균
+        // 예: 이전 * 0.7 + 현재 * 0.3
+
         Material smoothMat = new Material(Shader.Find("Hidden/TemporalSmooth"));
         if (smoothMat.shader == null)
         {
+            // 폴백: 간단한 블렌딩
             Graphics.Blit(current, output);
             return;
         }
@@ -194,9 +186,12 @@ public class VirtualBackgroundController : MonoBehaviour
 
     private Tensor TextureToTensor(Texture input)
     {
-        // 모델 입력 해상도로 리사이즈 (256x144 권장)
         RenderTexture temp = RenderTexture.GetTemporary(
-            _modelInputWidth, _modelInputHeight, 0, RenderTextureFormat.ARGB32);
+            _processingWidth,
+            _processingHeight,
+            0,
+            RenderTextureFormat.ARGB32
+        );
         Graphics.Blit(input, temp);
 
         var tensor = new Tensor(temp, 3);
@@ -218,21 +213,6 @@ public class VirtualBackgroundController : MonoBehaviour
             return;
         }
 
-        // index 0 && 비활성화 플래그 ON이면 원본 웹캠만 출력 (좌우반전만 적용)
-        if (_disableBackgroundA && _currentBackgroundIndex == 0)
-        {
-            if (_mirrorHorizontal)
-            {
-                // 좌우반전 적용을 위해 scale -1
-                Graphics.Blit(webcam, _outputTexture, new Vector2(-1f, 1f), new Vector2(1f, 0f));
-            }
-            else
-            {
-                Graphics.Blit(webcam, _outputTexture);
-            }
-            return;
-        }
-
         _compositeMaterial.SetTexture("_MainTex", webcam);
         _compositeMaterial.SetTexture("_MaskTex", _maskTexture);
         _compositeMaterial.SetTexture("_BackgroundTex", _backgroundTextures[_currentBackgroundIndex]);
@@ -242,7 +222,6 @@ public class VirtualBackgroundController : MonoBehaviour
         _compositeMaterial.SetFloat("_FillHoles", _fillHolesAmount);
         _compositeMaterial.SetFloat("_EdgeInset", _edgeInset);
         _compositeMaterial.SetFloat("_MirrorHorizontal", _mirrorHorizontal ? 1f : 0f);
-        _compositeMaterial.SetFloat("_UseBackground", 1f);
 
         Graphics.Blit(webcam, _outputTexture, _compositeMaterial);
     }
@@ -250,6 +229,7 @@ public class VirtualBackgroundController : MonoBehaviour
     public void NextBackground()
     {
         if (_backgroundTextures == null || _backgroundTextures.Length == 0) return;
+
         _currentBackgroundIndex = (_currentBackgroundIndex + 1) % _backgroundTextures.Length;
         Debug.Log($"[VirtualBackground] 배경 전환: {_currentBackgroundIndex + 1}/{_backgroundTextures.Length}");
     }
@@ -257,12 +237,17 @@ public class VirtualBackgroundController : MonoBehaviour
     public void PreviousBackground()
     {
         if (_backgroundTextures == null || _backgroundTextures.Length == 0) return;
+
         _currentBackgroundIndex--;
         if (_currentBackgroundIndex < 0)
             _currentBackgroundIndex = _backgroundTextures.Length - 1;
+
         Debug.Log($"[VirtualBackground] 배경 전환: {_currentBackgroundIndex + 1}/{_backgroundTextures.Length}");
     }
 
+    /// <summary>
+    /// 특정 번호의 배경으로 직접 변경 (0부터 시작)
+    /// </summary>
     public void SetBackground(int index)
     {
         if (_backgroundTextures == null || _backgroundTextures.Length == 0)
@@ -281,18 +266,29 @@ public class VirtualBackgroundController : MonoBehaviour
         Debug.Log($"[VirtualBackground] 배경 설정: {_currentBackgroundIndex + 1}/{_backgroundTextures.Length}");
     }
 
-    public int GetCurrentBackgroundIndex() => _currentBackgroundIndex;
-    public int GetBackgroundCount() => _backgroundTextures?.Length ?? 0;
+    /// <summary>
+    /// 현재 배경 인덱스 가져오기
+    /// </summary>
+    public int GetCurrentBackgroundIndex()
+    {
+        return _currentBackgroundIndex;
+    }
+
+    /// <summary>
+    /// 전체 배경 개수 가져오기
+    /// </summary>
+    public int GetBackgroundCount()
+    {
+        return _backgroundTextures?.Length ?? 0;
+    }
 
     void OnDestroy()
     {
         _worker?.Dispose();
 
-        if (_rawMaskTexture != null) _rawMaskTexture.Release();
         if (_maskTexture != null) _maskTexture.Release();
-        if (_previousMaskTexture != null) _previousMaskTexture.Release();
+        if (_previousMaskTexture != null) _previousMaskTexture.Release(); // ← 추가!
         if (_outputTexture != null) _outputTexture.Release();
         if (_compositeMaterial != null) Destroy(_compositeMaterial);
-        if (_maskBlurMaterial != null) Destroy(_maskBlurMaterial);
     }
 }

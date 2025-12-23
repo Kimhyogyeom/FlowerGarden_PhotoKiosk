@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
+using System.Collections;
 
 /// <summary>
 /// 웹캠 프리뷰 컨트롤러
@@ -73,6 +74,9 @@ public class WebcamPreview : MonoBehaviour
         // RawImage 에 텍스처 연결 후 재생
         webcamTarget.texture = _tex;
         _tex.Play();
+
+        // 실제 해상도 로그 출력 (1프레임 후 확인 필요)
+        StartCoroutine(LogActualResolution());
 
         // 초기 값 리셋
         _lastRotation = -999;
@@ -198,5 +202,22 @@ public class WebcamPreview : MonoBehaviour
     public void SetMirror(bool mirror)
     {
         _mirrorHorizontal = mirror;
+    }
+
+    private IEnumerator LogActualResolution()
+    {
+        // 웹캠이 초기화될 때까지 대기
+        yield return new WaitForSeconds(0.5f);
+
+        if (_tex != null && _tex.isPlaying)
+        {
+            Debug.Log($"[WebcamPreview] 요청 해상도: {requestedWidth}x{requestedHeight}");
+            Debug.Log($"[WebcamPreview] 실제 해상도: {_tex.width}x{_tex.height}");
+
+            if (_tex.width != requestedWidth || _tex.height != requestedHeight)
+            {
+                Debug.LogWarning($"[WebcamPreview] 요청한 해상도와 실제 해상도가 다릅니다! 카메라가 {requestedWidth}x{requestedHeight}를 지원하지 않을 수 있습니다.");
+            }
+        }
     }
 }
