@@ -575,6 +575,13 @@ public class PrintController : MonoBehaviour
             }
         }
 
+        // ✅ 프린터용: 가로 이미지면 90도 회전해서 세로로 저장 (DS-RX1은 Landscape 미지원)
+        if (isLandscapeMode && tex.width > tex.height)
+        {
+            tex = Rotate90CW(tex);
+            Debug.Log($"[Print] 프린터용 가로→세로 회전 완료: {tex.width}x{tex.height}");
+        }
+
         // 프린터용 이미지 저장
         string filename = $"photo_raw_{timestamp}.png";
         string savePath = Path.Combine(folderPath, filename);
