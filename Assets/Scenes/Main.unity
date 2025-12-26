@@ -2746,7 +2746,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1280154549}
+      - m_Target: {fileID: 5349299225686012025}
         m_TargetAssemblyTypeName: PaymentHttpTester, Assembly-CSharp
         m_MethodName: OnClickStartPayment
         m_Mode: 1
@@ -4033,7 +4033,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Texture: {fileID: 2800000, guid: 1e5c537131f6e754b88b8da2c449d58a, type: 3}
+  m_Texture: {fileID: 2800000, guid: c89e3e14922c88946aaa2af4a89a9ac4, type: 3}
   m_UVRect:
     serializedVersion: 2
     x: 0
@@ -5539,9 +5539,9 @@ MonoBehaviour:
   - {fileID: 21300000, guid: b90af3c647605174d85d1996a7aae785, type: 3}
   - {fileID: 21300000, guid: 6d980331beb0d524fbf23bda654154fb, type: 3}
   _frameSpriteWidth:
-  - {fileID: 21300000, guid: 7a63ec659b50fc94fa2e6c8f2118bd70, type: 3}
-  - {fileID: 21300000, guid: 1992479e16ea45f4c97ffab891a9ed55, type: 3}
-  - {fileID: 21300000, guid: 2da9639742daab2469b43ef48d9ee906, type: 3}
+  - {fileID: 21300000, guid: fde5684d2d43b4c4dbd81c298de8ac00, type: 3}
+  - {fileID: 21300000, guid: c89e3e14922c88946aaa2af4a89a9ac4, type: 3}
+  - {fileID: 21300000, guid: ae052acda39f41a44a2987407b0ea531, type: 3}
   _mainImageChange: {fileID: 1532088763}
   _fakeImageChange: {fileID: 424243261}
   _mainImageChangeWidth: {fileID: 944522311}
@@ -7359,7 +7359,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Texture: {fileID: 2800000, guid: 3879fd74920342e448db17d40cfc1b96, type: 3}
+  m_Texture: {fileID: 2800000, guid: ae052acda39f41a44a2987407b0ea531, type: 3}
   m_UVRect:
     serializedVersion: 2
     x: 0
@@ -16042,7 +16042,7 @@ Transform:
   - {fileID: 176438410}
   - {fileID: 1120190910}
   - {fileID: 1552794001}
-  - {fileID: 1280154550}
+  - {fileID: 732717316152568662}
   - {fileID: 1831144844}
   - {fileID: 1510076129}
   - {fileID: 800168908}
@@ -16147,7 +16147,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Texture: {fileID: 2800000, guid: 7a63ec659b50fc94fa2e6c8f2118bd70, type: 3}
+  m_Texture: {fileID: 2800000, guid: fde5684d2d43b4c4dbd81c298de8ac00, type: 3}
   m_UVRect:
     serializedVersion: 2
     x: 0
@@ -18677,8 +18677,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   webcamTarget: {fileID: 1153788932}
   preferredDeviceKeyword: C922
-  requestedWidth: 960
-  requestedHeight: 540
+  requestedWidth: 1280
+  requestedHeight: 720
   requestedFps: 30
   _mirrorHorizontal: 1
   _cameraPanel: {fileID: 0}
@@ -20105,7 +20105,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 457bc058cf21bce4292e3cb2e64d046d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _paymentHttpTester: {fileID: 1280154549}
+  _paymentHttpTester: {fileID: 5349299225686012025}
   _fadeAnimationCtrl: {fileID: 258928097}
   _goToPaymentButton: {fileID: 1008371420}
   _currentPanel: {fileID: 1708603835}
@@ -29558,22 +29558,6 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &1280154549 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 5657948161618109902, guid: 786d922614390024aabb5dd7579ee6d3, type: 3}
-  m_PrefabInstance: {fileID: 340468920552723895}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e1643e95e4dd0c84cb736c957ad98907, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!4 &1280154550 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 1050099754481368801, guid: 786d922614390024aabb5dd7579ee6d3, type: 3}
-  m_PrefabInstance: {fileID: 340468920552723895}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1281698409
 GameObject:
   m_ObjectHideFlags: 0
@@ -34505,12 +34489,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _paymentWaitingPanelTransitionCtrl: {fileID: 866139197}
-  paymentHttpTester: {fileID: 1280154549}
+  paymentHttpTester: {fileID: 5349299225686012025}
   _targetButton: {fileID: 2024000901}
   _receivedImageObject: {fileID: 837180559}
   _requiredClicks: 10
   _amountOnFirstToggle: 10
-  _amountOnSecondToggle: 5000
+  _amountOnSecondToggle: 3000
   _onFirstToggle:
     m_PersistentCalls:
       m_Calls: []
@@ -37022,20 +37006,20 @@ MonoBehaviour:
   - {fileID: 2800000, guid: 8165d057da0c54b40b81d583fbd6184b, type: 3}
   _disableBackgroundA: 1
   _outputImage: {fileID: 577752405}
-  _modelInputWidth: 256
-  _modelInputHeight: 144
-  _maskUpscaleWidth: 960
-  _maskUpscaleHeight: 540
+  _modelInputWidth: 1024
+  _modelInputHeight: 512
+  _maskUpscaleWidth: 1920
+  _maskUpscaleHeight: 1080
   _processEveryNFrames: 1
-  _maskThreshold: 0.35
-  _edgeSmoothness: 0.08
+  _maskThreshold: 0.25
+  _edgeSmoothness: 0.02
   _temporalStability: 0.3
-  _dilateAmount: 0.01
+  _dilateAmount: 0.05
   _fillHolesAmount: 0.8
-  _edgeInset: 0.015
+  _edgeInset: 0.005
   _mirrorHorizontal: 1
-  _outputResWidth: 960
-  _outputResHeight: 540
+  _outputResWidth: 1920
+  _outputResHeight: 1080
 --- !u!1 &1615767456
 GameObject:
   m_ObjectHideFlags: 0
@@ -41336,7 +41320,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Texture: {fileID: 2800000, guid: 89af248c411677147ae746a8772bab66, type: 3}
+  m_Texture: {fileID: 2800000, guid: 11a4bcf0e091d6742b849789d229dfb0, type: 3}
   m_UVRect:
     serializedVersion: 2
     x: 0
@@ -46463,7 +46447,7 @@ MonoBehaviour:
   _captureFromSourceTexture: 1
   _includeChildrenInCapture: 0
   _useHiResScreenshotCapture: 1
-  _screenshotSuperSize: 6
+  _screenshotSuperSize: 10
   _screenshotTimeoutSeconds: 2
   _deleteTempScreenshotFile: 1
   _useTempScaleDuringCapture: 1
@@ -48640,7 +48624,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Texture: {fileID: 2800000, guid: 2097b0af44cb34245b3f49b9fbf00d22, type: 3}
+  m_Texture: {fileID: 2800000, guid: a590ce4cca7e9c5409cbbbebeb1baac9, type: 3}
   m_UVRect:
     serializedVersion: 2
     x: 0
@@ -50230,79 +50214,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2147462126}
   m_CullTransparentMesh: 1
---- !u!1001 &340468920552723895
-PrefabInstance:
+--- !u!4 &732717316152568662
+Transform:
   m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3031520576914934551}
   serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 728593621}
-    m_Modifications:
-    - target: {fileID: 1050099754481368801, guid: 786d922614390024aabb5dd7579ee6d3, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 197.8282
-      objectReference: {fileID: 0}
-    - target: {fileID: 1050099754481368801, guid: 786d922614390024aabb5dd7579ee6d3, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 461.80554
-      objectReference: {fileID: 0}
-    - target: {fileID: 1050099754481368801, guid: 786d922614390024aabb5dd7579ee6d3, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -3.0060077
-      objectReference: {fileID: 0}
-    - target: {fileID: 1050099754481368801, guid: 786d922614390024aabb5dd7579ee6d3, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 1050099754481368801, guid: 786d922614390024aabb5dd7579ee6d3, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1050099754481368801, guid: 786d922614390024aabb5dd7579ee6d3, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1050099754481368801, guid: 786d922614390024aabb5dd7579ee6d3, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1050099754481368801, guid: 786d922614390024aabb5dd7579ee6d3, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1050099754481368801, guid: 786d922614390024aabb5dd7579ee6d3, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1050099754481368801, guid: 786d922614390024aabb5dd7579ee6d3, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3362932501018730144, guid: 786d922614390024aabb5dd7579ee6d3, type: 3}
-      propertyPath: m_Name
-      value: PaymentHttpTester
-      objectReference: {fileID: 0}
-    - target: {fileID: 3362932501018730144, guid: 786d922614390024aabb5dd7579ee6d3, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5657948161618109902, guid: 786d922614390024aabb5dd7579ee6d3, type: 3}
-      propertyPath: _amount
-      value: 5000
-      objectReference: {fileID: 0}
-    - target: {fileID: 5657948161618109902, guid: 786d922614390024aabb5dd7579ee6d3, type: 3}
-      propertyPath: _statusText
-      value: 
-      objectReference: {fileID: 1539729435}
-    - target: {fileID: 5657948161618109902, guid: 786d922614390024aabb5dd7579ee6d3, type: 3}
-      propertyPath: _onAllCompleted.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
-      objectReference: {fileID: 866139197}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 786d922614390024aabb5dd7579ee6d3, type: 3}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 197.8282, y: 461.80554, z: -3.0060077}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 728593621}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1729281706603357564
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -50432,6 +50358,60 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 19dbcb34577f41a4a950aef65f8584a3, type: 3}
+--- !u!1 &3031520576914934551
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 732717316152568662}
+  - component: {fileID: 5349299225686012025}
+  m_Layer: 0
+  m_Name: PaymentHttpTester
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &5349299225686012025
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3031520576914934551}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1643e95e4dd0c84cb736c957ad98907, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _k1Url: http://127.0.0.1:6444/tPayDaemon/Auth
+  _backendUrl: https://211.224.48.48:8443/api/payment/complete
+  _tid: 8800011829
+  _posSerialNo: JTPOSDM16011E278
+  _amount: 3000
+  _tax: 0
+  _statusText: {fileID: 1539729435}
+  _onAllCompleted:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 866139197}
+        m_TargetAssemblyTypeName: PaymentWaitingPanelTransitionCtrl, Assembly-CSharp
+        m_MethodName: PaymentHttpTesterStart
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  _tryAutoCancelOnBackendFail: 1
+  _ignoreCertificateError: 1
+  _messageTextTimer: 5
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
