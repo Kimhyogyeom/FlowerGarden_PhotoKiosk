@@ -26,6 +26,9 @@ public class WindowModePanelCtrl : MonoBehaviour
     [SerializeField] private GameObject _frameHightObject;
     [SerializeField] private GameObject _frameWidthObject;
     [SerializeField] private bool _hightWidthFlag = true;
+
+    [Header("Minimize Button Object")]
+    [SerializeField] private GameObject _minimizeButtonObject;
     void Awake()
     {
         // 가로/세로 프레임 모드
@@ -48,6 +51,9 @@ public class WindowModePanelCtrl : MonoBehaviour
         _hightWidthFlag = true;
         FrameObjectSetting(_hightWidthFlag);
         _framePanelScaleInCtrl._selectedIndex = 0;
+
+        // 세로모드: 최소화 버튼 활성화
+        if (_minimizeButtonObject != null) _minimizeButtonObject.SetActive(true);
     }
     /// <summary>
     /// 프레임 세로 클릭
@@ -63,13 +69,17 @@ public class WindowModePanelCtrl : MonoBehaviour
         _hightWidthFlag = false;
         FrameObjectSetting(_hightWidthFlag);
         _framePanelScaleInCtrl._selectedIndex = 3;
+
+        // 가로모드: 최소화 버튼 비활성화
+        if (_minimizeButtonObject != null) _minimizeButtonObject.SetActive(false);
     }
 
     /// <summary>
-    /// 페이드 스타트 
+    /// 페이드 스타트 (Mode → Select 전환)
     /// </summary>
     private void OnClickFadeStart()
     {
+        _fadeAnimationCtrl.SetState(FadeState.ModeToSelect);
         _fadeAnimationCtrl.StartFade();
     }
 

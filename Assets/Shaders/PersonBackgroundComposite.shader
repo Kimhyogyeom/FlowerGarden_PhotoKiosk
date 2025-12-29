@@ -11,6 +11,7 @@ Shader "Custom/PersonBackgroundComposite"
         _FillHoles ("Fill Small Holes", Range(0, 1)) = 0.8
         _EdgeInset ("Edge Inset (테두리 제거)", Range(0, 0.05)) = 0.015
         _MirrorHorizontal ("Mirror Horizontal", Float) = 1
+        _InvertMask ("Invert Mask (마스크 반전)", Float) = 0
     }
     
     SubShader
@@ -36,71 +37,104 @@ Shader "Custom/PersonBackgroundComposite"
             float _FillHoles;
             float _EdgeInset;
             float _MirrorHorizontal;
+            float _InvertMask;
             float4 _MainTex_TexelSize;
             
-            // 마스크 샘플링 (최소 블러 - 선명도 우선)
+            // 가우시안 블러 마스크 샘플링 (도트 제거용)
             float SampleMaskBlurred(float2 uv, float radius)
             {
-                // 3x3 경량 샘플링 (5x5 대신)
-                float center = tex2D(_MaskTex, uv).r;
-                float2 texel = _MaskTex_TexelSize.xy * radius * 0.5;
+                float2 texel = _MaskTex_TexelSize.xy * radius;
 
-                float sum = center * 4.0;  // 중심 가중치 높게
-                sum += tex2D(_MaskTex, uv + float2(-texel.x, 0)).r;
-                sum += tex2D(_MaskTex, uv + float2(texel.x, 0)).r;
-                sum += tex2D(_MaskTex, uv + float2(0, -texel.y)).r;
-                sum += tex2D(_MaskTex, uv + float2(0, texel.y)).r;
+                // 9-tap 가우시안 블러 (1 2 1 / 2 4 2 / 1 2 1)
+                float sum = 0.0;
+                sum += tex2D(_MaskTex, uv + float2(-texel.x, -texel.y)).r * 1.0;
+                sum += tex2D(_MaskTex, uv + float2(0, -texel.y)).r * 2.0;
+                sum += tex2D(_MaskTex, uv + float2(texel.x, -texel.y)).r * 1.0;
+                sum += tex2D(_MaskTex, uv + float2(-texel.x, 0)).r * 2.0;
+                sum += tex2D(_MaskTex, uv).r * 4.0;
+                sum += tex2D(_MaskTex, uv + float2(texel.x, 0)).r * 2.0;
+                sum += tex2D(_MaskTex, uv + float2(-texel.x, texel.y)).r * 1.0;
+                sum += tex2D(_MaskTex, uv + float2(0, texel.y)).r * 2.0;
+                sum += tex2D(_MaskTex, uv + float2(texel.x, texel.y)).r * 1.0;
 
-                return sum / 8.0;
+                return sum / 16.0;
+            }
+
+            // 경량 블러 (도트 제거 + 선명도 유지)
+            float SampleMaskLightBlur(float2 uv)
+            {
+                // 2단계 블러 (반경 작게)
+                float blur1 = SampleMaskBlurred(uv, 1.0);
+                float blur2 = SampleMaskBlurred(uv, 2.0);
+
+                // 선명한 블러 우선
+                return blur1 * 0.7 + blur2 * 0.3;
             }
 
             // 개선된 마스크 샘플링 (선명도 + 부드러운 경계)
             float GetImprovedMask(float2 uv)
             {
-                // 경계 부드럽게 (도트 감소)
-                float mask = SampleMaskBlurred(uv, 0.8);
+                // 경량 블러로 도트만 제거 (선명도 유지)
+                float mask = SampleMaskLightBlur(uv);
 
                 // === Dilate (팽창) - 옷깃 잘림 방지 ===
                 if (_Dilate > 0.001)
                 {
-                    float2 offset = _MaskTex_TexelSize.xy * (_Dilate * 50.0);
+                    float2 offset = _MaskTex_TexelSize.xy * (_Dilate * 60.0);
 
-                    // 8방향 샘플링 (블러 적용)
-                    float m1 = SampleMaskBlurred(uv + float2(-offset.x, -offset.y), 0.5);
-                    float m2 = SampleMaskBlurred(uv + float2(0, -offset.y), 0.5);
-                    float m3 = SampleMaskBlurred(uv + float2(offset.x, -offset.y), 0.5);
-                    float m4 = SampleMaskBlurred(uv + float2(-offset.x, 0), 0.5);
-                    float m5 = SampleMaskBlurred(uv + float2(offset.x, 0), 0.5);
-                    float m6 = SampleMaskBlurred(uv + float2(-offset.x, offset.y), 0.5);
-                    float m7 = SampleMaskBlurred(uv + float2(0, offset.y), 0.5);
-                    float m8 = SampleMaskBlurred(uv + float2(offset.x, offset.y), 0.5);
+                    // 8방향 샘플링 (단순 블러로 빠르게)
+                    float maxMask = mask;
+                    maxMask = max(maxMask, SampleMaskBlurred(uv + float2(-offset.x, 0), 1.5));
+                    maxMask = max(maxMask, SampleMaskBlurred(uv + float2(offset.x, 0), 1.5));
+                    maxMask = max(maxMask, SampleMaskBlurred(uv + float2(0, -offset.y), 1.5));
+                    maxMask = max(maxMask, SampleMaskBlurred(uv + float2(0, offset.y), 1.5));
+                    maxMask = max(maxMask, SampleMaskBlurred(uv + float2(-offset.x, -offset.y), 1.5));
+                    maxMask = max(maxMask, SampleMaskBlurred(uv + float2(offset.x, -offset.y), 1.5));
+                    maxMask = max(maxMask, SampleMaskBlurred(uv + float2(-offset.x, offset.y), 1.5));
+                    maxMask = max(maxMask, SampleMaskBlurred(uv + float2(offset.x, offset.y), 1.5));
 
-                    // 확장 (옷깃 잘림 방지 강화)
-                    float maxMask = max(max(max(m1, m2), max(m3, m4)),
-                                       max(max(m5, m6), max(m7, m8)));
-                    mask = lerp(mask, maxMask, 0.85);
+                    // 부드럽게 확장
+                    mask = lerp(mask, maxMask, 0.6);
                 }
 
-                // === Fill Holes (구멍 메우기) ===
-                if (_FillHoles > 0.5)
+                // === Fill Holes (구멍 메우기) - 강화 ===
+                if (_FillHoles > 0.01)
                 {
-                    float2 smallOffset = _MaskTex_TexelSize.xy * 2.0;
+                    // 더 넓은 범위에서 샘플링 (큰 구멍도 메우기)
+                    float2 offset1 = _MaskTex_TexelSize.xy * 4.0;
+                    float2 offset2 = _MaskTex_TexelSize.xy * 8.0;
 
-                    // 주변 9칸 평균
-                    float sum = 0.0;
-                    for (int x = -1; x <= 1; x++)
-                    {
-                        for (int y = -1; y <= 1; y++)
-                        {
-                            sum += tex2D(_MaskTex, uv + float2(x, y) * smallOffset).r;
-                        }
-                    }
-                    float avg = sum / 9.0;
+                    // 가까운 범위 (3x3)
+                    float sum1 = 0.0;
+                    sum1 += tex2D(_MaskTex, uv + float2(-1, -1) * offset1).r;
+                    sum1 += tex2D(_MaskTex, uv + float2(0, -1) * offset1).r;
+                    sum1 += tex2D(_MaskTex, uv + float2(1, -1) * offset1).r;
+                    sum1 += tex2D(_MaskTex, uv + float2(-1, 0) * offset1).r;
+                    sum1 += tex2D(_MaskTex, uv + float2(1, 0) * offset1).r;
+                    sum1 += tex2D(_MaskTex, uv + float2(-1, 1) * offset1).r;
+                    sum1 += tex2D(_MaskTex, uv + float2(0, 1) * offset1).r;
+                    sum1 += tex2D(_MaskTex, uv + float2(1, 1) * offset1).r;
+                    float avg1 = sum1 / 8.0;
 
-                    // 주변이 대부분 사람이면 구멍도 메우기
-                    if (avg > 0.6)
+                    // 먼 범위 (3x3)
+                    float sum2 = 0.0;
+                    sum2 += tex2D(_MaskTex, uv + float2(-1, -1) * offset2).r;
+                    sum2 += tex2D(_MaskTex, uv + float2(0, -1) * offset2).r;
+                    sum2 += tex2D(_MaskTex, uv + float2(1, -1) * offset2).r;
+                    sum2 += tex2D(_MaskTex, uv + float2(-1, 0) * offset2).r;
+                    sum2 += tex2D(_MaskTex, uv + float2(1, 0) * offset2).r;
+                    sum2 += tex2D(_MaskTex, uv + float2(-1, 1) * offset2).r;
+                    sum2 += tex2D(_MaskTex, uv + float2(0, 1) * offset2).r;
+                    sum2 += tex2D(_MaskTex, uv + float2(1, 1) * offset2).r;
+                    float avg2 = sum2 / 8.0;
+
+                    // 주변 평균이 높으면 (사람 내부로 판단) 구멍 메우기
+                    float surroundAvg = (avg1 + avg2) * 0.5;
+                    if (surroundAvg > 0.4)
                     {
-                        mask = max(mask, avg * _FillHoles);
+                        // 구멍 강하게 메우기
+                        float fillStrength = saturate((surroundAvg - 0.4) * 2.5) * _FillHoles;
+                        mask = max(mask, surroundAvg * fillStrength);
                     }
                 }
 
@@ -148,19 +182,22 @@ Shader "Custom/PersonBackgroundComposite"
                 // 개선된 마스크 (반전된 UV 사용)
                 float mask = GetImprovedMask(uv);
 
-                // 부드러운 경계
-                float alpha = smoothstep(_Threshold - _Smoothness, _Threshold + _Smoothness, mask);
+                // 마스크 반전 옵션 (일부 GPU/환경에서 필요)
+                if (_InvertMask > 0.5)
+                {
+                    mask = 1.0 - mask;
+                }
+
+                // 적절한 smoothstep 범위 (선명하되 부드러운 경계)
+                float lowEdge = _Threshold - _Smoothness;
+                float highEdge = _Threshold + _Smoothness * 0.3;
+                float alpha = smoothstep(lowEdge, highEdge, mask);
 
                 // 웹캠 이미지 (원본 그대로)
                 fixed4 person = tex2D(_MainTex, uv);
 
                 // 배경 이미지
                 fixed4 background = tex2D(_BackgroundTex, uv);
-
-                // 경계 보호: alpha가 낮아도 사람 색상 유지
-                // 기존 S-curve 대신 더 급격한 커브로 경계 번짐 방지
-                alpha = saturate(alpha * 1.15);  // 살짝 확장
-                alpha = alpha * alpha * (3.0 - 2.0 * alpha);  // S-curve
 
                 // 최종 합성
                 return lerp(background, person, alpha);

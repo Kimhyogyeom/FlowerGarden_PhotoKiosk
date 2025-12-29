@@ -12,6 +12,7 @@ public class QuantityToPaymentCtrl : MonoBehaviour
     [SerializeField] private Button _nextButton;          // "다음" 버튼
 
     [Header("Panels")]
+    [SerializeField] private GameObject _selectPanel;     // 프레임 선택 패널 [크로마키 임시 비활성화 추가]
     [SerializeField] private GameObject _quantityPanel;   // 수량 선택 패널
     [SerializeField] private GameObject _paymentPanel;    // 결제 패널 (PaymentPanelEnableBroadcaster 붙어 있는 쪽)
 
@@ -46,7 +47,8 @@ public class QuantityToPaymentCtrl : MonoBehaviour
         // 상태를 결제 대기 상태로 두고 싶다면 (원하는 경우 사용)
         // GameManager.Instance.SetState(KioskState.WaitingForPayment);
 
-        // _fadeAnimationCtrl._isStateStep = 3;
+        // Quantity → Payment 화면 전환
+        _fadeAnimationCtrl.SetState(FadeState.FilmingToQuantity);
         _fadeAnimationCtrl.StartFade();
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
@@ -79,5 +81,33 @@ public class QuantityToPaymentCtrl : MonoBehaviour
 
         // 필요하면 버튼 클릭 사운드도 여기서 재생 가능 하긴 한데 사운드가 들어가는지 안들어가는지 물어보는거 깜빡함 헷핫훗헷홋
         // SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._startButton);
+    }
+
+    /// <summary>
+    /// [크로마키 임시 비활성화] Select → Quantity 직접 전환
+    /// </summary>
+    public void SelectToQuantityTransition()
+    {
+        GameManager.Instance.SetState(KioskState.Quantity);
+
+        // Select 패널 닫기
+        if (_selectPanel != null)
+        {
+            _selectPanel.SetActive(false);
+        }
+        else
+        {
+            Debug.LogWarning("[QuantityToPaymentCtrl] _selectPanel reference is missing");
+        }
+
+        // Quantity 패널 열기
+        if (_quantityPanel != null)
+        {
+            _quantityPanel.SetActive(true);
+        }
+        else
+        {
+            Debug.LogWarning("[QuantityToPaymentCtrl] _quantityPanel reference is missing");
+        }
     }
 }

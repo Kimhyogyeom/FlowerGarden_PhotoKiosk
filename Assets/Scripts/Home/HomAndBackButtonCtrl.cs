@@ -83,9 +83,8 @@ public class HomAndBackButtonCtrl : MonoBehaviour
     /// </summary>
     private void OnHomeButtonClickMod()
     {
-        _fadeAnimationCtrl._isStateStep = 100;
+        _fadeAnimationCtrl.SetState(FadeState.HomeFromMode);
         _fadeAnimationCtrl.StartFade();
-        // GameManager.Instance.SetState(KioskState.Ready);
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
     /// <summary>
@@ -93,7 +92,7 @@ public class HomAndBackButtonCtrl : MonoBehaviour
     /// </summary>
     private void OnBackButtonClickMod()
     {
-        _fadeAnimationCtrl._isStateStep = 199;
+        _fadeAnimationCtrl.SetState(FadeState.BackFromMode);
         _fadeAnimationCtrl.StartFade();
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
@@ -115,7 +114,7 @@ public class HomAndBackButtonCtrl : MonoBehaviour
     /// </summary>
     private void OnHomeButtonClickSel()
     {
-        _fadeAnimationCtrl._isStateStep = 101;
+        _fadeAnimationCtrl.SetState(FadeState.HomeFromSelect);
         _fadeAnimationCtrl.StartFade();
         GameManager.Instance.SetState(KioskState.Ready);
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
@@ -125,7 +124,7 @@ public class HomAndBackButtonCtrl : MonoBehaviour
     /// </summary>
     private void OnBackButtonClickSel()
     {
-        _fadeAnimationCtrl._isStateStep = 200;
+        _fadeAnimationCtrl.SetState(FadeState.BackFromSelect);
         _fadeAnimationCtrl.StartFade();
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
@@ -147,7 +146,7 @@ public class HomAndBackButtonCtrl : MonoBehaviour
     /// </summary>
     private void OnHomeButtonClickQUan()
     {
-        _fadeAnimationCtrl._isStateStep = 102;
+        _fadeAnimationCtrl.SetState(FadeState.HomeFromQuantity);
         _fadeAnimationCtrl.StartFade();
         GameManager.Instance.SetState(KioskState.Ready);
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
@@ -157,7 +156,7 @@ public class HomAndBackButtonCtrl : MonoBehaviour
     /// </summary>
     private void OnBackButtonClickQUan()
     {
-        _fadeAnimationCtrl._isStateStep = 201;
+        _fadeAnimationCtrl.SetState(FadeState.BackFromQuantity);
         _fadeAnimationCtrl.StartFade();
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
@@ -168,7 +167,8 @@ public class HomAndBackButtonCtrl : MonoBehaviour
             item.gameObject.SetActive(false);
         }
         _quaChangePanel.SetActive(true);
-        GameManager.Instance.SetState(KioskState.Chroma);
+        // [크로마키 임시 비활성화] Select로 변경
+        GameManager.Instance.SetState(KioskState.Select);
     }
     // ========================================Quantity
 
@@ -179,7 +179,7 @@ public class HomAndBackButtonCtrl : MonoBehaviour
     /// </summary>
     private void OnHomeButtonClickPay()
     {
-        _fadeAnimationCtrl._isStateStep = 103;
+        _fadeAnimationCtrl.SetState(FadeState.HomeFromPayment);
         _fadeAnimationCtrl.StartFade();
         GameManager.Instance.SetState(KioskState.Ready);
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
@@ -189,7 +189,7 @@ public class HomAndBackButtonCtrl : MonoBehaviour
     /// </summary>
     private void OnBackButtonClickQPay()
     {
-        _fadeAnimationCtrl._isStateStep = 202;
+        _fadeAnimationCtrl.SetState(FadeState.BackFromPayment);
         _fadeAnimationCtrl.StartFade();
     }
     public void ObjectsActiveCtrlPay()
@@ -199,7 +199,8 @@ public class HomAndBackButtonCtrl : MonoBehaviour
             item.gameObject.SetActive(false);
         }
         _payChangePanel.SetActive(true);
-        GameManager.Instance.SetState(KioskState.Chroma);
+        // [크로마키 임시 비활성화] Quantity로 변경
+        GameManager.Instance.SetState(KioskState.Quantity);
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
     // ========================================Payment
@@ -211,7 +212,7 @@ public class HomAndBackButtonCtrl : MonoBehaviour
     /// </summary>
     private void OnHomeButtonClickChr()
     {
-        _fadeAnimationCtrl._isStateStep = 104;
+        _fadeAnimationCtrl.SetState(FadeState.HomeFromChromaKey);
         _fadeAnimationCtrl.StartFade();
         GameManager.Instance.SetState(KioskState.Ready);
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
@@ -221,7 +222,7 @@ public class HomAndBackButtonCtrl : MonoBehaviour
     /// </summary>
     private void OnBackButtonClickQChr()
     {
-        _fadeAnimationCtrl._isStateStep = 203;
+        _fadeAnimationCtrl.SetState(FadeState.BackFromChromaKey);
         _fadeAnimationCtrl.StartFade();
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }

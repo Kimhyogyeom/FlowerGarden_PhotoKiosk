@@ -58,23 +58,22 @@ public class ReadyPanelTransitionCtrl : MonoBehaviour
 
     /// <summary>
     /// 시작 버튼 클릭 시 호출
-    /// - 게임 상태를 Select 로 변경
+    /// - 게임 상태를 Mode 로 변경
+    /// - 페이드 애니메이션 상태를 ReadyToMode로 설정
     /// - 페이드 애니메이션 시작 요청
     /// - 시작 버튼 사운드 출력
-    /// + 외부 호출용으로 추가~
     /// </summary>
     public void OnReadyClicked()
     {
         if (_fadeAnimationCtrl != null)
         {
-            // 상태 변경 (Ready 화면에서 선택 단계로 전환)
+            // 상태 변경 (Ready → Mode 전환)
             GameManager.Instance.SetState(KioskState.Mode);
             SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
-            // 페이드 애니메이션 시작
-            _fadeAnimationCtrl.StartFade();
 
-            // 시작 버튼 효과음 재생
-            // Sound
+            // 페이드 상태 설정 및 애니메이션 시작
+            _fadeAnimationCtrl.SetState(FadeState.ReadyToMode);
+            _fadeAnimationCtrl.StartFade();
         }
         else
         {

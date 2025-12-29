@@ -35,16 +35,16 @@ public class FilmingToSelectCtrl : MonoBehaviour
     /// 촬영 화면에서 "뒤로 가기" 버튼 클릭 시 호출
     /// - 상태를 Select로 변경
     /// - 뒤로가기 사운드 재생
-    /// - FadeAnimationCtrl에 state step(100) 설정 후 페이드 시작
-    ///   (페이드 종료 후 FadeAnimationCtrl에서 다시 Select 패널로 전환)
+    /// - FadeAnimationCtrl에 HomeFromMode 상태 설정 후 페이드 시작
+    ///   (페이드 종료 후 FadeAnimationCtrl에서 다시 Ready 패널로 전환)
     /// </summary>
     public void OnFilimingToSelectCtrl()
     {
         GameManager.Instance.SetState(KioskState.Select);
         // Sound
 
-        // 100은 FadeAnimationCtrl에서 "촬영 → 선택 화면으로 복귀" 케이스를 구분하기 위한 값
-        _fadeAnimationCtrl._isStateStep = 100;
+        // Mode 화면에서 홈으로 돌아가는 상태로 설정
+        _fadeAnimationCtrl.SetState(FadeState.HomeFromMode);
         _fadeAnimationCtrl.StartFade();
     }
 

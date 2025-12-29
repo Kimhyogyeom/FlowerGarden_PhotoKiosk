@@ -177,7 +177,8 @@ public class InitCtrl : MonoBehaviour
 
 
         // 효과음 + 페이드 시작
-        // Sound
+        // Print → Output(출력 완료) → Ready(초기화) 화면 전환
+        _fadeAnimationCtrl.SetState(FadeState.PrintToOutput);
         _fadeAnimationCtrl.StartFade();
 
         // ─────────────────────────────────────────────────────────

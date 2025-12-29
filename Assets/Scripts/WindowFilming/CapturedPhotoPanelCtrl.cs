@@ -334,6 +334,8 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
     /// </summary>
     public void OpenNextPanelAndApplyPhotos()
     {
+        // Filming Start → Captured Photo(포토 선택) 화면 전환
+        _fadeAnimationCtrl.SetState(FadeState.FilmingStartToPhotoSelect);
         _fadeAnimationCtrl.StartFade();
     }
 

@@ -59,12 +59,16 @@ public class PaymentWaitingPanelTransitionCtrl : MonoBehaviour
         else
         {
             // 여기서 결제가 완료되면 콜백 받아서 아래 코드 실행시킬거임 (1209)
+            // Payment → Filming Start 화면 전환
+            _fadeAnimationCtrl.SetState(FadeState.QuantityToPayment);
             _fadeAnimationCtrl.StartFade();
         }
 
     }
     public void PaymentHttpTesterStart()
     {
+        // Payment → Filming Start 화면 전환
+        _fadeAnimationCtrl.SetState(FadeState.QuantityToPayment);
         _fadeAnimationCtrl.StartFade();
     }
     /// <summary>

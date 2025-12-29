@@ -25,6 +25,8 @@ public class ChromakeyPanelCtrl : MonoBehaviour
     public void OnFadeStart()
     {
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
+        // Select → Filming(Quantity) 화면 전환
+        _fadeAnimationCtrl.SetState(FadeState.SelectToFilming);
         _fadeAnimationCtrl.StartFade();
     }
     /// <summary>
@@ -36,8 +38,9 @@ public class ChromakeyPanelCtrl : MonoBehaviour
         if (_currentPanel != null) _currentPanel.SetActive(false);
         if (_nextPanel != null) _nextPanel.SetActive(true);
 
+        // [크로마키 임시 비활성화] Quantity로 상태 변경
         // Payment로 상태 변경
         // [251212 수량에서 카메라(필름)으로 변경]
-        GameManager.Instance.SetState(KioskState.Payment);
+        GameManager.Instance.SetState(KioskState.Quantity);
     }
 }

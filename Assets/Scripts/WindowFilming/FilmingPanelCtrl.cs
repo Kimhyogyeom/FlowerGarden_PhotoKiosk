@@ -132,21 +132,16 @@ public class FilmingPanelCtrl : MonoBehaviour
     /// <summary>
     /// 프레임 선택 & 사진 촬영 프레임 중
     /// - "사진 촬영" 버튼 선택 시 호출
-    /// - 상태를 Filming 으로 변경하고 페이드 애니메이션 실행
-    /// [추가]
-    /// 크로마키 영상으로 변경될 예정
+    /// - Select → Filming 으로 전환하고 페이드 애니메이션 실행
     /// </summary>
     public void OnSelectPhotoButtonClicked()
     {
-        // 상태를 촬영 모드로 전환
-        GameManager.Instance.SetState(KioskState.Chroma);
-
         // 촬영 시작 버튼 사운드 재생
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
 
-        // 화면 전환용 페이드 애니메이션 실행
+        // 페이드 상태 설정 및 애니메이션 실행
+        _fadeAnimationCtrl.SetState(FadeState.SelectToFilming);
         _fadeAnimationCtrl.StartFade();
-
     }
 
     /// <summary>
@@ -158,19 +153,19 @@ public class FilmingPanelCtrl : MonoBehaviour
     {
         if (_currentPanel != null) _currentPanel.SetActive(false);
         if (_changedPhotoPanel != null) _changedPhotoPanel.SetActive(true);
+        GameManager.Instance.SetState(KioskState.Quantity);
     }
 
     /// <summary>
     /// 카메라 윈도우에서 "사진 찍기" 버튼 클릭 시 호출
-    /// - 지금은 페이드 트리거 + 사운드만
+    /// - 페이드 상태 설정 및 애니메이션 실행
     /// </summary>
     public void OnPhotoButtonClicked()
     {
+        _fadeAnimationCtrl.SetState(FadeState.PaymentToFilmingStart);
         _fadeAnimationCtrl.StartFade();
         _photoButton.gameObject.SetActive(false);
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
-        // 촬영 버튼 사운드 재생
-        // Sound
     }
 
     /// <summary>
@@ -181,7 +176,7 @@ public class FilmingPanelCtrl : MonoBehaviour
     {
         if (_photoButton != null)
         {
-            // GameManager.Instance.SetState(KioskState.Filming);
+            // GameManager.Instance.SetState(KioskState.Quantity);
             SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._windowCamearaPlayingSound);
             print("Camera Start -> Camera Playing");
             // 촬영 후 선택 화면으로 가는 버튼/동작 비활성화

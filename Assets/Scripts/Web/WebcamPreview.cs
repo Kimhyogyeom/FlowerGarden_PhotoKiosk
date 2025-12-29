@@ -6,40 +6,159 @@ using System.Collections;
 /// <summary>
 /// 웹캠 프리뷰 컨트롤러
 /// - 선택한 WebCam 장치를 RawImage 에 실시간으로 출력
-/// - 카메라 패널이 꺼져있으면 업데이트 스킵
+/// - 1920x1080 FHD 고정
+/// - 활성화 체크 오브젝트가 꺼져있으면 실행 안 함
 /// - 회전/뒤집기 값이 변경될 때만 UI 갱신(불필요 연산 감소)
 /// </summary>
 public class WebcamPreview : MonoBehaviour
 {
     [Header("UI")]
-    [SerializeField] private RawImage webcamTarget;
-    // 웹캠 화면을 표시할 RawImage
+    [SerializeField] private RawImage _webcamTarget;
+
+    [Header("Activation Control")]
+    [SerializeField] private GameObject _activationCheckObject;
+    [Tooltip("이 오브젝트가 비활성화되어 있으면 웹캠이 시작/업데이트되지 않음 (Inspector에서 설정)")]
 
     [Header("Camera Selection")]
-    [SerializeField] private string preferredDeviceKeyword = "C922";
-    // 우선적으로 사용할 카메라 이름에 포함되었으면 하는 키워드 (예: "C922")
-
-    [SerializeField] private int requestedWidth = 1280;  // 1280x720 권장 (1920x1080은 렉 발생)
-    [SerializeField] private int requestedHeight = 720;   // 프리뷰용이므로 720p면 충분
-    [SerializeField] private int requestedFps = 30;    // 요청 프레임 수
+    [SerializeField] private string _preferredDeviceKeyword = "C922";
+    [SerializeField] private int _requestedWidth = 1920;   // FHD 고정
+    [SerializeField] private int _requestedHeight = 1080;
+    [SerializeField] private int _requestedFps = 30;
 
     [Header("Mirror Settings")]
-    [SerializeField] private bool _mirrorHorizontal = true;  // 좌우반전 여부
+    [SerializeField] private bool _mirrorHorizontal = true;
 
-    [Header("Setting Object")]
-    [SerializeField] private GameObject _cameraPanel;
-    // 카메라가 실제로 보이는 패널(ON일 때만 업데이트)
+    [Header("Performance Settings")]
+    [SerializeField] private bool _preInitializeOnStart = true;
+    [Tooltip("게임 시작 시 웹캠을 미리 초기화 (렉 방지, 권장)")]
 
     private WebCamTexture _tex;
+    private bool _isWebcamInitialized = false;
+    private CanvasGroup _canvasGroup;
+    private bool _isVisible = false;
 
     // 회전/플립 값 캐싱용
     private int _lastRotation = -999;
     private bool _lastVerticallyMirrored = false;
-    private bool _lastHorizontalMirrored = false;  // 좌우반전 캐싱용
+    private bool _lastHorizontalMirrored = false;
+
+    // 현재 장치 이름
+    private string _currentDeviceName;
 
     private void Start()
     {
-        InitAndStartWebcam();
+        // CanvasGroup 가져오기 (없으면 추가)
+        _canvasGroup = _webcamTarget.GetComponent<CanvasGroup>();
+        if (_canvasGroup == null)
+            _canvasGroup = _webcamTarget.gameObject.AddComponent<CanvasGroup>();
+
+        if (_preInitializeOnStart)
+        {
+            // 게임 시작 시 미리 초기화 (렉 방지)
+            Debug.Log("[WebcamPreview] 게임 시작 시 웹캠 미리 초기화 (렉 방지)");
+            InitAndStartWebcam();
+
+            // 초기에는 숨김 (활성화 체크 오브젝트가 켜질 때만 보임)
+            _canvasGroup.alpha = 0f;
+            _isVisible = false;
+        }
+        else
+        {
+            // 기존 방식: 활성화 체크 오브젝트가 켜져있으면 초기화
+            if (ShouldWebcamBeActive())
+            {
+                InitAndStartWebcam();
+            }
+        }
+    }
+
+    private void Update()
+    {
+        // === Pre-Initialize 모드 ===
+        if (_preInitializeOnStart)
+        {
+            bool shouldBeVisible = ShouldWebcamBeActive();
+
+            // 보여야 하는데 안 보임 → 페이드인
+            if (shouldBeVisible && !_isVisible)
+            {
+                StartCoroutine(FadeIn());
+                _isVisible = true;
+            }
+            // 숨겨야 하는데 보임 → 페이드아웃
+            else if (!shouldBeVisible && _isVisible)
+            {
+                StartCoroutine(FadeOut());
+                _isVisible = false;
+            }
+        }
+        // === 기존 방식 ===
+        else
+        {
+            bool shouldBeActive = ShouldWebcamBeActive();
+
+            if (shouldBeActive && !_isWebcamInitialized)
+            {
+                // 켜야 하는데 아직 초기화 안 됨 → 초기화
+                InitAndStartWebcam();
+            }
+            else if (!shouldBeActive && _isWebcamInitialized)
+            {
+                // 꺼야 하는데 켜져 있음 → 정지
+                StopAndDisposeWebcam();
+            }
+        }
+    }
+
+    private void LateUpdate()
+    {
+        // 웹캠이 초기화되지 않았거나 재생 중이 아니면 스킵
+        if (!_isWebcamInitialized || _tex == null || !_tex.isPlaying)
+            return;
+
+        // 카메라의 회전 각도 및 상하 반전 여부 읽기
+        int rot = _tex.videoRotationAngle;
+        bool vert = _tex.videoVerticallyMirrored;
+
+        // === 좌우반전 값이 바뀐 경우에만 UV 갱신 ===
+        if (_mirrorHorizontal != _lastHorizontalMirrored)
+        {
+            var uv = _webcamTarget.uvRect;
+            uv.x = _mirrorHorizontal ? 1f : 0f;
+            uv.width = _mirrorHorizontal ? -1f : 1f;
+            _webcamTarget.uvRect = uv;
+
+            _lastHorizontalMirrored = _mirrorHorizontal;
+        }
+
+        // === 상하 반전 값이 바뀐 경우에만 UV 갱신 ===
+        if (vert != _lastVerticallyMirrored)
+        {
+            var uv = _webcamTarget.uvRect;
+            uv.y = vert ? 1f : 0f;
+            uv.height = vert ? -1f : 1f;
+            _webcamTarget.uvRect = uv;
+
+            _lastVerticallyMirrored = vert;
+        }
+
+        // === 회전 값이 바뀐 경우에만 RectTransform 회전 갱신 ===
+        if (rot != _lastRotation)
+        {
+            _webcamTarget.rectTransform.localEulerAngles = new Vector3(0f, 0f, -rot);
+            _lastRotation = rot;
+        }
+    }
+
+    /// <summary>
+    /// 활성화 체크 오브젝트가 활성화되어 있는지 확인
+    /// </summary>
+    private bool ShouldWebcamBeActive()
+    {
+        if (_activationCheckObject == null)
+            return true; // null이면 항상 활성화
+
+        return _activationCheckObject.activeInHierarchy;
     }
 
     /// <summary>
@@ -47,9 +166,9 @@ public class WebcamPreview : MonoBehaviour
     /// </summary>
     private void InitAndStartWebcam()
     {
-        if (webcamTarget == null)
+        if (_webcamTarget == null)
         {
-            Debug.LogError("[WebcamPreview] webcamTarget이 비어있습니다.");
+            Debug.LogError("[WebcamPreview] _webcamTarget이 비어있습니다.");
             return;
         }
 
@@ -61,87 +180,42 @@ public class WebcamPreview : MonoBehaviour
             return;
         }
 
-        // preferredDeviceKeyword 를 포함하는 장치를 우선 선택, 없으면 첫 번째 장치 사용
-        var dev = devices.FirstOrDefault(d => d.name.Contains(preferredDeviceKeyword));
-        if (string.IsNullOrEmpty(dev.name))
-            dev = devices[0];
+        // 첫 시작: _preferredDeviceKeyword 를 포함하는 장치 우선 선택
+        // 재시작: 동일한 장치 사용
+        if (string.IsNullOrEmpty(_currentDeviceName))
+        {
+            var dev = devices.FirstOrDefault(d => d.name.Contains(_preferredDeviceKeyword));
+            if (string.IsNullOrEmpty(dev.name))
+                dev = devices[0];
 
-        Debug.Log($"[WebcamPreview] 사용 장치: {dev.name}");
+            _currentDeviceName = dev.name;
+        }
+
+        Debug.Log($"[WebcamPreview] 사용 장치: {_currentDeviceName}");
+        Debug.Log($"[WebcamPreview] 요청 해상도: FHD ({_requestedWidth}x{_requestedHeight})");
 
         // WebCamTexture 생성 (요청 해상도 / FPS)
-        _tex = new WebCamTexture(dev.name, requestedWidth, requestedHeight, requestedFps);
+        _tex = new WebCamTexture(_currentDeviceName, _requestedWidth, _requestedHeight, _requestedFps);
+
+        // 텍스처 품질 설정 (화질 개선)
+        _tex.filterMode = FilterMode.Bilinear;  // Bilinear 필터링 (부드럽게)
+        _tex.wrapMode = TextureWrapMode.Clamp;   // 가장자리 처리
 
         // RawImage 에 텍스처 연결 후 재생
-        webcamTarget.texture = _tex;
+        _webcamTarget.texture = _tex;
         _tex.Play();
+
+        _isWebcamInitialized = true;
 
         // 실제 해상도 로그 출력 (1프레임 후 확인 필요)
         StartCoroutine(LogActualResolution());
 
         // 초기 값 리셋
         _lastRotation = -999;
-        _lastVerticallyMirrored = !_tex.videoVerticallyMirrored; // 강제로 처음 한 번 갱신되게
-        _lastHorizontalMirrored = !_mirrorHorizontal; // 강제로 처음 한 번 갱신되게
-    }
+        _lastVerticallyMirrored = !_tex.videoVerticallyMirrored;
+        _lastHorizontalMirrored = !_mirrorHorizontal;
 
-    private void LateUpdate()
-    {
-        // 카메라 패널이 꺼져 있으면 업데이트 할 필요 없음
-        if (_cameraPanel != null && !_cameraPanel.activeInHierarchy)
-            return;
-
-        if (_tex == null || !_tex.isPlaying)
-            return;
-
-        // 카메라의 회전 각도 및 상하 반전 여부 읽기
-        int rot = _tex.videoRotationAngle;       // 0 / 90 / 180 / 270
-        bool vert = _tex.videoVerticallyMirrored; // 상하 반전 여부 (true 이면 위아래가 뒤집혀 있음)
-
-        // === 좌우반전 값이 바뀐 경우에만 UV 갱신 ===
-        if (_mirrorHorizontal != _lastHorizontalMirrored)
-        {
-            var uv = webcamTarget.uvRect;
-            uv.x = _mirrorHorizontal ? 1f : 0f;
-            uv.width = _mirrorHorizontal ? -1f : 1f;
-            webcamTarget.uvRect = uv;
-
-            _lastHorizontalMirrored = _mirrorHorizontal;
-        }
-
-        // === 상하 반전 값이 바뀐 경우에만 UV 갱신 ===
-        if (vert != _lastVerticallyMirrored)
-        {
-            var uv = webcamTarget.uvRect;
-            uv.y = vert ? 1f : 0f;
-            uv.height = vert ? -1f : 1f;
-            webcamTarget.uvRect = uv;
-
-            _lastVerticallyMirrored = vert;
-        }
-
-        // === 회전 값이 바뀐 경우에만 RectTransform 회전 갱신 ===
-        if (rot != _lastRotation)
-        {
-            webcamTarget.rectTransform.localEulerAngles = new Vector3(0f, 0f, -rot);
-            _lastRotation = rot;
-        }
-
-        // (선택 사항) AspectRatioFitter 등을 사용해 화면 비율을 웹캠 해상도에 맞추고 싶다면,
-        // _tex.width / _tex.height 값이 유효해졌을 때 한 번만 갱신해도 됨.
-    }
-
-    /// <summary>
-    /// 이 스크립트가 비활성화될 때(WebcamPreview 컴포넌트 꺼짐 / 오브젝트 비활성화 등)
-    /// 웹캠 정리
-    /// </summary>
-    private void OnDisable()
-    {
-        StopAndDisposeWebcam();
-    }
-
-    private void OnApplicationQuit()
-    {
-        StopAndDisposeWebcam();
+        Debug.Log("[WebcamPreview] 웹캠 초기화 완료");
     }
 
     private void StopAndDisposeWebcam()
@@ -154,31 +228,22 @@ public class WebcamPreview : MonoBehaviour
             Destroy(_tex);
             _tex = null;
         }
+
+        _isWebcamInitialized = false;
+        Debug.Log("[WebcamPreview] 웹캠 정지");
     }
 
-    // ===== (선택) 외부에서 호출할 수 있는 함수 예시 =====
-
-    /// <summary>
-    /// 외부에서 카메라 패널이 켜졌을 때 웹캠을 다시 켜고 싶다면 호출
-    /// </summary>
-    public void ResumeWebcamIfNeeded()
+    private void OnDisable()
     {
-        if (_tex != null && !_tex.isPlaying)
-        {
-            _tex.Play();
-        }
+        StopAndDisposeWebcam();
     }
 
-    /// <summary>
-    /// 외부에서 웹캠을 잠깐 멈추고 싶을 때
-    /// </summary>
-    public void PauseWebcam()
+    private void OnApplicationQuit()
     {
-        if (_tex != null && _tex.isPlaying)
-        {
-            _tex.Pause();
-        }
+        StopAndDisposeWebcam();
     }
+
+    // ===== Public API =====
 
     /// <summary>
     /// 외부에서 WebCamTexture를 가져갈 수 있게 하는 getter
@@ -204,6 +269,62 @@ public class WebcamPreview : MonoBehaviour
         _mirrorHorizontal = mirror;
     }
 
+    /// <summary>
+    /// 외부에서 웹캠을 강제로 재시작
+    /// </summary>
+    public void RestartWebcam()
+    {
+        StopAndDisposeWebcam();
+        if (ShouldWebcamBeActive())
+        {
+            InitAndStartWebcam();
+        }
+    }
+
+    /// <summary>
+    /// 페이드인 (Pre-Initialize 모드용)
+    /// </summary>
+    private IEnumerator FadeIn()
+    {
+        if (_canvasGroup == null)
+            yield break;
+
+        float fadeDuration = 0.3f;
+        float fadeElapsed = 0f;
+
+        while (fadeElapsed < fadeDuration)
+        {
+            fadeElapsed += Time.deltaTime;
+            _canvasGroup.alpha = Mathf.Lerp(0f, 1f, fadeElapsed / fadeDuration);
+            yield return null;
+        }
+
+        _canvasGroup.alpha = 1f;
+        Debug.Log("[WebcamPreview] 페이드인 완료");
+    }
+
+    /// <summary>
+    /// 페이드아웃 (Pre-Initialize 모드용)
+    /// </summary>
+    private IEnumerator FadeOut()
+    {
+        if (_canvasGroup == null)
+            yield break;
+
+        float fadeDuration = 0.3f;
+        float fadeElapsed = 0f;
+
+        while (fadeElapsed < fadeDuration)
+        {
+            fadeElapsed += Time.deltaTime;
+            _canvasGroup.alpha = Mathf.Lerp(1f, 0f, fadeElapsed / fadeDuration);
+            yield return null;
+        }
+
+        _canvasGroup.alpha = 0f;
+        Debug.Log("[WebcamPreview] 페이드아웃 완료");
+    }
+
     private IEnumerator LogActualResolution()
     {
         // 웹캠이 초기화될 때까지 대기
@@ -211,12 +332,16 @@ public class WebcamPreview : MonoBehaviour
 
         if (_tex != null && _tex.isPlaying)
         {
-            Debug.Log($"[WebcamPreview] 요청 해상도: {requestedWidth}x{requestedHeight}");
+            Debug.Log($"[WebcamPreview] 요청 해상도: {_requestedWidth}x{_requestedHeight}");
             Debug.Log($"[WebcamPreview] 실제 해상도: {_tex.width}x{_tex.height}");
 
-            if (_tex.width != requestedWidth || _tex.height != requestedHeight)
+            if (_tex.width != _requestedWidth || _tex.height != _requestedHeight)
             {
-                Debug.LogWarning($"[WebcamPreview] 요청한 해상도와 실제 해상도가 다릅니다! 카메라가 {requestedWidth}x{requestedHeight}를 지원하지 않을 수 있습니다.");
+                Debug.LogWarning($"[WebcamPreview] 카메라가 요청 해상도를 지원하지 않음. 실제: {_tex.width}x{_tex.height}");
+            }
+            else
+            {
+                Debug.Log($"[WebcamPreview] 해상도 매칭 성공!");
             }
         }
     }
