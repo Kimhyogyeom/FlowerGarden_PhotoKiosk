@@ -35,8 +35,11 @@ public enum FadeState
     /// <summary>Filming Start → Captured Photo(포토 선택) 화면 전환</summary>
     FilmingStartToPhotoSelect,
 
-    /// <summary>Photo Select → Print(프린트) 화면 전환</summary>
-    PhotoSelectToPrint,
+    /// <summary>Photo Select → Sticker(스티커 편집) 화면 전환</summary>
+    PhotoSelectToSticker,
+
+    /// <summary>Sticker → Print(프린트) 화면 전환</summary>
+    StickerToPrint,
 
     /// <summary>Print → Output(출력 완료) 화면 전환</summary>
     PrintToOutput,
@@ -259,12 +262,21 @@ public class FadeAnimationCtrl : MonoBehaviour
                 break;
 
             case FadeState.FilmingStartToPhotoSelect:
-                // Photo Select → Print 전환
-                CurrentState = FadeState.PhotoSelectToPrint;
+                // Photo Select → Sticker 전환
+                CurrentState = FadeState.PhotoSelectToSticker;
                 _capturePhotoPanelCtrl.FadeEndCallBack();
                 break;
 
-            case FadeState.PhotoSelectToPrint:
+            case FadeState.PhotoSelectToSticker:
+                // Photo Select → Sticker 전환 완료
+                CurrentState = FadeState.StickerToPrint;
+                if (_capturePhotoPanelCtrl != null)
+                {
+                    _capturePhotoPanelCtrl.FadeEndCallBackToSticker();
+                }
+                break;
+
+            case FadeState.StickerToPrint:
                 // Print → Output 전환
                 CurrentState = FadeState.PrintToOutput;
                 _printButtonHandler.FadeEndCallBack();

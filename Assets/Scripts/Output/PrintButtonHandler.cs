@@ -124,8 +124,8 @@ public class PrintButtonHandler : MonoBehaviour
     /// </summary>
     public void OnClickPrint()
     {
-        // Photo Select → Print(출력) 화면 전환
-        _fadeAnimationCtrl.SetState(FadeState.PhotoSelectToPrint);
+        // Sticker → Print(출력) 화면 전환
+        _fadeAnimationCtrl.SetState(FadeState.StickerToPrint);
         _fadeAnimationCtrl.StartFade();
     }
 

@@ -34,7 +34,8 @@ public class InitCtrl : MonoBehaviour
     [SerializeField] private PrintButtonHandler _printButtonHandler;        // 출력 버튼 핸들러
     [SerializeField] private StepCountdownUI _stepCountdownUI;              // 촬영 카운트다운 컨트롤러
 
-    [SerializeField] private CapturedPhotoPanelCtrl _capturedPhotoPanelCtrl;    // 포토 셀렉에서 캡처 관련 함수 
+    [SerializeField] private CapturedPhotoPanelCtrl _capturedPhotoPanelCtrl;    // 포토 셀렉에서 캡처 관련 함수
+    [SerializeField] private StickerPanelCtrl _stickerPanelCtrl;              // 스티커 패널 컨트롤러
     // [SerializeField] private FilmingToSelectCtrl _filmingToSelectCtrl;      // 촬영 → 선택 화면 전환 컨트롤러
     // [SerializeField] private FilmingEndCtrl _filmingEndCtrl;                // 촬영 종료 후 처리 컨트롤러 (필요시 확장용)    
 
@@ -162,7 +163,10 @@ public class InitCtrl : MonoBehaviour
     /// </summary>
     private void ResetManager()
     {
-        // 초기화
+        // ★ 모드 변경 전에 스티커 패널 리셋 (현재 모드 기준으로 원래 위치 복원)
+        StickerReset();
+
+        // 모드 초기화 (세로 모드로)
         GameManager.Instance.SetMode(KioskMode.Hight);
 
         // 자동 콜백 코루틴 정리
@@ -366,5 +370,19 @@ public class InitCtrl : MonoBehaviour
     public void PhotoCaptureReset()
     {
         _capturedPhotoPanelCtrl.ResetCapturedPhotoPanel();
+    }
+
+    /// <summary>
+    /// 스티커 패널 리셋
+    /// - 가져온 오브젝트를 원래 위치/스케일로 복원
+    /// - 타이머 정지
+    /// - ★ 모드 변경 전에 호출해야 현재 모드 기준으로 올바른 위치로 복원됨
+    /// </summary>
+    public void StickerReset()
+    {
+        if (_stickerPanelCtrl != null)
+        {
+            _stickerPanelCtrl.RestoreFrame();
+        }
     }
 }

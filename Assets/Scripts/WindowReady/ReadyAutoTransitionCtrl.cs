@@ -12,7 +12,8 @@ public class ReadyAutoTransitionCtrl : MonoBehaviour
     [SerializeField] private ReadyPanelTransitionCtrl _readyPanelTransitionCtrl;    // 버튼을 클릭할 때 Ready -> Select 화면으로 전환하는 컨트롤러
 
     [Header("Timer Settings")]
-    // [SerializeField] private float _startSeconds = 10f;      // 시작 카운트 값 (기본 10초)
+    [Tooltip("자동 전환 타이머 (초)")]
+    [SerializeField] private int _timerSeconds = 10;
 
     [Header("Runtime")]
     [SerializeField] private float _timer;                   // 현재 남은 시간
@@ -60,7 +61,7 @@ public class ReadyAutoTransitionCtrl : MonoBehaviour
 
     private IEnumerator TimerRoutine()
     {
-        _timer = GameManager.Instance._readyToSelectTimer;
+        _timer = _timerSeconds;
 
         while (_timer > 0f)
         {

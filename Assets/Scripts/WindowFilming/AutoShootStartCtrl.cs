@@ -10,8 +10,8 @@ using UnityEngine.Events;
 public class AutoShootStartCtrl : MonoBehaviour
 {
     [Header("Timer Settings")]
-    [Tooltip("카운트다운 시작 초(기본값)")]
-    [SerializeField] private float _startSeconds = 10f;
+    [Tooltip("자동 전환 타이머 (초)")]
+    [SerializeField] private int _timerSeconds = 10;
 
     [Header("Runtime")]
     [SerializeField] private float _timer;                   // 현재 남은 시간
@@ -58,7 +58,7 @@ public class AutoShootStartCtrl : MonoBehaviour
 
     private IEnumerator TimerRoutine()
     {
-        _timer = GameManager.Instance._filmingToPhotoTimer;
+        _timer = _timerSeconds;
 
         while (_timer > 0f)
         {
@@ -108,7 +108,7 @@ public class AutoShootStartCtrl : MonoBehaviour
         }
 
         // 타이머 값 초기화
-        _timer = _startSeconds;
+        _timer = _timerSeconds;
 
         // 텍스트 초기화
         if (_timerText != null)

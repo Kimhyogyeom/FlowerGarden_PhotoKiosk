@@ -10,8 +10,8 @@ using UnityEngine.Events;
 public class SelectAutoTransitionCtrl : MonoBehaviour
 {
     [Header("Timer Settings")]
-    [Tooltip("카운트다운 시작 초(기본값)")]
-    // [SerializeField] private float _startSeconds = 10f;
+    [Tooltip("자동 전환 타이머 (초)")]
+    [SerializeField] private int _timerSeconds = 10;
 
     [Header("Runtime")]
     [SerializeField] private float _timer;                   // 현재 남은 시간
@@ -62,7 +62,7 @@ public class SelectAutoTransitionCtrl : MonoBehaviour
     {
         print("코루틴 실행됨");
 
-        _timer = GameManager.Instance._selectToFilmingTimer;
+        _timer = _timerSeconds;
 
         while (_timer > 0f)
         {

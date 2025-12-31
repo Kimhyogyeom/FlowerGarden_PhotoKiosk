@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// 키오스크 상태 정의
-/// - 전체 흐름: 결제 → 대기 → 프레임 선택 → 촬영 → 인쇄
+/// - 전체 흐름: 결제 → 대기 → 프레임 선택 → 촬영 → 스티커 → 인쇄
 /// </summary>
 public enum KioskState
 {
@@ -24,6 +24,8 @@ public enum KioskState
     Filming,            // 사진 촬영 진행 중 상태
 
     CutWindow,          // 4컷 화면
+
+    Sticker,            // 스티커 편집 화면
 
     Printing            // 인쇄 진행 중 상태
 }
@@ -67,17 +69,15 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float _timeScale = 1.0f;
 #pragma warning restore CS0414
 
-    [Header("Test 삭제될 예정 Timer")]
-    // ───────────────────────────────────────────── Test용 삭제될 예정
-    public int _paymentToReadyTimer = 10;           // 결제 -> 래디 (현)
-    public int _readyToSelectTimer = 10;            // 래디 -> 선택 (현)
-    public int _selectToFilmingTimer = 10;          // 선택 -> 사진 (현)
-    public int _filmingToPhotoTimer = 10;           // 사진 -> 촬영 (현)
+    [Header("Timer Settings")]
+    [Tooltip("촬영 완료 → 포토 셀렉트 전환 타이머 (초)")]
+    public int _filmingToPhotoSelectTimer = 60;
 
-    [Header("사용중인 Timer")]
-    // ───────────────────────────────────────────── 사용중임
-    public int _photoSelectToPrintTimer = 10;   // 포토선택 에서 프린트로 가는 타이머
-    public int _printToSuccessTimer = 10;       // 프린트 완료 -> 래디로 가는 타이머
+    [Tooltip("포토 셀렉트 → 프린트 전환 타이머 (초)")]
+    public int _photoSelectToPrintTimer = 60;
+
+    [Tooltip("프린트 → Ready 초기화 타이머 (초)")]
+    public int _printToSuccessTimer = 10;
 
     private void Awake()
     {
@@ -140,6 +140,11 @@ public class GameManager : MonoBehaviour
         else if (newState == KioskState.CutWindow)
         {
             SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._windowPhotoSelectSound);
+        }
+        else if (newState == KioskState.Sticker)
+        {
+            // TODO: 스티커 사운드 추가 필요 시
+            // SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._windowStickerSound);
         }
         else if (newState == KioskState.Printing)
         {

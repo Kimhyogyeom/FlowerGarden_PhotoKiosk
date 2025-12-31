@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -131,6 +132,16 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
     [SerializeField] private GameObject _frameHight;
     [SerializeField] private GameObject _frameWidth;
 
+    [Header("Photo Select Next Button")]
+    [Tooltip("포토 셀렉트 패널의 '다음' 버튼")]
+    [SerializeField] private Button _photoSelectNextButton;
+
+    [Tooltip("스티커 패널 (다음 버튼 클릭 시 열림)")]
+    [SerializeField] private GameObject _stickerPanel;
+
+    [Tooltip("스티커 패널 컨트롤러 (프레임 참조 전달용)")]
+    [SerializeField] private StickerPanelCtrl _stickerPanelCtrl;
+
     // === 내부 상태 ===
     private bool[] _isSelected;             // 각 버튼 선택 여부
     private GameObject[] _selectionMarkers; // 버튼 하위에서 찾은 선택 마커
@@ -141,6 +152,19 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
 
     // 각 버튼이 어느 슬롯을 쓰고 있나? (-1 == 아직 안 들어감)
     private int[] _buttonAssignedSlot;      // 길이 = 현재 사용하는 버튼 배열 길이
+
+    // 빈 슬롯 깜빡임 코루틴
+    private Coroutine _blinkCoroutine;
+
+    [Header("Empty Slot Blink Settings")]
+    [Tooltip("빈 슬롯 깜빡임 색상")]
+    [SerializeField] private Color _blinkColor = Color.red;
+
+    [Tooltip("깜빡임 간격 (초)")]
+    [SerializeField] private float _blinkInterval = 0.2f;
+
+    [Tooltip("깜빡임 반복 횟수")]
+    [SerializeField] private int _blinkCount = 4;
 
     // ──────────────────────────────────────────────────────────────────────
     // 모드/현재 버튼 헬퍼
@@ -183,6 +207,12 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
         if (_cameraWindowNextButton != null)
         {
             _cameraWindowNextButton.onClick.AddListener(OpenNextPanelAndApplyPhotos);
+        }
+
+        // 포토 셀렉트 "다음" 버튼 → 스티커 패널 전환
+        if (_photoSelectNextButton != null)
+        {
+            _photoSelectNextButton.onClick.AddListener(OnPhotoSelectNextButtonClicked);
         }
 
         // Hight/Width 버튼 둘 다 리스너 연결
@@ -346,10 +376,16 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
     {
         GameManager.Instance.SetState(KioskState.CutWindow);
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
-        // 타이머 시작 (예: 60초)
+
+        // 타이머 시작 (GameManager 설정값 사용)
         if (_countdownTimer != null)
         {
-            _countdownTimer.StartTimer();
+            // 타이머 콜백 구독
+            _countdownTimer.OnTimeout -= OnTimerTimeout; // 중복 방지
+            _countdownTimer.OnTimeout += OnTimerTimeout;
+
+            // GameManager의 촬영→포토셀렉트 타이머 값 사용
+            _countdownTimer.StartTimer(GameManager.Instance._filmingToPhotoSelectTimer);
         }
 
         if (_stepCountdownUI == null)
@@ -819,6 +855,207 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
 
+    // ==================  포토 셀렉트 → 스티커 패널 전환 ==================
+
+    /// <summary>
+    /// 현재 활성화된 프레임 오브젝트를 반환
+    /// - Hight/Width 모드와 프레임 색상(빨강/파랑/검정)에 따라 반환
+    /// </summary>
+    public GameObject GetActiveFrame()
+    {
+        int index = CurrentFrameIndex;
+        bool isHightMode = IsHightMode;
+
+        switch (index)
+        {
+            case 0: // 빨강
+                return isHightMode ? _redGameObject : _redGameObjectWidth;
+
+            case 1: // 파랑
+                return isHightMode ? _blueGameObject : _blueGameObjectWidth;
+
+            case 2: // 검정
+                return isHightMode ? _blackGameObject : _blackGameObjectWidth;
+
+            default:
+                Debug.LogWarning($"[CapturedPhotoPanelCtrl] 잘못된 프레임 인덱스: {index}");
+                return null;
+        }
+    }
+
+    /// <summary>
+    /// 타이머 타임아웃 시 호출 (CountdownTimer.OnTimeout 이벤트)
+    /// - 4장 선택 여부 상관없이 무조건 다음으로 진행
+    /// </summary>
+    private void OnTimerTimeout()
+    {
+        Debug.Log("[CapturedPhotoPanelCtrl] 타이머 타임아웃 - 강제로 다음 단계 진행");
+
+        // 선택 개수 확인 후 로그만 출력
+        if (_currentSelectedCount < _maxSelection)
+        {
+            Debug.LogWarning($"[CapturedPhotoPanelCtrl] 제한 시간 초과 - 선택된 사진: {_currentSelectedCount}/{_maxSelection}");
+        }
+
+        // 4장 선택 여부와 상관없이 스티커 패널로 전환
+        MoveToStickerPanel();
+    }
+
+    /// <summary>
+    /// 포토 셀렉트 패널의 "다음" 버튼 클릭 시 호출
+    /// - 4장이 모두 선택되었는지 확인
+    /// - 선택 완료 시 스티커 패널로 전환
+    /// </summary>
+    private void OnPhotoSelectNextButtonClicked()
+    {
+        // 4장이 모두 선택되었는지 확인
+        if (_currentSelectedCount < _maxSelection)
+        {
+            Debug.LogWarning($"[CapturedPhotoPanelCtrl] {_maxSelection}장을 모두 선택해주세요. (현재: {_currentSelectedCount}/{_maxSelection})");
+
+            // 경고 사운드 재생
+            if (SoundManager.Instance != null)
+            {
+                SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._failSound);
+            }
+
+            // 빈 슬롯 깜빡임 시작
+            StartBlinkEmptySlots();
+
+            return;
+        }
+
+        // 스티커 패널로 전환
+        MoveToStickerPanel();
+    }
+
+    /// <summary>
+    /// 스티커 패널로 전환하는 공통 로직 (페이드 애니메이션 사용)
+    /// </summary>
+    private void MoveToStickerPanel()
+    {
+        // 페이드 애니메이션 시작
+        if (_fadeAnimationCtrl != null)
+        {
+            _fadeAnimationCtrl.SetState(FadeState.PhotoSelectToSticker);
+            _fadeAnimationCtrl.StartFade();
+        }
+        else
+        {
+            Debug.LogWarning("[CapturedPhotoPanelCtrl] FadeAnimationCtrl이 없습니다. 직접 전환합니다.");
+            MoveToStickerPanelDirect();
+        }
+    }
+
+    /// <summary>
+    /// 페이드 애니메이션 완료 후 호출되는 콜백 (FadeAnimationCtrl에서 호출)
+    /// PhotoSelectToSticker 상태에서 실제 패널 전환 수행
+    /// </summary>
+    public void FadeEndCallBackToSticker()
+    {
+        MoveToStickerPanelDirect();
+    }
+
+    /// <summary>
+    /// 직접 스티커 패널로 전환 (페이드 없이)
+    /// </summary>
+    private void MoveToStickerPanelDirect()
+    {
+        // 타이머 정지 (중요!)
+        if (_countdownTimer != null)
+        {
+            _countdownTimer.StopTimer();
+            Debug.Log("[CapturedPhotoPanelCtrl] 타이머 정지됨");
+        }
+
+        // 포토 셀렉트 패널 비활성화
+        if (_nextPanel != null)
+        {
+            _nextPanel.SetActive(false);
+        }
+
+        // 스티커 패널 활성화
+        if (_stickerPanel != null)
+        {
+            _stickerPanel.SetActive(true);
+        }
+
+        // StickerPanelCtrl에서 프레임 로드
+        if (_stickerPanelCtrl != null)
+        {
+            _stickerPanelCtrl.LoadFrame();
+        }
+        else
+        {
+            Debug.LogWarning("[CapturedPhotoPanelCtrl] StickerPanelCtrl 참조가 없습니다. Inspector에서 연결하세요.");
+        }
+
+        // GameManager 상태 변경
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.SetState(KioskState.Sticker);
+        }
+
+        Debug.Log("[CapturedPhotoPanelCtrl] 포토 셀렉트 → 스티커 패널 전환 완료");
+    }
+
+    // ==================  생명주기 ==================
+
+    private void OnDestroy()
+    {
+        // 타이머 콜백 구독 해제
+        if (_countdownTimer != null)
+        {
+            _countdownTimer.OnTimeout -= OnTimerTimeout;
+        }
+    }
+
+    // ==================  외부 접근용 Getter ==================
+
+    /// <summary>
+    /// Hight 프레임 오브젝트 반환 (StickerPanelCtrl에서 사용)
+    /// Inspector에서 설정 안 되어 있으면 자동으로 찾기
+    /// </summary>
+    public GameObject GetFrameHight()
+    {
+        // Inspector에서 설정 안 되어 있으면 찾기
+        if (_frameHight == null)
+        {
+            Debug.LogWarning("[CapturedPhotoPanelCtrl] _frameHight가 null입니다. 자동으로 찾는 중...");
+            _frameHight = GameObject.Find("Hight");
+
+            if (_frameHight == null)
+            {
+                Debug.LogError("[CapturedPhotoPanelCtrl] ❌ 'Hight' 오브젝트를 찾을 수 없습니다! Hierarchy에서 이름을 확인하거나 Inspector에서 수동으로 연결하세요.");
+            }
+        }
+
+        Debug.Log($"[CapturedPhotoPanelCtrl] GetFrameHight() 호출 - 반환값: {(_frameHight != null ? _frameHight.name : "NULL")}");
+        return _frameHight;
+    }
+
+    /// <summary>
+    /// Width 프레임 오브젝트 반환 (StickerPanelCtrl에서 사용)
+    /// Inspector에서 설정 안 되어 있으면 자동으로 찾기
+    /// </summary>
+    public GameObject GetFrameWidth()
+    {
+        // Inspector에서 설정 안 되어 있으면 찾기
+        if (_frameWidth == null)
+        {
+            Debug.LogWarning("[CapturedPhotoPanelCtrl] _frameWidth가 null입니다. 자동으로 찾는 중...");
+            _frameWidth = GameObject.Find("Width");
+
+            if (_frameWidth == null)
+            {
+                Debug.LogError("[CapturedPhotoPanelCtrl] ❌ 'Width' 오브젝트를 찾을 수 없습니다! Hierarchy에서 이름을 확인하거나 Inspector에서 수동으로 연결하세요.");
+            }
+        }
+
+        Debug.Log($"[CapturedPhotoPanelCtrl] GetFrameWidth() 호출 - 반환값: {(_frameWidth != null ? _frameWidth.name : "NULL")}");
+        return _frameWidth;
+    }
+
     // ==================  외부에서 호출할 리셋 함수 ==================
 
     /// <summary>
@@ -855,5 +1092,112 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
 
         // 필요하면 여기서 Print 슬롯도 초기화하고 싶으면, 아래 주석 풀어서 사용
         // CopyFinalSelectionToPrintSlots();
+    }
+
+    // ==================  빈 슬롯 깜빡임 ==================
+
+    /// <summary>
+    /// 빈 슬롯(선택되지 않은 메인 이미지)을 빨강 → 흰색 → 빨강 → 흰색 깜빡임
+    /// </summary>
+    private void StartBlinkEmptySlots()
+    {
+        // 이미 깜빡이는 중이면 무시
+        if (_blinkCoroutine != null)
+        {
+            return;
+        }
+
+        _blinkCoroutine = StartCoroutine(BlinkEmptySlotsCoroutine());
+    }
+
+    /// <summary>
+    /// 깜빡임 정지
+    /// </summary>
+    private void StopBlinkEmptySlots()
+    {
+        if (_blinkCoroutine != null)
+        {
+            StopCoroutine(_blinkCoroutine);
+            _blinkCoroutine = null;
+
+            // 원래 색상(흰색)으로 복원
+            RestoreEmptySlotsColor();
+        }
+    }
+
+    /// <summary>
+    /// 빈 슬롯 깜빡임 코루틴
+    /// 빨강 → 흰색 반복
+    /// </summary>
+    private IEnumerator BlinkEmptySlotsCoroutine()
+    {
+        if (_currentMainImages == null || _slotOwners == null)
+        {
+            _blinkCoroutine = null;
+            yield break;
+        }
+
+        // 빈 슬롯 찾기
+        List<Image> emptySlotImages = new List<Image>();
+        for (int i = 0; i < _slotOwners.Length && i < _currentMainImages.Length; i++)
+        {
+            if (_slotOwners[i] == -1 && _currentMainImages[i] != null)
+            {
+                emptySlotImages.Add(_currentMainImages[i]);
+            }
+        }
+
+        if (emptySlotImages.Count == 0)
+        {
+            _blinkCoroutine = null;
+            yield break;
+        }
+
+        Debug.Log($"[CapturedPhotoPanelCtrl] 빈 슬롯 {emptySlotImages.Count}개 깜빡임 시작");
+
+        // 깜빡임 반복 (빨강 → 흰색 → 빨강 → 흰색)
+        for (int i = 0; i < _blinkCount; i++)
+        {
+            // 빨강으로 변경
+            foreach (var img in emptySlotImages)
+            {
+                if (img != null)
+                {
+                    img.color = _blinkColor;
+                }
+            }
+
+            yield return new WaitForSeconds(_blinkInterval);
+
+            // 흰색으로 변경
+            foreach (var img in emptySlotImages)
+            {
+                if (img != null)
+                {
+                    img.color = Color.white;
+                }
+            }
+
+            yield return new WaitForSeconds(_blinkInterval);
+        }
+
+        _blinkCoroutine = null;
+        Debug.Log("[CapturedPhotoPanelCtrl] 빈 슬롯 깜빡임 종료");
+    }
+
+    /// <summary>
+    /// 빈 슬롯 색상을 흰색으로 복원
+    /// </summary>
+    private void RestoreEmptySlotsColor()
+    {
+        if (_currentMainImages == null || _slotOwners == null) return;
+
+        for (int i = 0; i < _slotOwners.Length && i < _currentMainImages.Length; i++)
+        {
+            if (_slotOwners[i] == -1 && _currentMainImages[i] != null)
+            {
+                _currentMainImages[i].color = Color.white;
+            }
+        }
     }
 }

@@ -12,9 +12,6 @@ using UnityEngine;
 /// </summary>
 public class CountdownTimer : MonoBehaviour
 {
-    [Header("Compoment Setting")]
-    [SerializeField] private PrintButtonHandler _printButtonHandler;
-
     [Header("Default Settings")]
     [Tooltip("기본 시작 시간(초). StartTimer()를 seconds 없이 부를 때 사용")]
     [SerializeField] private int _defaultSeconds = 60;
@@ -30,7 +27,7 @@ public class CountdownTimer : MonoBehaviour
     public bool IsRunning => _timerRoutine != null;
 
     /// <summary>시간이 0이 되었을 때 호출되는 콜백</summary>
-    // public event Action OnTimeout;
+    public event Action OnTimeout;
 
     private Coroutine _timerRoutine;
 
@@ -57,6 +54,8 @@ public class CountdownTimer : MonoBehaviour
         RemainingSeconds = Mathf.Max(0, seconds);
         UpdateTimeText();
         _timerRoutine = StartCoroutine(TimerRoutine());
+
+        Debug.Log($"[CountdownTimer] 타이머 시작: {RemainingSeconds}초");
     }
 
     /// <summary>
@@ -80,11 +79,10 @@ public class CountdownTimer : MonoBehaviour
             UpdateTimeText();
         }
 
-        Debug.Log("제한 시간 초과");
+        Debug.Log("[CountdownTimer] 제한 시간 초과");
 
         // 콜백 호출 (구독자가 있다면)
-        // OnTimeout?.Invoke();
-        _printButtonHandler.OnClickPrint();
+        OnTimeout?.Invoke();
 
         _timerRoutine = null;
     }

@@ -54,6 +54,10 @@ public class StepCountdownUI : MonoBehaviour
     [Tooltip("UI 기준 가상 캡처 높이 (예전 height 값, 예: 640)")]
     [SerializeField] private float _virtualCaptureHeight = 640f;
 
+    [Header("Upscale Settings")]
+    [Tooltip("캡처 후 업스케일 배율 (1 = 원본, 2 = 2배 해상도)")]
+    [SerializeField, Range(1f, 4f)] private float _upscaleMultiplier = 1f;
+
     [Header("Progress Slider (Optional)")]
     [Tooltip("각 촬영 단계 진행도를 표시할 슬라이더 (0~1). 비우면 무시.")]
     [SerializeField] private Slider _stepProgressSlider;
@@ -415,9 +419,9 @@ public class StepCountdownUI : MonoBehaviour
 
             if (GameManager.Instance.CurrentMode == KioskMode.Hight)
             {
-                // "옛날에 사용하던 가상의 폭/높이" (예: 470 x 640)
-                float desiredLocalW = Mathf.Min(_virtualCaptureWidth, localW);
-                float desiredLocalH = Mathf.Min(_virtualCaptureHeight, localH);
+                // localW/localH 제한 없이 가상 캡처 크기 그대로 사용
+                float desiredLocalW = _virtualCaptureWidth;
+                float desiredLocalH = _virtualCaptureHeight;
 
                 // 그걸 화면 공간으로 환산
                 float desiredScreenW = desiredLocalW * scaleX;
@@ -433,9 +437,9 @@ public class StepCountdownUI : MonoBehaviour
             }
             else if (GameManager.Instance.CurrentMode == KioskMode.Width)
             {
-                // "옛날에 사용하던 가상의 폭/높이" (예: 470 x 640)
-                float desiredLocalW = Mathf.Min(_virtualCaptureHeight * 1.4f, localW);
-                float desiredLocalH = Mathf.Min(_virtualCaptureWidth * 1.3f, localH);
+                // localW/localH 제한 없이 가상 캡처 크기 그대로 사용
+                float desiredLocalW = _virtualCaptureHeight * 1.4f;
+                float desiredLocalH = _virtualCaptureWidth * 1.3f;
 
                 // 그걸 화면 공간으로 환산
                 float desiredScreenW = desiredLocalW * scaleX;
@@ -471,12 +475,23 @@ public class StepCountdownUI : MonoBehaviour
         tex.ReadPixels(new Rect(ix, iy, iw, ih), 0, 0);
         tex.Apply();
 
+        // === 업스케일 처리 ===
+        Texture2D finalTex = tex;
+        if (_upscaleMultiplier > 1f)
+        {
+            int upW = Mathf.RoundToInt(iw * _upscaleMultiplier);
+            int upH = Mathf.RoundToInt(ih * _upscaleMultiplier);
+            finalTex = UpscaleTexture(tex, upW, upH);
+            Destroy(tex); // 원본 텍스처 해제
+            Debug.Log($"[Capture] 업스케일 완료: {iw}x{ih} → {upW}x{upH} (x{_upscaleMultiplier})");
+        }
+
         string folderPath = Application.persistentDataPath;
         Directory.CreateDirectory(folderPath);
         string filename = $"photo_raw_{stepIndex + 1}_{DateTime.Now:yyyyMMdd_HHmmss}.png";
         string savePath = Path.Combine(folderPath, filename);
-        File.WriteAllBytes(savePath, tex.EncodeToPNG());
-        Debug.Log($"[찰칵] 저장 완료: {savePath} ({iw}x{ih} from {ix},{iy})");
+        File.WriteAllBytes(savePath, finalTex.EncodeToPNG());
+        Debug.Log($"[찰칵] 저장 완료: {savePath} ({finalTex.width}x{finalTex.height} from {ix},{iy})");
 
         // === 내부 배열에 항상 저장 ===
         if (stepIndex >= 0 && stepIndex < _capturedSprites.Length)
@@ -490,8 +505,8 @@ public class StepCountdownUI : MonoBehaviour
             }
 
             // pixelsPerUnit을 1로 설정하면 1:1 픽셀 매핑으로 최대 선명도 유지
-            var spr = Sprite.Create(tex,
-                new Rect(0, 0, tex.width, tex.height),
+            var spr = Sprite.Create(finalTex,
+                new Rect(0, 0, finalTex.width, finalTex.height),
                 new Vector2(0.5f, 0.5f),
                 1f);
 
@@ -609,5 +624,32 @@ public class StepCountdownUI : MonoBehaviour
         if (_capturedSprites == null) return null;
         if (index < 0 || index >= _capturedSprites.Length) return null;
         return _capturedSprites[index];
+    }
+
+    // ================== Upscale Helper ==================
+
+    /// <summary>
+    /// Bilinear 보간으로 텍스처를 업스케일
+    /// GPU RenderTexture를 사용하여 고품질 스케일링
+    /// </summary>
+    private Texture2D UpscaleTexture(Texture2D source, int targetWidth, int targetHeight)
+    {
+        // RenderTexture로 GPU 기반 스케일링
+        RenderTexture rt = RenderTexture.GetTemporary(targetWidth, targetHeight, 0, RenderTextureFormat.ARGB32);
+        rt.filterMode = FilterMode.Bilinear;
+
+        RenderTexture.active = rt;
+        Graphics.Blit(source, rt);
+
+        // 결과를 새 Texture2D로 복사
+        Texture2D result = new Texture2D(targetWidth, targetHeight, TextureFormat.RGBA32, false);
+        result.ReadPixels(new Rect(0, 0, targetWidth, targetHeight), 0, 0);
+        result.Apply();
+
+        // 정리
+        RenderTexture.active = null;
+        RenderTexture.ReleaseTemporary(rt);
+
+        return result;
     }
 }
