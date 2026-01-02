@@ -56,6 +56,10 @@ public class PrintButtonHandler : MonoBehaviour
     [SerializeField] private GameObject[] _hideWhileCapture; // 캡처 중 숨김
     // 캡처 시 화면에 찍히지 않길 원하는 UI 오브젝트들
 
+    [Header("Sticker Panel")]
+    [Tooltip("스티커 패널 컨트롤러 (스티커 붙은 프레임 캡처용)")]
+    [SerializeField] private StickerPanelCtrl _stickerPanelCtrl;
+
     [Header("Countdown")]
     [SerializeField] private TextMeshProUGUI _countdownTMP; // TMP 사용 시
     // 카운트다운 숫자를 표시할 TMP 텍스트
@@ -87,6 +91,20 @@ public class PrintButtonHandler : MonoBehaviour
         {
             // Kiosk 모드에 따라 최종 출력 대상만 분기
             return IsHightMode ? _targetRawImage : _targetRawImageWidth;
+        }
+    }
+
+    /// <summary>
+    /// 스티커가 붙은 프레임의 Image 컴포넌트 반환
+    /// </summary>
+    private Image StickerFrameImage
+    {
+        get
+        {
+            if (_stickerPanelCtrl == null) return null;
+            var frame = _stickerPanelCtrl.GetCurrentFrame();
+            if (frame == null) return null;
+            return frame.GetComponent<Image>();
         }
     }
 
@@ -187,8 +205,13 @@ public class PrintButtonHandler : MonoBehaviour
         }
 
         // -------- 실제 인쇄 호출 --------
+        // 스티커가 붙은 프레임이 있으면 그것을 캡처, 없으면 기존 TargetImage 사용
+        Image captureTarget = StickerFrameImage != null ? StickerFrameImage : TargetImage;
+
+        Debug.Log($"[PrintButtonHandler] 캡처 대상: {captureTarget.gameObject.name}");
+
         _printController.PrintRawImage(
-            TargetImage,
+            captureTarget,
             onDone: () =>
             {
                 Debug.Log("인쇄 완료");

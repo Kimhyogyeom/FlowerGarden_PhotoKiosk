@@ -36,6 +36,7 @@ public class InitCtrl : MonoBehaviour
 
     [SerializeField] private CapturedPhotoPanelCtrl _capturedPhotoPanelCtrl;    // 포토 셀렉에서 캡처 관련 함수
     [SerializeField] private StickerPanelCtrl _stickerPanelCtrl;              // 스티커 패널 컨트롤러
+    [SerializeField] private PrintPhotoImageMapping _printPhotoImageMapping;  // 프린트 이미지 매핑 (스티커 복사본 삭제용)
     // [SerializeField] private FilmingToSelectCtrl _filmingToSelectCtrl;      // 촬영 → 선택 화면 전환 컨트롤러
     // [SerializeField] private FilmingEndCtrl _filmingEndCtrl;                // 촬영 종료 후 처리 컨트롤러 (필요시 확장용)    
 
@@ -383,6 +384,12 @@ public class InitCtrl : MonoBehaviour
         if (_stickerPanelCtrl != null)
         {
             _stickerPanelCtrl.RestoreFrame();
+        }
+
+        // 프린트용으로 복사된 스티커들도 삭제
+        if (_printPhotoImageMapping != null)
+        {
+            _printPhotoImageMapping.ClearCopiedStickers();
         }
     }
 }

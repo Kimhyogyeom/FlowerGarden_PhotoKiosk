@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using Image = UnityEngine.UI.Image;
@@ -6,6 +7,10 @@ public class PrintPhotoImageMapping : MonoBehaviour
 {
     [Header("Component")]
     [SerializeField] private PhotoFrameSelectCtrl _photoFrameSelectCtrl;
+
+    [Header("Sticker")]
+    [Tooltip("스티커 패널 컨트롤러 (스티커 복사용)")]
+    [SerializeField] private StickerPanelCtrl _stickerPanelCtrl;
 
     [Header("Frame Sprites (Hight Mode)")]
     [Tooltip("세로(Hight)용 프레임 스프라이트 (0: 빨강, 1: 파랑, 2: 검정)")]
@@ -54,6 +59,9 @@ public class PrintPhotoImageMapping : MonoBehaviour
     [SerializeField] private GameObject _blackObjectWidth;
     [SerializeField] private Image[] _gridBlackImagesCurrentWidth;
     [SerializeField] private Image[] _gridBlackImagesChangeWidth;
+
+    // 복사된 스티커 목록 (리셋 시 삭제용)
+    private List<GameObject> _copiedStickers = new List<GameObject>();
 
     // ---------------------------------------------------
     // 현재 모드 헬퍼 (GameManager 없으면 기본 Hight)
@@ -224,6 +232,129 @@ public class PrintPhotoImageMapping : MonoBehaviour
                 }
                 break;
         }
+
+        // 스티커 복사 (원본 프레임 → 프린트용 프레임)
+        CopyStickersToTarget(isHightMode);
+    }
+
+    /// <summary>
+    /// 원본 프레임의 스티커들을 프린트용 프레임으로 복사
+    /// </summary>
+    private void CopyStickersToTarget(bool isHightMode)
+    {
+        // 이전 복사본 삭제
+        ClearCopiedStickers();
+
+        if (_stickerPanelCtrl == null)
+        {
+            Debug.Log("[ImageMapping] StickerPanelCtrl이 설정되지 않음 - 스티커 복사 건너뜀");
+            return;
+        }
+
+        var dropZone = _stickerPanelCtrl.GetDropZone();
+        if (dropZone == null)
+        {
+            Debug.Log("[ImageMapping] DropZone이 없음 - 스티커 복사 건너뜀");
+            return;
+        }
+
+        var stickers = dropZone.GetDroppedStickers();
+        if (stickers == null || stickers.Count == 0)
+        {
+            Debug.Log("[ImageMapping] 복사할 스티커가 없음");
+            return;
+        }
+
+        // 프린트용 프레임 선택
+        RectTransform targetFrame = isHightMode
+            ? (_mainImageChange != null ? _mainImageChange.rectTransform : null)
+            : (_mainImageChangeWidth != null ? _mainImageChangeWidth.rectTransform : null);
+
+        if (targetFrame == null)
+        {
+            Debug.LogWarning("[ImageMapping] 프린트용 프레임이 없음 - 스티커 복사 실패");
+            return;
+        }
+
+        // 원본 프레임 (스티커의 부모)
+        RectTransform sourceFrame = dropZone.GetStickerParent();
+        if (sourceFrame == null)
+        {
+            Debug.LogWarning("[ImageMapping] 원본 프레임이 없음 - 스티커 복사 실패");
+            return;
+        }
+
+        Debug.Log($"[ImageMapping] 스티커 복사 시작: {stickers.Count}개, {sourceFrame.name} → {targetFrame.name}");
+
+        foreach (var sticker in stickers)
+        {
+            if (sticker == null) continue;
+
+            // 스티커 복제
+            var copy = Instantiate(sticker, targetFrame);
+            copy.name = sticker.name + "_PrintCopy";
+
+            // 원본 스티커의 로컬 좌표/스케일을 그대로 복사
+            var srcRect = sticker.GetComponent<RectTransform>();
+            var dstRect = copy.GetComponent<RectTransform>();
+
+            if (srcRect != null && dstRect != null)
+            {
+                // 상대 위치 계산 (원본 프레임 기준 → 프린트 프레임 기준)
+                // 원본과 프린트 프레임의 크기 비율 계산
+                Vector2 srcSize = sourceFrame.rect.size;
+                Vector2 dstSize = targetFrame.rect.size;
+
+                // 비율 적용
+                float scaleX = dstSize.x / srcSize.x;
+                float scaleY = dstSize.y / srcSize.y;
+
+                dstRect.anchoredPosition = new Vector2(
+                    srcRect.anchoredPosition.x * scaleX,
+                    srcRect.anchoredPosition.y * scaleY
+                );
+
+                dstRect.localScale = new Vector3(
+                    srcRect.localScale.x * scaleX,
+                    srcRect.localScale.y * scaleY,
+                    srcRect.localScale.z
+                );
+
+                dstRect.sizeDelta = srcRect.sizeDelta;
+            }
+
+            // Draggable 비활성화 (프린트용은 드래그 불가)
+            var draggable = copy.GetComponent<Draggable>();
+            if (draggable != null)
+            {
+                Destroy(draggable);
+            }
+
+            _copiedStickers.Add(copy);
+            Debug.Log($"[ImageMapping] 스티커 복사됨: {copy.name}");
+        }
+
+        Debug.Log($"[ImageMapping] 스티커 복사 완료: 총 {_copiedStickers.Count}개");
+    }
+
+    /// <summary>
+    /// 복사된 스티커들 삭제 (리셋 시 호출)
+    /// </summary>
+    public void ClearCopiedStickers()
+    {
+        if (_copiedStickers.Count == 0) return;
+
+        Debug.Log($"[ImageMapping] 복사된 스티커 삭제: {_copiedStickers.Count}개");
+
+        foreach (var sticker in _copiedStickers)
+        {
+            if (sticker != null)
+            {
+                Destroy(sticker);
+            }
+        }
+
+        _copiedStickers.Clear();
     }
 
     /// <summary>

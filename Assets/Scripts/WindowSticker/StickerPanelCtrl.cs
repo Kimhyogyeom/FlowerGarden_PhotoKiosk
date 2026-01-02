@@ -19,12 +19,18 @@ public class StickerPanelCtrl : MonoBehaviour
     [Tooltip("세로 모드에서 원래 위치로 돌아갈 부모")]
     [SerializeField] private Transform _originalParentHight;
 
+    [Tooltip("세로 모드에서 사용할 DropZone (없으면 프레임에서 자동 탐색)")]
+    [SerializeField] private DropZone _dropZoneHight;
+
     [Header("Width Mode (가로 모드)")]
     [Tooltip("가로 모드에서 가져올 오브젝트")]
     [SerializeField] private GameObject _sourceObjectWidth;
 
     [Tooltip("가로 모드에서 원래 위치로 돌아갈 부모")]
     [SerializeField] private Transform _originalParentWidth;
+
+    [Tooltip("가로 모드에서 사용할 DropZone (없으면 프레임에서 자동 탐색)")]
+    [SerializeField] private DropZone _dropZoneWidth;
 
     [Header("Target Panel")]
     [Tooltip("오브젝트를 가져올 목표 패널")]
@@ -45,6 +51,7 @@ public class StickerPanelCtrl : MonoBehaviour
 
     // 내부 상태
     private GameObject _currentFrame;           // 현재 가져온 오브젝트
+    private DropZone _currentDropZone;          // 현재 활성화된 DropZone (프레임에서 가져옴)
     private Transform _currentOriginalParent;   // 현재 오브젝트의 원래 부모
     private Vector3 _originalLocalPosition;     // 원래 로컬 좌표
     private Vector3 _originalLocalScale;        // 원래 스케일
@@ -127,6 +134,35 @@ public class StickerPanelCtrl : MonoBehaviour
         _currentFrame.transform.localPosition = _targetLocalPosition;
         _currentFrame.transform.localScale = _targetScale;
 
+        // 모드에 따라 DropZone 선택 (Inspector에서 지정한 것 우선, 없으면 프레임에서 탐색)
+        DropZone configuredDropZone = _isHightMode ? _dropZoneHight : _dropZoneWidth;
+
+        if (configuredDropZone != null)
+        {
+            _currentDropZone = configuredDropZone;
+            // Inspector에서 설정된 DropZone의 StickerParent를 현재 프레임으로 설정
+            _currentDropZone.SetStickerParent(_currentFrame.GetComponent<RectTransform>());
+            Debug.Log($"[StickerPanelCtrl] Inspector에서 설정된 DropZone 사용: {_currentDropZone.gameObject.name}, StickerParent: {_currentFrame.name}");
+        }
+        else
+        {
+            // 프레임에서 DropZone 컴포넌트 가져오기 (없으면 추가)
+            _currentDropZone = _currentFrame.GetComponent<DropZone>();
+            if (_currentDropZone == null)
+            {
+                _currentDropZone = _currentFrame.AddComponent<DropZone>();
+                // 런타임에서 추가된 DropZone 초기화 (스티커가 프레임의 자식이 되도록)
+                _currentDropZone.Initialize(_currentFrame.GetComponent<RectTransform>());
+                Debug.Log($"[StickerPanelCtrl] DropZone 컴포넌트 자동 추가 및 초기화됨: {_currentFrame.name}");
+            }
+            else
+            {
+                // 기존 DropZone의 StickerParent 설정
+                _currentDropZone.SetStickerParent(_currentFrame.GetComponent<RectTransform>());
+                Debug.Log($"[StickerPanelCtrl] 프레임에서 DropZone 탐색됨: {_currentFrame.name}");
+            }
+        }
+
         Debug.Log($"[StickerPanelCtrl] ✅ {_currentFrame.name}를 {targetParent.name} 자식으로 이동 완료, 좌표: {_targetLocalPosition}, 스케일: {_targetScale}");
     }
 
@@ -157,13 +193,44 @@ public class StickerPanelCtrl : MonoBehaviour
             Debug.LogWarning("[StickerPanelCtrl] 원래 부모가 설정되지 않아 복원할 수 없습니다.");
         }
 
+        // 모든 스티커 삭제 (프레임 복원 전에 먼저 삭제)
+        ClearAllStickers();
+
         _currentFrame = null;
         _currentOriginalParent = null;
+        _currentDropZone = null;
 
         if (_panelSticker != null)
         {
             _panelSticker.SetActive(false);
         }
+    }
+
+    /// <summary>
+    /// 모든 드롭된 스티커 삭제
+    /// </summary>
+    public void ClearAllStickers()
+    {
+        if (_currentDropZone != null)
+        {
+            _currentDropZone.ClearAllStickers();
+        }
+    }
+
+    /// <summary>
+    /// 현재 프레임 반환 (프린트 시 사용)
+    /// </summary>
+    public GameObject GetCurrentFrame()
+    {
+        return _currentFrame;
+    }
+
+    /// <summary>
+    /// 현재 활성화된 드롭 영역 반환
+    /// </summary>
+    public DropZone GetDropZone()
+    {
+        return _currentDropZone;
     }
 
     // ==================  타이머 관련 ==================
