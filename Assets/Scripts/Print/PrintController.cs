@@ -286,7 +286,7 @@ public class PrintController : MonoBehaviour
             }
         }
 
-        Debug.Log("[Print] ResetPrintState: 초기화 완료");
+        // Debug.Log("[Print] ResetPrintState: 초기화 완료");
     }
 
     // ===== 외부 API =====
@@ -369,7 +369,7 @@ public class PrintController : MonoBehaviour
                 target.localScale = Vector3.one * appliedScale;
             }
 
-            Debug.Log($"[Print] TempScale applied: x{appliedScale:0.###}");
+            // Debug.Log($"[Print] TempScale applied: x{appliedScale:0.###}");
         }
         else
         {
@@ -381,11 +381,11 @@ public class PrintController : MonoBehaviour
         Canvas.ForceUpdateCanvases();
         yield return new WaitForEndOfFrame();
 
-        Debug.Log($"[Print] ===== 캡처 시작 =====");
-        Debug.Log($"[Print] Target: {target.name}");
-        Debug.Log($"[Print] oldRectSize: {oldRectSize}");
-        Debug.Log($"[Print] nowRectSize: {target.rect.size}, tempScale=x{appliedScale:0.###}");
-        Debug.Log($"[Print] Screen: {Screen.width}x{Screen.height}");
+        // Debug.Log($"[Print] ===== 캡처 시작 =====");
+        // Debug.Log($"[Print] Target: {target.name}");
+        // Debug.Log($"[Print] oldRectSize: {oldRectSize}");
+        // Debug.Log($"[Print] nowRectSize: {target.rect.size}, tempScale=x{appliedScale:0.###}");
+        // Debug.Log($"[Print] Screen: {Screen.width}x{Screen.height}");
 
         Texture2D tex = null;
 
@@ -396,7 +396,7 @@ public class PrintController : MonoBehaviour
             if (raw && raw.texture)
             {
                 tex = CopyRawImageAsSeen(raw);
-                Debug.Log("[Print] CopyRawImageAsSeen 사용 (RawImage.texture 기반)");
+                // Debug.Log("[Print] CopyRawImageAsSeen 사용 (RawImage.texture 기반)");
             }
         }
 
@@ -416,8 +416,8 @@ public class PrintController : MonoBehaviour
                     ? CaptureRectTransformAreaIncludingChildren(target)
                     : CaptureRectTransformArea(target);
 
-                if (tex != null)
-                    Debug.Log($"[Print] ReadPixels 기반 캡처 완료: {tex.width}x{tex.height}");
+                // if (tex != null)
+                //     Debug.Log($"[Print] ReadPixels 기반 캡처 완료: {tex.width}x{tex.height}");
             }
         }
 
@@ -453,7 +453,7 @@ public class PrintController : MonoBehaviour
         if (GameManager.Instance != null)
         {
             isLandscapeMode = (GameManager.Instance.CurrentMode == KioskMode.Width);
-            Debug.Log(isLandscapeMode ? "[Print] KioskMode.Width 감지 -> 가로 모드" : "[Print] KioskMode.Height 감지 -> 세로 모드");
+            // Debug.Log(isLandscapeMode ? "[Print] KioskMode.Width 감지 -> 가로 모드" : "[Print] KioskMode.Height 감지 -> 세로 모드");
         }
         else
         {
@@ -464,15 +464,15 @@ public class PrintController : MonoBehaviour
 
         switch (effectiveRotation)
         {
-            case RotationMode.ForceCW: tex = Rotate90CW(tex); Debug.Log("[Print] 시계방향 90도 회전 완료"); break;
-            case RotationMode.ForceCCW: tex = Rotate90CCW(tex); Debug.Log("[Print] 반시계방향 90도 회전 완료"); break;
-            default: Debug.Log("[Print] 회전 없음"); break;
+            case RotationMode.ForceCW: tex = Rotate90CW(tex); /* Debug.Log("[Print] 시계방향 90도 회전 완료"); */ break;
+            case RotationMode.ForceCCW: tex = Rotate90CCW(tex); /* Debug.Log("[Print] 반시계방향 90도 회전 완료"); */ break;
+            default: /* Debug.Log("[Print] 회전 없음"); */ break;
         }
 
         if (isLandscapeMode)
         {
             tex = MirrorX(tex);
-            Debug.Log("[Print] 가로 모드: 좌우 반전 적용");
+            // Debug.Log("[Print] 가로 모드: 좌우 반전 적용");
         }
 
         if (_autoFixOrientationByAspect)
@@ -498,7 +498,7 @@ public class PrintController : MonoBehaviour
                 int tmp = w; w = h; h = tmp;
             }
 
-            Debug.Log($"[Print] BEFORE RESAMPLE tex={tex.width}x{tex.height}, target={w}x{h}, mode={mode}, isLandscape={isLandscapeMode}");
+            // Debug.Log($"[Print] BEFORE RESAMPLE tex={tex.width}x{tex.height}, target={w}x{h}, mode={mode}, isLandscape={isLandscapeMode}");
 
             Texture2D resampled = null;
             if (mode == ResampleMode.Cover) resampled = MakePortraitCover(tex, w, h, _coverBiasX, _coverBiasY, _postCropInsetPx);
@@ -523,7 +523,7 @@ public class PrintController : MonoBehaviour
             {
                 Destroy(tex);
                 tex = resampled;
-                Debug.Log($"[Print] AFTER RESAMPLE tex={tex.width}x{tex.height}");
+                // Debug.Log($"[Print] AFTER RESAMPLE tex={tex.width}x{tex.height}");
             }
             else
             {
@@ -553,7 +553,7 @@ public class PrintController : MonoBehaviour
             qrSavePath = Path.Combine(folderPath, qrFilename);
             File.WriteAllBytes(qrSavePath, qrTex.EncodeToPNG());
             Destroy(qrTex);
-            Debug.Log($"[Print] QR용 저장 완료 (정방향): {qrSavePath}");
+            // Debug.Log($"[Print] QR용 저장 완료 (정방향): {qrSavePath}");
         }
 
         // 프린터용: QR과 동일하게 정방향으로 저장
@@ -566,12 +566,12 @@ public class PrintController : MonoBehaviour
             {
                 // 가로모드: 472라인 MirrorX + 여기 MirrorX = 2번 → 추가 MirrorX로 QR과 동일하게
                 tex = MirrorX(tex);
-                Debug.Log("[Print] 180도 회전 + 좌우반전x2 적용 완료 (가로모드, QR과 동일)");
+                // Debug.Log("[Print] 180도 회전 + 좌우반전x2 적용 완료 (가로모드, QR과 동일)");
             }
             else
             {
                 // 세로모드: Rotate180 + MirrorX (QR과 동일)
-                Debug.Log("[Print] 180도 회전 + 좌우반전 적용 완료 (세로모드, QR과 동일)");
+                // Debug.Log("[Print] 180도 회전 + 좌우반전 적용 완료 (세로모드, QR과 동일)");
             }
         }
 
@@ -579,7 +579,7 @@ public class PrintController : MonoBehaviour
         if (isLandscapeMode && tex.width > tex.height)
         {
             tex = Rotate90CW(tex);
-            Debug.Log($"[Print] 프린터용 가로→세로 회전 완료: {tex.width}x{tex.height}");
+            // Debug.Log($"[Print] 프린터용 가로→세로 회전 완료: {tex.width}x{tex.height}");
         }
 
         // 프린터용 이미지 저장
@@ -587,7 +587,7 @@ public class PrintController : MonoBehaviour
         string savePath = Path.Combine(folderPath, filename);
 
         File.WriteAllBytes(savePath, tex.EncodeToPNG());
-        Debug.Log($"[Print] 프린터용 저장 완료: {savePath} ({tex.width}x{tex.height})");
+        // Debug.Log($"[Print] 프린터용 저장 완료: {savePath} ({tex.width}x{tex.height})");
         Destroy(tex);
 
         // ✅ 저장 직후 업로드+QR (옵션) - QR용 파일 사용
@@ -608,7 +608,7 @@ public class PrintController : MonoBehaviour
             int safeCount = Mathf.Max(1, _printCount);
             for (int i = 0; i < safeCount; i++)
             {
-                Debug.Log($"[Print] (Legacy) {_printCount}장 중 {i + 1}번째 출력 시작");
+                // Debug.Log($"[Print] (Legacy) {_printCount}장 중 {i + 1}번째 출력 시작");
                 yield return StartCoroutine(PrintAndNotifyLegacy(savePath));
             }
         }
@@ -672,7 +672,7 @@ public class PrintController : MonoBehaviour
             yield break;
         }
 
-        Debug.Log("[QR] 업로드 성공 URL: " + url);
+        // Debug.Log("[QR] 업로드 성공 URL: " + url);
 
         // QR 생성 (너 프로젝트에 이미 있는 걸 사용)
         Texture2D qrTex = QrCodeGenerator_ZXing.Generate(url, _qrSize, 1);
@@ -771,7 +771,7 @@ public class PrintController : MonoBehaviour
             w = Mathf.Clamp(w, 1, full.width - x);
             h = Mathf.Clamp(h, 1, full.height - y);
 
-            Debug.Log($"[Print] HiResCapture(full={full.width}x{full.height}, superSize={superSize}) crop={w}x{h} at ({x},{y})");
+            // Debug.Log($"[Print] HiResCapture(full={full.width}x{full.height}, superSize={superSize}) crop={w}x{h} at ({x},{y})");
 
             Color32[] src = full.GetPixels32();
             cropped = new Texture2D(w, h, TextureFormat.RGBA32, false);
@@ -858,7 +858,7 @@ public class PrintController : MonoBehaviour
         int iw = Mathf.Max(1, Mathf.RoundToInt(w));
         int ih = Mathf.Max(1, Mathf.RoundToInt(h));
 
-        Debug.Log($"[Print] CaptureRectTransformArea: {iw}x{ih} at ({ix},{iy})");
+        // Debug.Log($"[Print] CaptureRectTransformArea: {iw}x{ih} at ({ix},{iy})");
 
         var tex = new Texture2D(iw, ih, TextureFormat.RGBA32, false);
         tex.ReadPixels(new Rect(ix, iy, iw, ih), 0, 0);
@@ -901,7 +901,7 @@ public class PrintController : MonoBehaviour
         int iw = Mathf.Max(1, Mathf.RoundToInt(w));
         int ih = Mathf.Max(1, Mathf.RoundToInt(h));
 
-        Debug.Log($"[Print] CaptureRectTransformAreaIncludingChildren: {iw}x{ih} at ({ix},{iy})");
+        // Debug.Log($"[Print] CaptureRectTransformAreaIncludingChildren: {iw}x{ih} at ({ix},{iy})");
 
         var tex = new Texture2D(iw, ih, TextureFormat.RGBA32, false);
         tex.ReadPixels(new Rect(ix, iy, iw, ih), 0, 0);
@@ -1075,7 +1075,7 @@ public class PrintController : MonoBehaviour
                 Arguments = $"\"{imagePath}\" {totalCopies} {timeout} \"{_printerName}\" {landscapeFlag}"
             };
 
-            Debug.Log($"[Print] Bridge start: {psi.FileName} {psi.Arguments}");
+            // Debug.Log($"[Print] Bridge start: {psi.FileName} {psi.Arguments}");
             proc = Process.Start(psi);
             started = (proc != null);
         }
@@ -1106,10 +1106,10 @@ public class PrintController : MonoBehaviour
         }
         else
         {
-            Debug.Log("[Print] Bridge 인쇄 완료 (또는 정상 종료)");
+            // Debug.Log("[Print] Bridge 인쇄 완료 (또는 정상 종료)");
         }
 
-        Debug.Log("출력 완료! (Bridge)");
+        // Debug.Log("출력 완료! (Bridge)");
         if (_outputSuccessCtrl) _outputSuccessCtrl.OutputSuccessObjChange();
 #else
         yield return StartCoroutine(PrintAndNotifyLegacy(imagePath));
@@ -1135,7 +1135,7 @@ public class PrintController : MonoBehaviour
                     CreateNoWindow = true,
                     WindowStyle = ProcessWindowStyle.Hidden
                 };
-                Debug.Log($"[Print] printto: {psi.FileName} {psi.Arguments}");
+                // Debug.Log($"[Print] printto: {psi.FileName} {psi.Arguments}");
                 Process.Start(psi);
                 started = true;
             }
@@ -1156,7 +1156,7 @@ public class PrintController : MonoBehaviour
                     CreateNoWindow = true,
                     WindowStyle = ProcessWindowStyle.Hidden
                 };
-                Debug.Log($"[Print] OS print: {psi.FileName}");
+                // Debug.Log($"[Print] OS print: {psi.FileName}");
                 var proc = Process.Start(psi);
                 started = (proc != null);
 
@@ -1191,10 +1191,10 @@ public class PrintController : MonoBehaviour
         }
         TickProgressUITo(1f);
 
-        Debug.Log("출력 완료! (Legacy)");
+        // Debug.Log("출력 완료! (Legacy)");
         if (_outputSuccessCtrl) _outputSuccessCtrl.OutputSuccessObjChange();
 #else
-        Debug.Log("[Print] Non-Windows: saved only");
+        // Debug.Log("[Print] Non-Windows: saved only");
         yield return null;
 #endif
     }
@@ -1222,7 +1222,7 @@ public class PrintController : MonoBehaviour
             IntPtr hwnd = FindWindow(null, targetTitle);
             if (hwnd != IntPtr.Zero)
             {
-                Debug.Log("[Print] \"사진 인쇄\" 창 발견 -> Enter 전송");
+                // Debug.Log("[Print] \"사진 인쇄\" 창 발견 -> Enter 전송");
                 SetForegroundWindow(hwnd);
 
                 keybd_event(VK_RETURN, 0, 0, 0);
@@ -1414,7 +1414,7 @@ public class PrintController : MonoBehaviour
         cropW = Mathf.Clamp(cropW, 1, (int)srcW - cropX);
         cropH = Mathf.Clamp(cropH, 1, (int)srcH - cropY);
 
-        Debug.Log($"[Print] ExactCrop: src={srcW}x{srcH}, crop={cropW}x{cropH} at ({cropX},{cropY}), target={targetW}x{targetH}");
+        // Debug.Log($"[Print] ExactCrop: src={srcW}x{srcH}, crop={cropW}x{cropH} at ({cropX},{cropY}), target={targetW}x{targetH}");
 
         // 1) 크롭된 영역 추출
         Color32[] srcPixels = src.GetPixels32();
@@ -1485,7 +1485,7 @@ public class PrintController : MonoBehaviour
         float finalRatio = (float)finalW / finalH;
         float stretchPercent = Mathf.Abs(srcRatio - finalRatio) / finalRatio * 100f;
 
-        Debug.Log($"[Print] Stretch: src={src.width}x{src.height} (ratio={srcRatio:0.###}), final={finalW}x{finalH} (ratio={finalRatio:0.###}), stretch={stretchPercent:0.#}%, extra={extraRatio:0.##}");
+        // Debug.Log($"[Print] Stretch: src={src.width}x{src.height} (ratio={srcRatio:0.###}), final={finalW}x{finalH} (ratio={finalRatio:0.###}), stretch={stretchPercent:0.#}%, extra={extraRatio:0.##}");
 
         var rt = RenderTexture.GetTemporary(finalW, finalH, 0,
             RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
@@ -1535,7 +1535,7 @@ public class PrintController : MonoBehaviour
             scaledH = Mathf.RoundToInt(targetH * (1f + scaleRatio));
         }
 
-        Debug.Log($"[Print] ScaleUp: src={srcW}x{srcH}, scaled={scaledW}x{scaledH}, target={targetW}x{targetH}, ratio={scaleRatio:0.##}");
+        // Debug.Log($"[Print] ScaleUp: src={srcW}x{srcH}, scaled={scaledW}x{scaledH}, target={targetW}x{targetH}, ratio={scaleRatio:0.##}");
 
         // 2) 소스를 확대된 크기로 Stretch
         var rt = RenderTexture.GetTemporary(scaledW, scaledH, 0,
@@ -1584,7 +1584,7 @@ public class PrintController : MonoBehaviour
         outTex.SetPixels32(croppedPixels);
         outTex.Apply(false);
 
-        Debug.Log($"[Print] ScaleUp 완료: 최종={targetW}x{targetH} (crop offset: {cropX},{cropY})");
+        // Debug.Log($"[Print] ScaleUp 완료: 최종={targetW}x{targetH} (crop offset: {cropX},{cropY})");
 
         return outTex;
     }
@@ -1624,7 +1624,7 @@ public class PrintController : MonoBehaviour
         string savePath = Path.Combine(folderPath, filename);
         File.WriteAllBytes(savePath, tex.EncodeToPNG());
         Destroy(tex);
-        Debug.Log($"[Print] test blank saved: {savePath} ({w}x{h})");
+        // Debug.Log($"[Print] test blank saved: {savePath} ({w}x{h})");
 
         if (_enableUploadAndQr && _ncpUploader != null)
         {

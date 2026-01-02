@@ -64,17 +64,17 @@ public class StickerPanelCtrl : MonoBehaviour
 
     private void Awake()
     {
-        Debug.Log("[StickerPanelCtrl] ===== Awake 호출됨 =====");
+        // Debug.Log("[StickerPanelCtrl] ===== Awake 호출됨 =====");
     }
 
     private void Start()
     {
-        Debug.Log("[StickerPanelCtrl] ===== Start 호출됨 =====");
+        // Debug.Log("[StickerPanelCtrl] ===== Start 호출됨 =====");
     }
 
     private void OnEnable()
     {
-        Debug.Log("[StickerPanelCtrl] ===== OnEnable 호출됨 =====");
+        // Debug.Log("[StickerPanelCtrl] ===== OnEnable 호출됨 =====");
 
         // OutputEnableBroadcaster 이벤트 구독
         OutputEnableBroadcaster.OnOutputEnabled += OnStickerPanelEnabled;
@@ -95,11 +95,11 @@ public class StickerPanelCtrl : MonoBehaviour
     /// </summary>
     public void LoadFrame()
     {
-        Debug.Log("[StickerPanelCtrl] ===== LoadFrame 시작 =====");
+        // Debug.Log("[StickerPanelCtrl] ===== LoadFrame 시작 =====");
 
         // 현재 모드 확인
         _isHightMode = GameManager.Instance != null && GameManager.Instance.CurrentMode == KioskMode.Hight;
-        Debug.Log($"[StickerPanelCtrl] 현재 모드: {(_isHightMode ? "Hight (세로)" : "Width (가로)")}");
+        // Debug.Log($"[StickerPanelCtrl] 현재 모드: {(_isHightMode ? "Hight (세로)" : "Width (가로)")}");
 
         // 모드에 따라 오브젝트와 원래 부모 선택
         GameObject sourceObject = _isHightMode ? _sourceObjectHight : _sourceObjectWidth;
@@ -125,7 +125,7 @@ public class StickerPanelCtrl : MonoBehaviour
         _originalLocalPosition = _currentFrame.transform.localPosition;
         _originalLocalScale = _currentFrame.transform.localScale;
         _originalSiblingIndex = _currentFrame.transform.GetSiblingIndex();
-        Debug.Log($"[StickerPanelCtrl] 원래 위치 저장 - 부모: {(_currentOriginalParent != null ? _currentOriginalParent.name : "NULL")}, 좌표: {_originalLocalPosition}, 스케일: {_originalLocalScale}, 순서: {_originalSiblingIndex}");
+        // Debug.Log($"[StickerPanelCtrl] 원래 위치 저장 - 부모: {(_currentOriginalParent != null ? _currentOriginalParent.name : "NULL")}, 좌표: {_originalLocalPosition}, 스케일: {_originalLocalScale}, 순서: {_originalSiblingIndex}");
 
         // 목표 패널의 자식으로 이동
         _currentFrame.transform.SetParent(targetParent, false);
@@ -142,7 +142,7 @@ public class StickerPanelCtrl : MonoBehaviour
             _currentDropZone = configuredDropZone;
             // Inspector에서 설정된 DropZone의 StickerParent를 현재 프레임으로 설정
             _currentDropZone.SetStickerParent(_currentFrame.GetComponent<RectTransform>());
-            Debug.Log($"[StickerPanelCtrl] Inspector에서 설정된 DropZone 사용: {_currentDropZone.gameObject.name}, StickerParent: {_currentFrame.name}");
+            // Debug.Log($"[StickerPanelCtrl] Inspector에서 설정된 DropZone 사용: {_currentDropZone.gameObject.name}, StickerParent: {_currentFrame.name}");
         }
         else
         {
@@ -153,17 +153,17 @@ public class StickerPanelCtrl : MonoBehaviour
                 _currentDropZone = _currentFrame.AddComponent<DropZone>();
                 // 런타임에서 추가된 DropZone 초기화 (스티커가 프레임의 자식이 되도록)
                 _currentDropZone.Initialize(_currentFrame.GetComponent<RectTransform>());
-                Debug.Log($"[StickerPanelCtrl] DropZone 컴포넌트 자동 추가 및 초기화됨: {_currentFrame.name}");
+                // Debug.Log($"[StickerPanelCtrl] DropZone 컴포넌트 자동 추가 및 초기화됨: {_currentFrame.name}");
             }
             else
             {
                 // 기존 DropZone의 StickerParent 설정
                 _currentDropZone.SetStickerParent(_currentFrame.GetComponent<RectTransform>());
-                Debug.Log($"[StickerPanelCtrl] 프레임에서 DropZone 탐색됨: {_currentFrame.name}");
+                // Debug.Log($"[StickerPanelCtrl] 프레임에서 DropZone 탐색됨: {_currentFrame.name}");
             }
         }
 
-        Debug.Log($"[StickerPanelCtrl] ✅ {_currentFrame.name}를 {targetParent.name} 자식으로 이동 완료, 좌표: {_targetLocalPosition}, 스케일: {_targetScale}");
+        // Debug.Log($"[StickerPanelCtrl] {_currentFrame.name}를 {targetParent.name} 자식으로 이동 완료, 좌표: {_targetLocalPosition}, 스케일: {_targetScale}");
     }
 
     /// <summary>
@@ -186,12 +186,12 @@ public class StickerPanelCtrl : MonoBehaviour
             _currentFrame.transform.localScale = _originalLocalScale;
             _currentFrame.transform.SetSiblingIndex(_originalSiblingIndex);
 
-            Debug.Log($"[StickerPanelCtrl] {_currentFrame.name}를 원래 위치로 복원 - 부모: {_currentOriginalParent.name}, 좌표: {_originalLocalPosition}, 스케일: {_originalLocalScale}");
+            // Debug.Log($"[StickerPanelCtrl] {_currentFrame.name}를 원래 위치로 복원 - 부모: {_currentOriginalParent.name}, 좌표: {_originalLocalPosition}, 스케일: {_originalLocalScale}");
         }
-        else
-        {
-            Debug.LogWarning("[StickerPanelCtrl] 원래 부모가 설정되지 않아 복원할 수 없습니다.");
-        }
+        // else
+        // {
+        //     Debug.LogWarning("[StickerPanelCtrl] 원래 부모가 설정되지 않아 복원할 수 없습니다.");
+        // }
 
         // 모든 스티커 삭제 (프레임 복원 전에 먼저 삭제)
         ClearAllStickers();
@@ -292,7 +292,7 @@ public class StickerPanelCtrl : MonoBehaviour
             _timerValue = 10; // 기본값
         }
 
-        Debug.Log($"[StickerPanelCtrl] 카운트다운 시작: {_timerValue}초");
+        // Debug.Log($"[StickerPanelCtrl] 카운트다운 시작: {_timerValue}초");
 
         while (_timerValue > 0)
         {
@@ -312,7 +312,7 @@ public class StickerPanelCtrl : MonoBehaviour
             _countdownText.text = "0";
         }
 
-        Debug.Log("[StickerPanelCtrl] 카운트다운 종료 - 자동으로 프린트 진행하지 않음 (수동 버튼 클릭 대기)");
+        // Debug.Log("[StickerPanelCtrl] 카운트다운 종료 - 자동으로 프린트 진행하지 않음 (수동 버튼 클릭 대기)");
 
         // 텍스트 지우기
         if (_countdownText != null)

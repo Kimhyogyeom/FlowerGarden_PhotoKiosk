@@ -151,7 +151,7 @@ public class FadeAnimationCtrl : MonoBehaviour
     /// </summary>
     public void StartFade()
     {
-        print("StartFade 호출이요~!");
+        // print("StartFade 호출이요~!");
 
         if (_fadeAnimator != null)
         {
@@ -188,7 +188,7 @@ public class FadeAnimationCtrl : MonoBehaviour
     /// </summary>
     public void OnFadeEnd()
     {
-        print("OnFadeEnd 호출이요~!");
+        // print("OnFadeEnd 호출이요~!");
 
         if (_fadeAnimator == null)
         {
@@ -294,7 +294,7 @@ public class FadeAnimationCtrl : MonoBehaviour
             case FadeState.HomeFromQuantity:
             case FadeState.HomeFromPayment:
             case FadeState.HomeFromChromaKey:
-                UnityEngine.Debug.Log($"[Home Button] {CurrentState} → Ready");
+                // UnityEngine.Debug.Log($"[Home Button] {CurrentState} → Ready");
                 CurrentState = FadeState.InitializeReady;
                 _homeButtonCtrl.ObjectsActiveCtrlReset();
                 break;

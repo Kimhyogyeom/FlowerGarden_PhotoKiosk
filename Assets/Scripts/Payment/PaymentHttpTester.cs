@@ -61,9 +61,9 @@ public class PaymentHttpTester : MonoBehaviour
 
     private void Start()
     {
-        Debug.Log("[PAY-HTTP] PaymentHttpTester Start() 호출됨");
-        Debug.Log("[PAY-HTTP] _k1Url = " + _k1Url);
-        Debug.Log("[PAY-HTTP] _backendUrl = " + _backendUrl);
+        // Debug.Log("[PAY-HTTP] PaymentHttpTester Start() 호출됨");
+        // Debug.Log("[PAY-HTTP] _k1Url = " + _k1Url);
+        // Debug.Log("[PAY-HTTP] _backendUrl = " + _backendUrl);
 
         // 시작 시에도 한 번 초기화
         ClearStatusTextImmediate();
@@ -80,11 +80,11 @@ public class PaymentHttpTester : MonoBehaviour
     /// </summary>
     public void OnClickStartPayment()
     {
-        Debug.Log("[PAY-HTTP] >>> OnClickStartPayment() 호출됨");
+        // Debug.Log("[PAY-HTTP] >>> OnClickStartPayment() 호출됨");
 
         if (_isRequesting)
         {
-            Debug.Log("[PAY-HTTP] 이미 요청 중입니다.");
+            // Debug.Log("[PAY-HTTP] 이미 요청 중입니다.");
             return;
         }
 
@@ -95,7 +95,7 @@ public class PaymentHttpTester : MonoBehaviour
             return;
         }
 
-        Debug.Log("========== [PAY-HTTP] 결제 요청 시작 (K1) ==========");
+        // Debug.Log("========== [PAY-HTTP] 결제 요청 시작 (K1) ==========");
         StartCoroutine(SendPaymentRequestToK1Coroutine());
     }
 
@@ -105,8 +105,8 @@ public class PaymentHttpTester : MonoBehaviour
     /// </summary>
     private void OnAllProcessCompleted()
     {
-        Debug.Log("[PAY-HTTP] ### 모든 결제/서버 저장 프로세스 완료 ###");
-        Debug.Log("[PAY-HTTP] ### 여기서 외부 스크립트 실행하면 됩니다. ###");
+        // Debug.Log("[PAY-HTTP] ### 모든 결제/서버 저장 프로세스 완료 ###");
+        // Debug.Log("[PAY-HTTP] ### 여기서 외부 스크립트 실행하면 됩니다. ###");
 
         // 인스펙터에서 연결해둔 외부 함수들 호출
         _onAllCompleted?.Invoke();
@@ -123,10 +123,10 @@ public class PaymentHttpTester : MonoBehaviour
 
         // 1) 요청 JSON 구성
         string requestJson = BuildRequestJson();
-        Debug.Log("[PAY-HTTP] K1 Request JSON = " + requestJson);
+        // Debug.Log("[PAY-HTTP] K1 Request JSON = " + requestJson);
 
         // 요청 JSON도 필드별로 보고 싶으면:
-        LogAllJsonFields(requestJson, "[PAY-HTTP] K1 REQUEST FIELD");
+        // LogAllJsonFields(requestJson, "[PAY-HTTP] K1 REQUEST FIELD");
 
         // 2) HTTP POST 전송 (K1)
         byte[] bodyRaw = Encoding.UTF8.GetBytes(requestJson);
@@ -145,7 +145,7 @@ public class PaymentHttpTester : MonoBehaviour
                 Debug.LogWarning("[PAY-HTTP] ⚠ K1 HTTPS 인증서 검증을 무시하고 요청합니다. (테스트 전용)");
             }
 
-            Debug.Log("[PAY-HTTP] K1 HTTP POST 보내는 중... " + _k1Url);
+            // Debug.Log("[PAY-HTTP] K1 HTTP POST 보내는 중... " + _k1Url);
 
             yield return request.SendWebRequest();
 
@@ -170,14 +170,14 @@ public class PaymentHttpTester : MonoBehaviour
 
             string k1Response = request.downloadHandler.text;
 
-            Debug.Log("========== [PAY-HTTP] K1 응답 수신 ==========");
-            Debug.Log("[PAY-HTTP] K1 RAW RESPONSE = " + k1Response);
+            // Debug.Log("========== [PAY-HTTP] K1 응답 수신 ==========");
+            // Debug.Log("[PAY-HTTP] K1 RAW RESPONSE = " + k1Response);
 
-            string pretty = PrettyPrintJson(k1Response);
-            Debug.Log("[PAY-HTTP] K1 PRETTY JSON:\n" + pretty);
+            // string pretty = PrettyPrintJson(k1Response);
+            // Debug.Log("[PAY-HTTP] K1 PRETTY JSON:\n" + pretty);
 
             // 응답 필드 모두 출력
-            LogAllJsonFields(k1Response, "[PAY-HTTP] K1 RESPONSE FIELD");
+            // LogAllJsonFields(k1Response, "[PAY-HTTP] K1 RESPONSE FIELD");
 
             // 에러 체크 필드들
             string errorCheckResult = ExtractJsonStringField(k1Response, "ERROR_CHECK_RESULT");
@@ -207,7 +207,7 @@ public class PaymentHttpTester : MonoBehaviour
             }
 
             // 여기까지 왔으면 카드 승인 성공
-            Debug.Log("[PAY-HTTP] K1 REPLY 코드 = " + replyCode);
+            // Debug.Log("[PAY-HTTP] K1 REPLY 코드 = " + replyCode);
             SetStatus("카드 승인 완료\n결과를 서버로 전송 중입니다...");
 
             // 2단계: 받은 JSON 그대로 우리 서버로 전송
@@ -252,8 +252,8 @@ public class PaymentHttpTester : MonoBehaviour
                 Debug.LogWarning("[PAY-HTTP] ⚠ Backend HTTPS 인증서 검증을 무시하고 요청합니다. (테스트 전용)");
             }
 
-            Debug.Log("[PAY-HTTP] Backend HTTP POST 보내는 중... " + _backendUrl);
-            Debug.Log("[PAY-HTTP] Backend Request Body(K1 그대로) = " + k1Json);
+            // Debug.Log("[PAY-HTTP] Backend HTTP POST 보내는 중... " + _backendUrl);
+            // Debug.Log("[PAY-HTTP] Backend Request Body(K1 그대로) = " + k1Json);
 
             yield return request.SendWebRequest();
 
@@ -266,12 +266,12 @@ public class PaymentHttpTester : MonoBehaviour
 
             string backendResp = request.downloadHandler.text;
 
-            Debug.Log("========== [PAY-HTTP] Backend 응답 수신 ==========");
-            Debug.Log($"[PAY-HTTP] Backend HTTP Status = {statusCode}");
-            Debug.Log("[PAY-HTTP] Backend RAW RESPONSE = " + backendResp);
+            // Debug.Log("========== [PAY-HTTP] Backend 응답 수신 ==========");
+            // Debug.Log($"[PAY-HTTP] Backend HTTP Status = {statusCode}");
+            // Debug.Log("[PAY-HTTP] Backend RAW RESPONSE = " + backendResp);
 
             // 서버 응답 JSON도 필드별로 찍어보기
-            LogAllJsonFields(backendResp, "[PAY-HTTP] Backend RESPONSE FIELD");
+            // LogAllJsonFields(backendResp, "[PAY-HTTP] Backend RESPONSE FIELD");
 
             // 네트워크 레벨에서 실패 (서버가 안 떠있거나, 포트/방화벽 문제 등)
             if (!netOk || statusCode == 0)
@@ -318,7 +318,7 @@ public class PaymentHttpTester : MonoBehaviour
 
             if (isSuccess)
             {
-                Debug.Log("[PAY-HTTP] ▶ 서버 저장 성공");
+                // Debug.Log("[PAY-HTTP] 서버 저장 성공");
 
                 string finalMessage = string.IsNullOrEmpty(msg)
                     ? "결제가 정상적으로 완료되었습니다."
@@ -331,7 +331,7 @@ public class PaymentHttpTester : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("[PAY-HTTP] ▶ 서버 저장 실패");
+                Debug.LogWarning("[PAY-HTTP] 서버 저장 실패");
 
                 string serverMsg = string.IsNullOrEmpty(msg)
                     ? "서버에서 결제 결과 처리에 실패했습니다."
@@ -404,7 +404,7 @@ public class PaymentHttpTester : MonoBehaviour
         if (_statusText != null)
             _statusText.text = msg;
 
-        Debug.Log("[PAY-HTTP][UI] RESULT: " + msg);
+        // Debug.Log("[PAY-HTTP][UI] RESULT: " + msg);
 
         if (_clearStatusCoroutine != null)
         {
@@ -463,7 +463,7 @@ public class PaymentHttpTester : MonoBehaviour
         {
             var key = m.Groups["key"].Value;
             var value = m.Groups["value"].Value;
-            Debug.Log($"{prefix} {key} = {value}");
+            // Debug.Log($"{prefix} {key} = {value}");
         }
     }
 
@@ -579,6 +579,6 @@ public class PaymentHttpTester : MonoBehaviour
         if (_statusText != null)
             _statusText.text = msg;
 
-        Debug.Log("[PAY-HTTP] " + msg);
+        // Debug.Log("[PAY-HTTP] " + msg);
     }
 }

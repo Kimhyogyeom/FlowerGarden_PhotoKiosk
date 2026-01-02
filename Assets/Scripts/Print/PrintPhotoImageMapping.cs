@@ -100,7 +100,7 @@ public class PrintPhotoImageMapping : MonoBehaviour
     /// </summary>
     public void ImageMappingCallBack()
     {
-        Debug.Log("[ImageMapping] ImageMappingCallBack 호출");
+        // Debug.Log("[ImageMapping] ImageMappingCallBack 호출");
 
         if (_photoFrameSelectCtrl == null)
         {
@@ -188,7 +188,7 @@ public class PrintPhotoImageMapping : MonoBehaviour
         switch (index)
         {
             case 0: // 빨강
-                Debug.Log("[ImageMapping] Red Frame 적용 (" + (isHightMode ? "Hight" : "Width") + ")");
+                // Debug.Log("[ImageMapping] Red Frame 적용 (" + (isHightMode ? "Hight" : "Width") + ")");
 
                 if (isHightMode)
                 {
@@ -203,7 +203,7 @@ public class PrintPhotoImageMapping : MonoBehaviour
                 break;
 
             case 1: // 파랑
-                Debug.Log("[ImageMapping] Blue Frame 적용 (" + (isHightMode ? "Hight" : "Width") + ")");
+                // Debug.Log("[ImageMapping] Blue Frame 적용 (" + (isHightMode ? "Hight" : "Width") + ")");
 
                 if (isHightMode)
                 {
@@ -218,7 +218,7 @@ public class PrintPhotoImageMapping : MonoBehaviour
                 break;
 
             case 2: // 검정
-                Debug.Log("[ImageMapping] Black Frame 적용 (" + (isHightMode ? "Hight" : "Width") + ")");
+                // Debug.Log("[ImageMapping] Black Frame 적용 (" + (isHightMode ? "Hight" : "Width") + ")");
 
                 if (isHightMode)
                 {
@@ -247,21 +247,21 @@ public class PrintPhotoImageMapping : MonoBehaviour
 
         if (_stickerPanelCtrl == null)
         {
-            Debug.Log("[ImageMapping] StickerPanelCtrl이 설정되지 않음 - 스티커 복사 건너뜀");
+            // Debug.Log("[ImageMapping] StickerPanelCtrl이 설정되지 않음 - 스티커 복사 건너뜀");
             return;
         }
 
         var dropZone = _stickerPanelCtrl.GetDropZone();
         if (dropZone == null)
         {
-            Debug.Log("[ImageMapping] DropZone이 없음 - 스티커 복사 건너뜀");
+            // Debug.Log("[ImageMapping] DropZone이 없음 - 스티커 복사 건너뜀");
             return;
         }
 
         var stickers = dropZone.GetDroppedStickers();
         if (stickers == null || stickers.Count == 0)
         {
-            Debug.Log("[ImageMapping] 복사할 스티커가 없음");
+            // Debug.Log("[ImageMapping] 복사할 스티커가 없음");
             return;
         }
 
@@ -284,7 +284,7 @@ public class PrintPhotoImageMapping : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[ImageMapping] 스티커 복사 시작: {stickers.Count}개, {sourceFrame.name} → {targetFrame.name}");
+        // Debug.Log($"[ImageMapping] 스티커 복사 시작: {stickers.Count}개, {sourceFrame.name} → {targetFrame.name}");
 
         foreach (var sticker in stickers)
         {
@@ -331,10 +331,10 @@ public class PrintPhotoImageMapping : MonoBehaviour
             }
 
             _copiedStickers.Add(copy);
-            Debug.Log($"[ImageMapping] 스티커 복사됨: {copy.name}");
+            // Debug.Log($"[ImageMapping] 스티커 복사됨: {copy.name}");
         }
 
-        Debug.Log($"[ImageMapping] 스티커 복사 완료: 총 {_copiedStickers.Count}개");
+        // Debug.Log($"[ImageMapping] 스티커 복사 완료: 총 {_copiedStickers.Count}개");
     }
 
     /// <summary>
@@ -344,7 +344,7 @@ public class PrintPhotoImageMapping : MonoBehaviour
     {
         if (_copiedStickers.Count == 0) return;
 
-        Debug.Log($"[ImageMapping] 복사된 스티커 삭제: {_copiedStickers.Count}개");
+        // Debug.Log($"[ImageMapping] 복사된 스티커 삭제: {_copiedStickers.Count}개");
 
         foreach (var sticker in _copiedStickers)
         {

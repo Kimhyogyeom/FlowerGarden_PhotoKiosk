@@ -143,7 +143,7 @@ public class NcpObjectStorageUploader : MonoBehaviour
             if (!string.IsNullOrEmpty(secrets.secretKey))
                 _secretKey = secrets.secretKey;
 
-            Debug.Log("[NCP] 키 파일에서 인증 정보 로드 완료");
+            // Debug.Log("[NCP] 키 파일에서 인증 정보 로드 완료");
         }
         catch (Exception e)
         {
@@ -169,7 +169,7 @@ public class NcpObjectStorageUploader : MonoBehaviour
 #if ENABLE_INPUT_SYSTEM
         if (Keyboard.current != null && Keyboard.current.aKey.wasPressedThisFrame)
         {
-            Debug.Log("[NCP TEST] AKey pressed -> uploading test png...");
+            // Debug.Log("[NCP TEST] AKey pressed -> uploading test png...");
             StartCoroutine(TestUploadDummyPng());
         }
 #endif
@@ -204,9 +204,9 @@ public class NcpObjectStorageUploader : MonoBehaviour
         );
 
         if (!string.IsNullOrEmpty(err))
-            Debug.LogError("[NCP TEST] ❌ 업로드 실패:\n" + err);
-        else
-            Debug.Log("[NCP TEST] ✅ 업로드 성공!\nURL: " + resultUrl);
+            Debug.LogError("[NCP TEST] 업로드 실패:\n" + err);
+        // else
+        //     Debug.Log("[NCP TEST] 업로드 성공! URL: " + resultUrl);
     }
 
     // =======================

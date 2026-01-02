@@ -195,7 +195,7 @@ public class StepCountdownUI : MonoBehaviour
             }
         }
 
-        Debug.Log("[StepReset] StepCountdownUI 초기화 완료");
+        // Debug.Log("[StepReset] StepCountdownUI 초기화 완료");
     }
 
     // ================== Sequence ==================
@@ -286,7 +286,7 @@ public class StepCountdownUI : MonoBehaviour
 
             // 실제 캡처
             yield return StartCoroutine(CaptureRawImage(_targetRawImage.rectTransform, step - 1));
-            Debug.Log($"[StepCountdown] 찰칵! stepIndex={step - 1}");
+            // Debug.Log($"[StepCountdown] 찰칵! stepIndex={step - 1}");
             SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._shutterSound);
             // 촬영 연출
             if (_filmingAnimator != null)
@@ -326,7 +326,7 @@ public class StepCountdownUI : MonoBehaviour
         // 인쇄까지
         if (_printController != null && _photoImageForPrint != null)
         {
-            print("_printController or _photoImageForPrint Missing(null)");
+            // print("_printController or _photoImageForPrint Missing(null)");
             // _printController.PrintRawImage(
             //     _photoImageForPrint,
             //     OnPrintCompleted,
@@ -455,9 +455,9 @@ public class StepCountdownUI : MonoBehaviour
             }
 
             // 디버그용
-            Debug.Log($"[Capture] VirtualRect 사용: full=({fullW}x{fullH}), local=({localW}x{localH}), " +
-                      $"virtLocal=({_virtualCaptureWidth}x{_virtualCaptureHeight}), " +
-                      $"capScreen=({capW}x{capH}) at ({capX},{capY})");
+            // Debug.Log($"[Capture] VirtualRect 사용: full=({fullW}x{fullH}), local=({localW}x{localH}), " +
+            //           $"virtLocal=({_virtualCaptureWidth}x{_virtualCaptureHeight}), " +
+            //           $"capScreen=({capW}x{capH}) at ({capX},{capY})");
         }
 
         // 3) 화면 범위로 클램프
@@ -483,7 +483,7 @@ public class StepCountdownUI : MonoBehaviour
             int upH = Mathf.RoundToInt(ih * _upscaleMultiplier);
             finalTex = UpscaleTexture(tex, upW, upH);
             Destroy(tex); // 원본 텍스처 해제
-            Debug.Log($"[Capture] 업스케일 완료: {iw}x{ih} → {upW}x{upH} (x{_upscaleMultiplier})");
+            // Debug.Log($"[Capture] 업스케일 완료: {iw}x{ih} → {upW}x{upH} (x{_upscaleMultiplier})");
         }
 
         string folderPath = Application.persistentDataPath;
@@ -491,7 +491,7 @@ public class StepCountdownUI : MonoBehaviour
         string filename = $"photo_raw_{stepIndex + 1}_{DateTime.Now:yyyyMMdd_HHmmss}.png";
         string savePath = Path.Combine(folderPath, filename);
         File.WriteAllBytes(savePath, finalTex.EncodeToPNG());
-        Debug.Log($"[찰칵] 저장 완료: {savePath} ({finalTex.width}x{finalTex.height} from {ix},{iy})");
+        // Debug.Log($"[찰칵] 저장 완료: {savePath} ({finalTex.width}x{finalTex.height} from {ix},{iy})");
 
         // === 내부 배열에 항상 저장 ===
         if (stepIndex >= 0 && stepIndex < _capturedSprites.Length)

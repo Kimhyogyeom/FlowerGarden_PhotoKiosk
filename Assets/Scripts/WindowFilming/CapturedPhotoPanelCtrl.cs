@@ -354,7 +354,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
         }
         else
         {
-            Debug.Log($"[CapturedPhotoPanelCtrl] ApplyFrameSelection index={index}, mode={(isHightMode ? "Hight" : "Width")}, mainCount={_currentMainImages.Length}");
+            // Debug.Log($"[CapturedPhotoPanelCtrl] ApplyFrameSelection index={index}, mode={(isHightMode ? "Hight" : "Width")}, mainCount={_currentMainImages.Length}");
         }
     }
 
@@ -484,7 +484,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
             if (_currentSelectedCount >= _maxSelection)
             {
                 SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._failSound);
-                Debug.Log("[CapturedPhotoPanelCtrl] 이미 최대 선택 개수에 도달했습니다.");
+                // Debug.Log("[CapturedPhotoPanelCtrl] 이미 최대 선택 개수에 도달했습니다.");
                 return;
             }
 
@@ -850,8 +850,8 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
                 break;
         }
 
-        Debug.Log("[CapturedPhotoPanelCtrl] 최종 선택 4장을 인쇄용 슬롯으로 복사 완료 (index=" + index + ", mode=" +
-                  (isHightMode ? "Hight" : "Width") + ")");
+        // Debug.Log("[CapturedPhotoPanelCtrl] 최종 선택 4장을 인쇄용 슬롯으로 복사 완료 (index=" + index + ", mode=" +
+        //           (isHightMode ? "Hight" : "Width") + ")");
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
 
@@ -889,7 +889,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
     /// </summary>
     private void OnTimerTimeout()
     {
-        Debug.Log("[CapturedPhotoPanelCtrl] 타이머 타임아웃 - 강제로 다음 단계 진행");
+        // Debug.Log("[CapturedPhotoPanelCtrl] 타이머 타임아웃 - 강제로 다음 단계 진행");
 
         // 선택 개수 확인 후 로그만 출력
         if (_currentSelectedCount < _maxSelection)
@@ -965,7 +965,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
         if (_countdownTimer != null)
         {
             _countdownTimer.StopTimer();
-            Debug.Log("[CapturedPhotoPanelCtrl] 타이머 정지됨");
+            // Debug.Log("[CapturedPhotoPanelCtrl] 타이머 정지됨");
         }
 
         // 포토 셀렉트 패널 비활성화
@@ -996,7 +996,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
             GameManager.Instance.SetState(KioskState.Sticker);
         }
 
-        Debug.Log("[CapturedPhotoPanelCtrl] 포토 셀렉트 → 스티커 패널 전환 완료");
+        // Debug.Log("[CapturedPhotoPanelCtrl] 포토 셀렉트 → 스티커 패널 전환 완료");
     }
 
     // ==================  생명주기 ==================
@@ -1026,11 +1026,11 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
 
             if (_frameHight == null)
             {
-                Debug.LogError("[CapturedPhotoPanelCtrl] ❌ 'Hight' 오브젝트를 찾을 수 없습니다! Hierarchy에서 이름을 확인하거나 Inspector에서 수동으로 연결하세요.");
+                Debug.LogError("[CapturedPhotoPanelCtrl] 'Hight' 오브젝트를 찾을 수 없습니다! Hierarchy에서 이름을 확인하거나 Inspector에서 수동으로 연결하세요.");
             }
         }
 
-        Debug.Log($"[CapturedPhotoPanelCtrl] GetFrameHight() 호출 - 반환값: {(_frameHight != null ? _frameHight.name : "NULL")}");
+        // Debug.Log($"[CapturedPhotoPanelCtrl] GetFrameHight() 호출 - 반환값: {(_frameHight != null ? _frameHight.name : "NULL")}");
         return _frameHight;
     }
 
@@ -1048,11 +1048,11 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
 
             if (_frameWidth == null)
             {
-                Debug.LogError("[CapturedPhotoPanelCtrl] ❌ 'Width' 오브젝트를 찾을 수 없습니다! Hierarchy에서 이름을 확인하거나 Inspector에서 수동으로 연결하세요.");
+                Debug.LogError("[CapturedPhotoPanelCtrl] 'Width' 오브젝트를 찾을 수 없습니다! Hierarchy에서 이름을 확인하거나 Inspector에서 수동으로 연결하세요.");
             }
         }
 
-        Debug.Log($"[CapturedPhotoPanelCtrl] GetFrameWidth() 호출 - 반환값: {(_frameWidth != null ? _frameWidth.name : "NULL")}");
+        // Debug.Log($"[CapturedPhotoPanelCtrl] GetFrameWidth() 호출 - 반환값: {(_frameWidth != null ? _frameWidth.name : "NULL")}");
         return _frameWidth;
     }
 
@@ -1153,7 +1153,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
             yield break;
         }
 
-        Debug.Log($"[CapturedPhotoPanelCtrl] 빈 슬롯 {emptySlotImages.Count}개 깜빡임 시작");
+        // Debug.Log($"[CapturedPhotoPanelCtrl] 빈 슬롯 {emptySlotImages.Count}개 깜빡임 시작");
 
         // 깜빡임 반복 (빨강 → 흰색 → 빨강 → 흰색)
         for (int i = 0; i < _blinkCount; i++)
@@ -1182,7 +1182,7 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
         }
 
         _blinkCoroutine = null;
-        Debug.Log("[CapturedPhotoPanelCtrl] 빈 슬롯 깜빡임 종료");
+        // Debug.Log("[CapturedPhotoPanelCtrl] 빈 슬롯 깜빡임 종료");
     }
 
     /// <summary>

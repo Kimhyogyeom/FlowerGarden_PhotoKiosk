@@ -120,7 +120,7 @@ public class QuantitySelectCtrl : MonoBehaviour
             img.color = (i == _selectedIndex) ? _selectedColor : _normalColor;
         }
 
-        Debug.Log($"[QuantitySelectCtrl] 선택된 수량: {_selectedQuantity}");
+        // Debug.Log($"[QuantitySelectCtrl] 선택된 수량: {_selectedQuantity}");
     }
 
     // ─────────────────────────────────────────────────────────────────────

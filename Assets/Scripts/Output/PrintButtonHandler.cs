@@ -208,13 +208,13 @@ public class PrintButtonHandler : MonoBehaviour
         // 스티커가 붙은 프레임이 있으면 그것을 캡처, 없으면 기존 TargetImage 사용
         Image captureTarget = StickerFrameImage != null ? StickerFrameImage : TargetImage;
 
-        Debug.Log($"[PrintButtonHandler] 캡처 대상: {captureTarget.gameObject.name}");
+        // Debug.Log($"[PrintButtonHandler] 캡처 대상: {captureTarget.gameObject.name}");
 
         _printController.PrintRawImage(
             captureTarget,
             onDone: () =>
             {
-                Debug.Log("인쇄 완료");
+                // Debug.Log("인쇄 완료");
                 _busy = false;
                 if (_outputButton) _outputButton.interactable = true;
                 SetCountdownText(string.Empty); // 완료 시 카운트 텍스트 클리어(선택)

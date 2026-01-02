@@ -178,7 +178,7 @@ public class FilmingPanelCtrl : MonoBehaviour
         {
             // GameManager.Instance.SetState(KioskState.Quantity);
             SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._windowCamearaPlayingSound);
-            print("Camera Start -> Camera Playing");
+            // print("Camera Start -> Camera Playing");
             // 촬영 후 선택 화면으로 가는 버튼/동작 비활성화
             // _filmingToSelectCtrl.ButtonInActive();
 
@@ -258,7 +258,7 @@ public class FilmingPanelCtrl : MonoBehaviour
     /// </summary>
     public void ResetFilming()
     {
-        print("ResetFilmingPanelCtrl");
+        // print("ResetFilmingPanelCtrl");
 
         // 패널 상태 복구
         // 셀렉 -> Quantity 간 걸 다시 셀렉으로 복구할필요는 없음 Reset되면 Ready로 감
@@ -314,6 +314,6 @@ public class FilmingPanelCtrl : MonoBehaviour
             _nextButton.SetActive(false);
         }
 
-        Debug.Log("[FilmingPanelCtrl] FilmingEnd: UI reset to initial state.");
+        // Debug.Log("[FilmingPanelCtrl] FilmingEnd: UI reset to initial state.");
     }
 }

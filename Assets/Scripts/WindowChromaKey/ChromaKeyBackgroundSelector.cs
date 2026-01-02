@@ -123,6 +123,6 @@ public class ChromaKeyBackgroundSelector : MonoBehaviour
             mat.SetFloat(_useBackgroundPropertyName, selectedBackground != null ? 1f : 0f);
         }
 
-        Debug.Log($"[ChromaKeyBackgroundSelector] mode={_mode}, tex={(selectedBackground ? selectedBackground.name : "null")}");
+        // Debug.Log($"[ChromaKeyBackgroundSelector] mode={_mode}, tex={(selectedBackground ? selectedBackground.name : "null")}");
     }
 }

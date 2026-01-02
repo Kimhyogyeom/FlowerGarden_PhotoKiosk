@@ -119,7 +119,7 @@ public class PaymentMethodSelector : MonoBehaviour
     private void SetMethod(PaymentMethod method)
     {
         _selectedMethod = method;
-        Debug.Log($"[PaymentMethodSelector] Selected: {_selectedMethod}");
+        // Debug.Log($"[PaymentMethodSelector] Selected: {_selectedMethod}");
         UpdateHighlight();
 
         // 필요하면 여기서 결제 수단 선택 효과음 재생도 가능
@@ -152,7 +152,7 @@ public class PaymentMethodSelector : MonoBehaviour
     {
         _selectedMethod = _defaultMethod;
         UpdateHighlight();
-        Debug.Log($"[PaymentMethodSelector] Reset to default: {_selectedMethod}");
+        // Debug.Log($"[PaymentMethodSelector] Reset to default: {_selectedMethod}");
     }
 
     /// <summary>
@@ -162,6 +162,6 @@ public class PaymentMethodSelector : MonoBehaviour
     {
         _selectedMethod = method;
         UpdateHighlight();
-        Debug.Log($"[PaymentMethodSelector] Reset to: {_selectedMethod}");
+        // Debug.Log($"[PaymentMethodSelector] Reset to: {_selectedMethod}");
     }
 }

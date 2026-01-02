@@ -62,7 +62,7 @@ public class TenClickMinimizeWatcher : MonoBehaviour
 
         if (_count >= _requiredClicks)
         {
-            Debug.Log("[TenClickMinimizeWatcher] 10번 클릭 감지 - 앱 최소화");
+            // Debug.Log("[TenClickMinimizeWatcher] 10번 클릭 감지 - 앱 최소화");
             MinimizeWindow();
             _count = 0;
         }
@@ -77,7 +77,7 @@ public class TenClickMinimizeWatcher : MonoBehaviour
             ShowWindow(hWnd, SW_MINIMIZE);
         }
 #else
-        Debug.Log("[TenClickMinimizeWatcher] Windows가 아닌 환경에서는 최소화가 동작하지 않습니다.");
+        // Debug.Log("[TenClickMinimizeWatcher] Windows가 아닌 환경에서는 최소화가 동작하지 않습니다.");
 #endif
     }
 

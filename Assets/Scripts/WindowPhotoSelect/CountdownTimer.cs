@@ -55,7 +55,7 @@ public class CountdownTimer : MonoBehaviour
         UpdateTimeText();
         _timerRoutine = StartCoroutine(TimerRoutine());
 
-        Debug.Log($"[CountdownTimer] 타이머 시작: {RemainingSeconds}초");
+        // Debug.Log($"[CountdownTimer] 타이머 시작: {RemainingSeconds}초");
     }
 
     /// <summary>
@@ -79,7 +79,7 @@ public class CountdownTimer : MonoBehaviour
             UpdateTimeText();
         }
 
-        Debug.Log("[CountdownTimer] 제한 시간 초과");
+        // Debug.Log("[CountdownTimer] 제한 시간 초과");
 
         // 콜백 호출 (구독자가 있다면)
         OnTimeout?.Invoke();

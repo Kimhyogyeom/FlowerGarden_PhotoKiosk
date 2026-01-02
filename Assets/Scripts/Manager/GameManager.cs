@@ -107,7 +107,7 @@ public class GameManager : MonoBehaviour
     public void SetState(KioskState newState)
     {
         _currentState = newState;
-        Debug.Log($"[KIOSK] State -> {newState}");
+        // Debug.Log($"[KIOSK] State -> {newState}");
 
         if (newState == KioskState.Ready)
         {
@@ -154,7 +154,7 @@ public class GameManager : MonoBehaviour
     public void SetMode(KioskMode newMode)
     {
         _currentMode = newMode;
-        Debug.Log($"[KIOSK] Mode -> {newMode}");
+        // Debug.Log($"[KIOSK] Mode -> {newMode}");
     }
 
     /// <summary>

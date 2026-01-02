@@ -24,6 +24,7 @@ public class Draggable : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDra
     private bool _isSpawned = false;        // 복제된 인스턴스인지 여부
     private bool _isDragging = false;       // 현재 드래그 중인지
     private bool _isDroppedToZone = false;  // DropZone에 드롭되었는지
+    private bool _isDeleted = false;        // DeleteZone에서 삭제 예정인지
 
     // 드롭된 DropZone 참조
     private DropZone _currentDropZone;
@@ -103,7 +104,7 @@ public class Draggable : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDra
                 out localPoint);
             cloneRect.anchoredPosition = localPoint;
 
-            Debug.Log($"[Draggable] 스티커 복제 및 드래그 시작: {_dragClone.name}");
+            // Debug.Log($"[Draggable] 스티커 복제 및 드래그 시작: {_dragClone.name}");
 
             // 원본은 드래그 이벤트를 복제본에게 넘김
             eventData.pointerDrag = _dragClone;
@@ -114,6 +115,19 @@ public class Draggable : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDra
         _isDragging = true;
         _isDroppedToZone = false;
 
+        // 드래그 시작 시 Canvas 자식으로 이동 (좌표계 통일)
+        // 현재 월드 위치를 유지하면서 부모 변경
+        transform.SetParent(_canvas.transform, true);
+
+        // Canvas 기준 로컬 좌표로 변환
+        Vector2 canvasLocalPoint;
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            _canvas.transform as RectTransform,
+            eventData.position,
+            eventData.pressEventCamera,
+            out canvasLocalPoint);
+        _rectTransform.anchoredPosition = canvasLocalPoint;
+
         // Raycast 차단 해제 (DropZone 감지를 위해)
         _canvasGroup.blocksRaycasts = false;
 
@@ -122,7 +136,7 @@ public class Draggable : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDra
             _image.raycastTarget = false;
         }
 
-        Debug.Log($"[Draggable] 드래그 시작: {gameObject.name}");
+        // Debug.Log($"[Draggable] 드래그 시작: {gameObject.name}");
     }
 
     /// <summary>
@@ -167,6 +181,9 @@ public class Draggable : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDra
             _image.raycastTarget = true;
         }
 
+        // DeleteZone에서 이미 삭제 처리된 경우 스킵
+        if (_isDeleted) return;
+
         // DropZone에 드롭되지 않았으면 삭제
         if (!_isDroppedToZone)
         {
@@ -178,12 +195,12 @@ public class Draggable : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDra
             }
 
             Destroy(gameObject);
-            Debug.Log($"[Draggable] DropZone 밖 - 스티커 삭제");
+            // Debug.Log($"[Draggable] DropZone 밖 - 스티커 삭제");
         }
-        else
-        {
-            Debug.Log($"[Draggable] 드래그 종료: {gameObject.name}");
-        }
+        // else
+        // {
+        //     Debug.Log($"[Draggable] 드래그 종료: {gameObject.name}");
+        // }
     }
 
     /// <summary>
@@ -208,5 +225,13 @@ public class Draggable : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDra
     public DropZone GetCurrentDropZone()
     {
         return _currentDropZone;
+    }
+
+    /// <summary>
+    /// DeleteZone에서 삭제 예정으로 표시 (OnEndDrag에서 중복 삭제 방지)
+    /// </summary>
+    public void MarkAsDeleted()
+    {
+        _isDeleted = true;
     }
 }

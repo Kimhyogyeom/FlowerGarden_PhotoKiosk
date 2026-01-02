@@ -60,7 +60,7 @@ public class SelectAutoTransitionCtrl : MonoBehaviour
 
     private IEnumerator TimerRoutine()
     {
-        print("코루틴 실행됨");
+        // print("코루틴 실행됨");
 
         _timer = _timerSeconds;
 

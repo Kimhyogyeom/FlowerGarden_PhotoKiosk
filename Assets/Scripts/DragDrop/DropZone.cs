@@ -69,7 +69,7 @@ public class DropZone : MonoBehaviour, IDropHandler
         // Draggable에게 드롭 성공 알림
         draggable.OnDroppedToZone(this);
 
-        Debug.Log($"[DropZone] 스티커 드롭 완료: {sticker.name}, 총 {_droppedStickers.Count}개");
+        // Debug.Log($"[DropZone] 스티커 드롭 완료: {sticker.name}, 총 {_droppedStickers.Count}개");
     }
 
     /// <summary>
@@ -80,7 +80,7 @@ public class DropZone : MonoBehaviour, IDropHandler
         if (_droppedStickers.Contains(sticker))
         {
             _droppedStickers.Remove(sticker);
-            Debug.Log($"[DropZone] 스티커 제거: {sticker.name}, 남은 개수: {_droppedStickers.Count}");
+            // Debug.Log($"[DropZone] 스티커 제거: {sticker.name}, 남은 개수: {_droppedStickers.Count}");
         }
     }
 
@@ -89,7 +89,7 @@ public class DropZone : MonoBehaviour, IDropHandler
     /// </summary>
     public void ClearAllStickers()
     {
-        Debug.Log($"[DropZone] 모든 스티커 삭제 시작, 총 {_droppedStickers.Count}개");
+        // Debug.Log($"[DropZone] 모든 스티커 삭제 시작, 총 {_droppedStickers.Count}개");
 
         foreach (var sticker in _droppedStickers)
         {
@@ -101,7 +101,7 @@ public class DropZone : MonoBehaviour, IDropHandler
 
         _droppedStickers.Clear();
 
-        Debug.Log("[DropZone] 모든 스티커 삭제 완료");
+        // Debug.Log("[DropZone] 모든 스티커 삭제 완료");
     }
 
     /// <summary>

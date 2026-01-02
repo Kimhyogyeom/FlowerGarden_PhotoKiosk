@@ -55,7 +55,7 @@ public class WebcamPreview : MonoBehaviour
         if (_preInitializeOnStart)
         {
             // 게임 시작 시 미리 초기화 (렉 방지)
-            Debug.Log("[WebcamPreview] 게임 시작 시 웹캠 미리 초기화 (렉 방지)");
+            // Debug.Log("[WebcamPreview] 게임 시작 시 웹캠 미리 초기화 (렉 방지)");
             InitAndStartWebcam();
 
             // 초기에는 숨김 (활성화 체크 오브젝트가 켜질 때만 보임)
@@ -191,8 +191,8 @@ public class WebcamPreview : MonoBehaviour
             _currentDeviceName = dev.name;
         }
 
-        Debug.Log($"[WebcamPreview] 사용 장치: {_currentDeviceName}");
-        Debug.Log($"[WebcamPreview] 요청 해상도: FHD ({_requestedWidth}x{_requestedHeight})");
+        // Debug.Log($"[WebcamPreview] 사용 장치: {_currentDeviceName}");
+        // Debug.Log($"[WebcamPreview] 요청 해상도: FHD ({_requestedWidth}x{_requestedHeight})");
 
         // WebCamTexture 생성 (요청 해상도 / FPS)
         _tex = new WebCamTexture(_currentDeviceName, _requestedWidth, _requestedHeight, _requestedFps);
@@ -215,7 +215,7 @@ public class WebcamPreview : MonoBehaviour
         _lastVerticallyMirrored = !_tex.videoVerticallyMirrored;
         _lastHorizontalMirrored = !_mirrorHorizontal;
 
-        Debug.Log("[WebcamPreview] 웹캠 초기화 완료");
+        // Debug.Log("[WebcamPreview] 웹캠 초기화 완료");
     }
 
     private void StopAndDisposeWebcam()
@@ -230,7 +230,7 @@ public class WebcamPreview : MonoBehaviour
         }
 
         _isWebcamInitialized = false;
-        Debug.Log("[WebcamPreview] 웹캠 정지");
+        // Debug.Log("[WebcamPreview] 웹캠 정지");
     }
 
     private void OnDisable()
@@ -300,7 +300,7 @@ public class WebcamPreview : MonoBehaviour
         }
 
         _canvasGroup.alpha = 1f;
-        Debug.Log("[WebcamPreview] 페이드인 완료");
+        // Debug.Log("[WebcamPreview] 페이드인 완료");
     }
 
     /// <summary>
@@ -322,7 +322,7 @@ public class WebcamPreview : MonoBehaviour
         }
 
         _canvasGroup.alpha = 0f;
-        Debug.Log("[WebcamPreview] 페이드아웃 완료");
+        // Debug.Log("[WebcamPreview] 페이드아웃 완료");
     }
 
     private IEnumerator LogActualResolution()
@@ -332,8 +332,8 @@ public class WebcamPreview : MonoBehaviour
 
         if (_tex != null && _tex.isPlaying)
         {
-            Debug.Log($"[WebcamPreview] 요청 해상도: {_requestedWidth}x{_requestedHeight}");
-            Debug.Log($"[WebcamPreview] 실제 해상도: {_tex.width}x{_tex.height}");
+            // Debug.Log($"[WebcamPreview] 요청 해상도: {_requestedWidth}x{_requestedHeight}");
+            // Debug.Log($"[WebcamPreview] 실제 해상도: {_tex.width}x{_tex.height}");
 
             if (_tex.width != _requestedWidth || _tex.height != _requestedHeight)
             {
@@ -341,7 +341,7 @@ public class WebcamPreview : MonoBehaviour
             }
             else
             {
-                Debug.Log($"[WebcamPreview] 해상도 매칭 성공!");
+                // Debug.Log($"[WebcamPreview] 해상도 매칭 성공!");
             }
         }
     }

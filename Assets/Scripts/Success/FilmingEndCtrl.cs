@@ -43,7 +43,7 @@ public class FilmingEndCtrl : MonoBehaviour
     private void Awake()
     {
         // 저장 경로 확인용 로그 (디버그)
-        Debug.Log(Application.persistentDataPath);
+        // Debug.Log(Application.persistentDataPath);
     }
 
     /// <summary>

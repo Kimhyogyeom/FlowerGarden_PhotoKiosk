@@ -142,7 +142,7 @@ public class VirtualBackgroundController : MonoBehaviour
         try
         {
             File.WriteAllText(logPath, sb.ToString());
-            Debug.Log($"[VirtualBackground] 로그 저장됨: {logPath}");
+            // Debug.Log($"[VirtualBackground] 로그 저장됨: {logPath}");
         }
         catch (Exception e)
         {
@@ -158,7 +158,7 @@ public class VirtualBackgroundController : MonoBehaviour
         if (_modelAsset != null)
         {
             model = ModelLoader.Load(_modelAsset);
-            Debug.Log("[VirtualBackground] 모델 로드됨 (Inspector)");
+            // Debug.Log("[VirtualBackground] 모델 로드됨 (Inspector)");
         }
         else
         {
@@ -171,7 +171,7 @@ public class VirtualBackgroundController : MonoBehaviour
                 return;
             }
             model = ModelLoader.Load(runtimeModel);
-            Debug.Log("[VirtualBackground] 모델 로드됨 (Resources)");
+            // Debug.Log("[VirtualBackground] 모델 로드됨 (Resources)");
         }
 
         // Worker 생성 (GPU Compute 우선)
@@ -184,7 +184,7 @@ public class VirtualBackgroundController : MonoBehaviour
         try
         {
             _worker = WorkerFactory.CreateWorker(workerType, model);
-            Debug.Log($"[VirtualBackground] Worker 생성 완료: {workerType}");
+            // Debug.Log($"[VirtualBackground] Worker 생성 완료: {workerType}");
             AppendToLog($"[Worker] 타입: {workerType}");
         }
         catch (Exception e)
@@ -269,13 +269,13 @@ public class VirtualBackgroundController : MonoBehaviour
                 {
                     _invertMask = true;
                     _autoInvertDetected = true;
-                    Debug.Log($"[VirtualBackground] 마스크 자동 반전 활성화 (avgMask={avgMask:F2})");
+                    // Debug.Log($"[VirtualBackground] 마스크 자동 반전 활성화 (avgMask={avgMask:F2})");
                     AppendToLog($"[AutoDetect] 마스크 자동 반전 활성화 (avgMask={avgMask:F2})");
                 }
                 else if (_autoInvertCheckFrames >= 30)
                 {
                     _autoInvertDetected = true;
-                    Debug.Log($"[VirtualBackground] 마스크 정상 (avgMask={avgMask:F2})");
+                    // Debug.Log($"[VirtualBackground] 마스크 정상 (avgMask={avgMask:F2})");
                 }
             }
 
@@ -410,7 +410,7 @@ public class VirtualBackgroundController : MonoBehaviour
     {
         if (_backgroundTextures == null || _backgroundTextures.Length == 0) return;
         _currentBackgroundIndex = (_currentBackgroundIndex + 1) % _backgroundTextures.Length;
-        Debug.Log($"[VirtualBackground] 배경 전환: {_currentBackgroundIndex + 1}/{_backgroundTextures.Length}");
+        // Debug.Log($"[VirtualBackground] 배경 전환: {_currentBackgroundIndex + 1}/{_backgroundTextures.Length}");
     }
 
     public void PreviousBackground()
@@ -419,7 +419,7 @@ public class VirtualBackgroundController : MonoBehaviour
         _currentBackgroundIndex--;
         if (_currentBackgroundIndex < 0)
             _currentBackgroundIndex = _backgroundTextures.Length - 1;
-        Debug.Log($"[VirtualBackground] 배경 전환: {_currentBackgroundIndex + 1}/{_backgroundTextures.Length}");
+        // Debug.Log($"[VirtualBackground] 배경 전환: {_currentBackgroundIndex + 1}/{_backgroundTextures.Length}");
     }
 
     public void SetBackground(int index)
@@ -437,7 +437,7 @@ public class VirtualBackgroundController : MonoBehaviour
         }
 
         _currentBackgroundIndex = index;
-        Debug.Log($"[VirtualBackground] 배경 설정: {_currentBackgroundIndex + 1}/{_backgroundTextures.Length}");
+        // Debug.Log($"[VirtualBackground] 배경 설정: {_currentBackgroundIndex + 1}/{_backgroundTextures.Length}");
     }
 
     public int GetCurrentBackgroundIndex() => _currentBackgroundIndex;
