@@ -21,7 +21,11 @@ public class WebcamPreview : MonoBehaviour
 
     [Header("Camera Selection")]
     [SerializeField] private string _preferredDeviceKeyword = "C922";
-    [SerializeField] private int _requestedWidth = 1920;   // FHD 고정
+
+    [Header("Resolution Settings")]
+    [Tooltip("true면 4K 지원 시 4K, 아니면 FHD로 자동 선택")]
+    [SerializeField] private bool _prefer4KIfAvailable = true;
+    [SerializeField] private int _requestedWidth = 1920;   // FHD 기본값
     [SerializeField] private int _requestedHeight = 1080;
     [SerializeField] private int _requestedFps = 30;
 
@@ -191,11 +195,20 @@ public class WebcamPreview : MonoBehaviour
             _currentDeviceName = dev.name;
         }
 
-        // Debug.Log($"[WebcamPreview] 사용 장치: {_currentDeviceName}");
-        // Debug.Log($"[WebcamPreview] 요청 해상도: FHD ({_requestedWidth}x{_requestedHeight})");
+        // 4K 자동 감지: 먼저 4K로 시도하고, 실패하면 FHD로 폴백
+        int targetWidth = _requestedWidth;
+        int targetHeight = _requestedHeight;
+        int targetFps = _requestedFps;
+
+        if (_prefer4KIfAvailable)
+        {
+            targetWidth = 3840;
+            targetHeight = 2160;
+            targetFps = 30; // 4K는 보통 30fps
+        }
 
         // WebCamTexture 생성 (요청 해상도 / FPS)
-        _tex = new WebCamTexture(_currentDeviceName, _requestedWidth, _requestedHeight, _requestedFps);
+        _tex = new WebCamTexture(_currentDeviceName, targetWidth, targetHeight, targetFps);
 
         // 텍스처 품질 설정 (화질 개선)
         _tex.filterMode = FilterMode.Bilinear;  // Bilinear 필터링 (부드럽게)
@@ -207,15 +220,71 @@ public class WebcamPreview : MonoBehaviour
 
         _isWebcamInitialized = true;
 
-        // 실제 해상도 로그 출력 (1프레임 후 확인 필요)
-        StartCoroutine(LogActualResolution());
+        // 실제 해상도 확인 및 4K 폴백 처리
+        StartCoroutine(CheckResolutionAndFallback(targetWidth, targetHeight));
 
         // 초기 값 리셋
         _lastRotation = -999;
         _lastVerticallyMirrored = !_tex.videoVerticallyMirrored;
         _lastHorizontalMirrored = !_mirrorHorizontal;
+    }
 
-        // Debug.Log("[WebcamPreview] 웹캠 초기화 완료");
+    /// <summary>
+    /// 실제 해상도 확인 후 4K 미지원 시 FHD로 폴백
+    /// </summary>
+    private IEnumerator CheckResolutionAndFallback(int requestedWidth, int requestedHeight)
+    {
+        yield return new WaitForSeconds(0.5f);
+
+        if (_tex == null || !_tex.isPlaying)
+            yield break;
+
+        int actualWidth = _tex.width;
+        int actualHeight = _tex.height;
+
+        Debug.Log($"[WebcamPreview] 요청 해상도: {requestedWidth}x{requestedHeight}");
+        Debug.Log($"[WebcamPreview] 실제 해상도: {actualWidth}x{actualHeight}");
+
+        // 빌드 폴더에 로그 파일 생성 (덮어쓰기)
+        try
+        {
+            string logPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Application.dataPath), "print_log.txt");
+            string logContent = $"[{System.DateTime.Now:yyyy-MM-dd HH:mm:ss}] 웹캠 요청: {requestedWidth}x{requestedHeight}, 실제: {actualWidth}x{actualHeight}\n";
+            System.IO.File.WriteAllText(logPath, logContent);
+        }
+        catch { }
+
+        // 4K가 아니면 FHD로 재시작 (중간 해상도는 부하만 주고 화질 이점 적음)
+        if (_prefer4KIfAvailable && requestedWidth == 3840)
+        {
+            bool is4K = actualWidth >= 3840 || actualHeight >= 2160;
+
+            if (is4K)
+            {
+                Debug.Log("[WebcamPreview] ✅ 4K 카메라 감지됨!");
+            }
+            else
+            {
+                Debug.Log($"[WebcamPreview] 4K 미지원 → FHD로 재시작 (실제: {actualWidth}x{actualHeight})");
+
+                // 웹캠 정지 후 FHD로 재시작
+                if (_tex.isPlaying)
+                    _tex.Stop();
+                Destroy(_tex);
+
+                _tex = new WebCamTexture(_currentDeviceName, _requestedWidth, _requestedHeight, _requestedFps);
+                _tex.filterMode = FilterMode.Bilinear;
+                _tex.wrapMode = TextureWrapMode.Clamp;
+                _webcamTarget.texture = _tex;
+                _tex.Play();
+
+                yield return new WaitForSeconds(0.3f);
+                if (_tex != null && _tex.isPlaying)
+                {
+                    Debug.Log($"[WebcamPreview] ✅ FHD로 안정화 완료: {_tex.width}x{_tex.height}");
+                }
+            }
+        }
     }
 
     private void StopAndDisposeWebcam()
@@ -251,6 +320,100 @@ public class WebcamPreview : MonoBehaviour
     public WebCamTexture GetTexture()
     {
         return _tex;
+    }
+
+    /// <summary>
+    /// 촬영 순간에 고해상도로 전환 후 캡처 (4K 지원 카메라일 경우)
+    /// </summary>
+    /// <param name="onHighResReady">고해상도 준비 완료 시 콜백 (Texture2D 전달)</param>
+    /// <param name="targetWidth">목표 너비 (기본 3840)</param>
+    /// <param name="targetHeight">목표 높이 (기본 2160)</param>
+    public void CaptureHighResolution(System.Action<Texture2D> onHighResReady, int targetWidth = 3840, int targetHeight = 2160)
+    {
+        StartCoroutine(CaptureHighResolutionCoroutine(onHighResReady, targetWidth, targetHeight));
+    }
+
+    private IEnumerator CaptureHighResolutionCoroutine(System.Action<Texture2D> onHighResReady, int targetWidth, int targetHeight)
+    {
+        if (_tex == null || !_tex.isPlaying)
+        {
+            Debug.LogWarning("[WebcamPreview] 웹캠이 활성화되지 않음");
+            onHighResReady?.Invoke(null);
+            yield break;
+        }
+
+        // 현재 해상도 저장
+        int originalWidth = _tex.width;
+        int originalHeight = _tex.height;
+
+        // 이미 목표 해상도 이상이면 바로 캡처
+        if (originalWidth >= targetWidth || originalHeight >= targetHeight)
+        {
+            Debug.Log($"[WebcamPreview] 현재 해상도가 충분함: {originalWidth}x{originalHeight}");
+            Texture2D captured = CaptureCurrentFrame();
+            onHighResReady?.Invoke(captured);
+            yield break;
+        }
+
+        Debug.Log($"[WebcamPreview] 고해상도 캡처 시도: {originalWidth}x{originalHeight} → {targetWidth}x{targetHeight}");
+
+        // 웹캠 정지
+        _tex.Stop();
+        Destroy(_tex);
+
+        // 고해상도로 재시작
+        _tex = new WebCamTexture(_currentDeviceName, targetWidth, targetHeight, 30);
+        _tex.filterMode = FilterMode.Bilinear;
+        _tex.wrapMode = TextureWrapMode.Clamp;
+        _webcamTarget.texture = _tex;
+        _tex.Play();
+
+        // 안정화 대기
+        yield return new WaitForSeconds(0.5f);
+
+        // 실제 해상도 확인
+        int actualWidth = _tex.width;
+        int actualHeight = _tex.height;
+        Debug.Log($"[WebcamPreview] 고해상도 전환 결과: {actualWidth}x{actualHeight}");
+
+        // 캡처
+        Texture2D highResTex = CaptureCurrentFrame();
+
+        // 원래 해상도로 복원 (4K 미지원이면 어차피 FHD로 돌아감)
+        if (actualWidth < targetWidth && actualHeight < targetHeight)
+        {
+            // 4K 미지원 → FHD로 복원
+            Debug.Log("[WebcamPreview] 4K 미지원 → FHD로 복원");
+            _tex.Stop();
+            Destroy(_tex);
+
+            _tex = new WebCamTexture(_currentDeviceName, _requestedWidth, _requestedHeight, _requestedFps);
+            _tex.filterMode = FilterMode.Bilinear;
+            _tex.wrapMode = TextureWrapMode.Clamp;
+            _webcamTarget.texture = _tex;
+            _tex.Play();
+        }
+
+        onHighResReady?.Invoke(highResTex);
+    }
+
+    /// <summary>
+    /// 현재 웹캠 프레임을 Texture2D로 캡처
+    /// </summary>
+    public Texture2D CaptureCurrentFrame()
+    {
+        if (_tex == null || !_tex.isPlaying)
+        {
+            Debug.LogWarning("[WebcamPreview] 웹캠이 활성화되지 않음");
+            return null;
+        }
+
+        Texture2D captured = new Texture2D(_tex.width, _tex.height, TextureFormat.RGB24, false);
+        captured.SetPixels(_tex.GetPixels());
+        captured.Apply();
+
+        Debug.Log($"[WebcamPreview] 프레임 캡처 완료: {captured.width}x{captured.height}");
+        return captured;
     }
 
     /// <summary>
@@ -323,26 +486,5 @@ public class WebcamPreview : MonoBehaviour
 
         _canvasGroup.alpha = 0f;
         // Debug.Log("[WebcamPreview] 페이드아웃 완료");
-    }
-
-    private IEnumerator LogActualResolution()
-    {
-        // 웹캠이 초기화될 때까지 대기
-        yield return new WaitForSeconds(0.5f);
-
-        if (_tex != null && _tex.isPlaying)
-        {
-            // Debug.Log($"[WebcamPreview] 요청 해상도: {_requestedWidth}x{_requestedHeight}");
-            // Debug.Log($"[WebcamPreview] 실제 해상도: {_tex.width}x{_tex.height}");
-
-            if (_tex.width != _requestedWidth || _tex.height != _requestedHeight)
-            {
-                Debug.LogWarning($"[WebcamPreview] 카메라가 요청 해상도를 지원하지 않음. 실제: {_tex.width}x{_tex.height}");
-            }
-            else
-            {
-                // Debug.Log($"[WebcamPreview] 해상도 매칭 성공!");
-            }
-        }
     }
 }

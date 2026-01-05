@@ -92,16 +92,16 @@ public class PrintController : MonoBehaviour
     public enum ResampleMode { None, Cover, Fit, ExactCrop, Stretch, ScaleUp }
 
     [Header("Resample Mode")]
-    [Tooltip("세로 모드에서 출력 크기에 맞춰 리샘플링 할지 (Stretch 권장: 크롭/여백 없이 강제 리사이즈)")]
-    [SerializeField] private ResampleMode _portraitResample = ResampleMode.Stretch;
+    [Tooltip("세로 모드에서 출력 크기에 맞춰 리샘플링 할지 (None: 색상 테스트용)")]
+    [SerializeField] private ResampleMode _portraitResample = ResampleMode.None;
 
-    [Tooltip("가로 모드에서 출력 크기에 맞춰 리샘플링 할지 (Stretch 권장: 크롭/여백 없이 강제 리사이즈)")]
-    [SerializeField] private ResampleMode _landscapeResample = ResampleMode.Stretch;
+    [Tooltip("가로 모드에서 출력 크기에 맞춰 리샘플링 할지 (None: 색상 테스트용)")]
+    [SerializeField] private ResampleMode _landscapeResample = ResampleMode.None;
 
     [Header("Output Size (Printer Target)")]
-    [Tooltip("세로 4x6 기준 해상도. 4:6 비율(1600x2400) 권장. 가로모드는 자동으로 스왑.")]
-    [SerializeField] private int _outputWidth = 1600;
-    [SerializeField] private int _outputHeight = 2400;
+    [Tooltip("세로 4x6 기준 해상도. 4:6 비율(3200x4800) 고해상도 권장. 가로모드는 자동으로 스왑.")]
+    [SerializeField] private int _outputWidth = 3200;
+    [SerializeField] private int _outputHeight = 4800;
 
     [Header("Windows Print Target (레거시 폴백용)")]
     [Tooltip("printto에 사용할 프린터 이름 (비우면 OS 기본 print 사용)")]
@@ -144,6 +144,34 @@ public class PrintController : MonoBehaviour
 
     [Tooltip("자동 보정 회전 방향")]
     [SerializeField] private RotationMode _autoFixRotationDir = RotationMode.ForceCW;
+
+    [Header("Sharpening Filter (선명도 보정)")]
+    [Tooltip("샤프닝 필터 적용 여부 (흐릿한 이미지를 선명하게)")]
+    [SerializeField] private bool _useSharpeningFilter = true;
+
+    [Tooltip("샤프닝 강도 (0.1=약함, 0.5=보통, 1.0=강함)")]
+    [SerializeField, Range(0.1f, 2f)] private float _sharpeningStrength = 1.0f;
+
+    // ==========================
+    // ✅ RenderTexture 방식 (고화질)
+    // ==========================
+    [Header("RenderTexture Capture (색상 문제로 비활성화)")]
+    [Tooltip("true면 화면 캡처 대신 RenderTexture로 직접 합성 - 현재 Linear 프로젝트에서 색상 문제 있음")]
+    [SerializeField] private bool _useRenderTextureCapture = false;
+
+    [Tooltip("웹캠 프리뷰 컴포넌트 (RenderTexture 캡처에 필요)")]
+    [SerializeField] private WebcamPreview _webcamPreview;
+
+    [Header("High Resolution Capture")]
+    [Tooltip("인쇄 전 웹캠을 고해상도로 전환 시도 (4K 카메라 지원 시)")]
+    [SerializeField] private bool _tryHighResCapture = true;
+    [Tooltip("고해상도 캡처 목표 너비")]
+    [SerializeField] private int _highResWidth = 3840;
+    [Tooltip("고해상도 캡처 목표 높이")]
+    [SerializeField] private int _highResHeight = 2160;
+
+    [Tooltip("스티커 패널 컨트롤러 (스티커 정보 가져오기용)")]
+    [SerializeField] private StickerPanelCtrl _stickerPanelCtrl;
 
     // ==========================
     // ✅ NCP Upload + QR
@@ -194,6 +222,9 @@ public class PrintController : MonoBehaviour
     private bool _initAutoFitTempScale;
     private float _initFitMargin;
 
+    private bool _initUseSharpeningFilter;
+    private float _initSharpeningStrength;
+
     [Header("Save Transform")]
     [SerializeField] private bool _rotate180OnSave = true;
     private void Awake()
@@ -225,6 +256,9 @@ public class PrintController : MonoBehaviour
         _initTempScale = _tempCaptureScale;
         _initAutoFitTempScale = _autoFitTempScaleToScreen;
         _initFitMargin = _fitScreenMargin;
+
+        _initUseSharpeningFilter = _useSharpeningFilter;
+        _initSharpeningStrength = _sharpeningStrength;
 
         if (_qrPanel) _qrPanel.SetActive(false);
     }
@@ -261,6 +295,9 @@ public class PrintController : MonoBehaviour
         _tempCaptureScale = _initTempScale;
         _autoFitTempScaleToScreen = _initAutoFitTempScale;
         _fitScreenMargin = _initFitMargin;
+
+        _useSharpeningFilter = _initUseSharpeningFilter;
+        _sharpeningStrength = _initSharpeningStrength;
 
         if (_qrPanel) _qrPanel.SetActive(false);
 
@@ -318,123 +355,216 @@ public class PrintController : MonoBehaviour
         if (_captureStartDelay > 0f)
             yield return new WaitForSeconds(_captureStartDelay);
 
+        // =====================================================================
+        // 고해상도 캡처 시도 (4K 카메라 지원 시)
+        // =====================================================================
+        if (_tryHighResCapture && _webcamPreview != null)
+        {
+            Debug.Log("[Print] 고해상도 캡처 시도 중...");
+            bool highResReady = false;
+            _webcamPreview.CaptureHighResolution((tex) => {
+                highResReady = true;
+                if (tex != null)
+                {
+                    Debug.Log($"[Print] 고해상도 전환 완료: {tex.width}x{tex.height}");
+                    // 텍스처는 웹캠이 직접 들고 있으므로 여기서는 해제
+                    Destroy(tex);
+                }
+            }, _highResWidth, _highResHeight);
+
+            // 고해상도 전환 대기 (최대 2초)
+            float waitTime = 0f;
+            while (!highResReady && waitTime < 2f)
+            {
+                yield return null;
+                waitTime += Time.deltaTime;
+            }
+
+            if (!highResReady)
+            {
+                Debug.LogWarning("[Print] 고해상도 전환 타임아웃 - 현재 해상도로 진행");
+            }
+        }
+
         ToggleObjects(toHide, false);
 
-        Transform oldParent = target.parent;
-
-        Vector3 oldLocalPosition = target.localPosition;
-        Vector2 oldAnchoredPosition = target.anchoredPosition;
-        Vector3 oldLocalScale = target.localScale;
-        Quaternion oldLocalRotation = target.localRotation;
-
-        Vector2 oldPivot = target.pivot;
-        Vector2 oldAnchorMin = target.anchorMin;
-        Vector2 oldAnchorMax = target.anchorMax;
-
-        Vector2 oldRectSize = target.rect.size;
-        Vector2 oldOffsetMin = target.offsetMin;
-        Vector2 oldOffsetMax = target.offsetMax;
-
-        Canvas canvas = target.GetComponentInParent<Canvas>();
-        if (canvas == null)
+        // 가로/세로 모드 미리 확인
+        bool isLandscapeForCapture = false;
+        if (GameManager.Instance != null)
         {
-            Debug.LogError("[Print] Canvas를 찾을 수 없습니다.");
-            ToggleObjects(toHide, true);
-            onDone?.Invoke();
-            yield break;
+            isLandscapeForCapture = (GameManager.Instance.CurrentMode == KioskMode.Width);
         }
-
-        // 중앙으로 임시 이동
-        target.SetParent(canvas.transform, false);
-        target.localRotation = Quaternion.identity;
-
-        target.pivot = new Vector2(0.5f, 0.5f);
-        target.anchorMin = new Vector2(0.5f, 0.5f);
-        target.anchorMax = new Vector2(0.5f, 0.5f);
-        target.anchoredPosition = Vector2.zero;
-
-        target.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, oldRectSize.x);
-        target.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, oldRectSize.y);
-
-        // ✅ 캡처 직전에만 스케일 업
-        float appliedScale = 1f;
-        if (_useTempScaleDuringCapture && _tempCaptureScale > 1.001f)
-        {
-            appliedScale = Mathf.Max(1f, _tempCaptureScale);
-            target.localScale = Vector3.one * appliedScale;
-
-            if (_autoFitTempScaleToScreen)
-            {
-                appliedScale = FitTempScaleToScreen(target, canvas, appliedScale, _fitScreenMargin);
-                target.localScale = Vector3.one * appliedScale;
-            }
-
-            // Debug.Log($"[Print] TempScale applied: x{appliedScale:0.###}");
-        }
-        else
-        {
-            target.localScale = Vector3.one;
-        }
-
-        Canvas.ForceUpdateCanvases();
-        yield return new WaitForEndOfFrame();
-        Canvas.ForceUpdateCanvases();
-        yield return new WaitForEndOfFrame();
-
-        // Debug.Log($"[Print] ===== 캡처 시작 =====");
-        // Debug.Log($"[Print] Target: {target.name}");
-        // Debug.Log($"[Print] oldRectSize: {oldRectSize}");
-        // Debug.Log($"[Print] nowRectSize: {target.rect.size}, tempScale=x{appliedScale:0.###}");
-        // Debug.Log($"[Print] Screen: {Screen.width}x{Screen.height}");
 
         Texture2D tex = null;
+        bool usedRenderTextureCapture = false;
 
-        // (1) RawImage 단독(자식 미포함)일 때만: 소스 텍스처 복사
-        if (_captureFromSourceTexture && !_includeChildrenInCapture)
+        // =====================================================================
+        // (0) RenderTexture 기반 고화질 캡처 (최우선) - target 이동 없이 바로 캡처
+        // =====================================================================
+        if (_useRenderTextureCapture && _stickerPanelCtrl != null)
         {
-            var raw = target.GetComponent<RawImage>();
-            if (raw && raw.texture)
+            var frameObj = _stickerPanelCtrl.GetCurrentFrame();
+            if (frameObj != null)
             {
-                tex = CopyRawImageAsSeen(raw);
-                // Debug.Log("[Print] CopyRawImageAsSeen 사용 (RawImage.texture 기반)");
-            }
-        }
-
-        // (2) 캡처
-        if (tex == null)
-        {
-            if (_useHiResScreenshotCapture && _screenshotSuperSize > 1)
-            {
-                Texture2D hiResTex = null;
-                yield return StartCoroutine(CaptureByHiResScreenshot(target, canvas, t => hiResTex = t));
-                tex = hiResTex;
+                RectTransform frameRect = frameObj.GetComponent<RectTransform>();
+                if (frameRect != null)
+                {
+                    tex = CaptureWithRenderTexture(frameRect, isLandscapeForCapture);
+                    if (tex != null)
+                    {
+                        usedRenderTextureCapture = true;
+                        Debug.Log($"[Print] ★★ RenderTexture 캡처 성공: {tex.width}x{tex.height} (고화질 모드)");
+                    }
+                }
             }
 
             if (tex == null)
             {
-                tex = _includeChildrenInCapture
-                    ? CaptureRectTransformAreaIncludingChildren(target)
-                    : CaptureRectTransformArea(target);
-
-                // if (tex != null)
-                //     Debug.Log($"[Print] ReadPixels 기반 캡처 완료: {tex.width}x{tex.height}");
+                tex = CaptureWithRenderTexture(target, isLandscapeForCapture);
+                if (tex != null)
+                {
+                    usedRenderTextureCapture = true;
+                    Debug.Log($"[Print] ★★ RenderTexture 캡처 성공 (target): {tex.width}x{tex.height}");
+                }
             }
         }
 
-        // 원복
-        target.SetParent(oldParent, false);
+        // =====================================================================
+        // RenderTexture 캡처 실패 시에만 기존 방식 (화면 캡처) 사용
+        // =====================================================================
+        Transform oldParent = null;
+        Vector3 oldLocalPosition = Vector3.zero;
+        Vector2 oldAnchoredPosition = Vector2.zero;
+        Vector3 oldLocalScale = Vector3.one;
+        Quaternion oldLocalRotation = Quaternion.identity;
+        Vector2 oldPivot = Vector2.zero;
+        Vector2 oldAnchorMin = Vector2.zero;
+        Vector2 oldAnchorMax = Vector2.zero;
+        Vector2 oldRectSize = Vector2.zero;
+        Vector2 oldOffsetMin = Vector2.zero;
+        Vector2 oldOffsetMax = Vector2.zero;
+        bool movedTarget = false;
 
-        target.localPosition = oldLocalPosition;
-        target.anchoredPosition = oldAnchoredPosition;
-        target.localScale = oldLocalScale;
-        target.localRotation = oldLocalRotation;
+        if (tex == null)
+        {
+            // 기존 화면 캡처 방식 - target을 가운데로 이동
+            oldParent = target.parent;
+            oldLocalPosition = target.localPosition;
+            oldAnchoredPosition = target.anchoredPosition;
+            oldLocalScale = target.localScale;
+            oldLocalRotation = target.localRotation;
+            oldPivot = target.pivot;
+            oldAnchorMin = target.anchorMin;
+            oldAnchorMax = target.anchorMax;
+            oldRectSize = target.rect.size;
+            oldOffsetMin = target.offsetMin;
+            oldOffsetMax = target.offsetMax;
 
-        target.pivot = oldPivot;
-        target.anchorMin = oldAnchorMin;
-        target.anchorMax = oldAnchorMax;
+            Canvas canvas = target.GetComponentInParent<Canvas>();
+            if (canvas == null)
+            {
+                Debug.LogError("[Print] Canvas를 찾을 수 없습니다.");
+                ToggleObjects(toHide, true);
+                onDone?.Invoke();
+                yield break;
+            }
 
-        target.offsetMin = oldOffsetMin;
-        target.offsetMax = oldOffsetMax;
+            // 중앙으로 임시 이동 (화면 캡처용)
+            target.SetParent(canvas.transform, false);
+            target.localRotation = Quaternion.identity;
+            target.pivot = new Vector2(0.5f, 0.5f);
+            target.anchorMin = new Vector2(0.5f, 0.5f);
+            target.anchorMax = new Vector2(0.5f, 0.5f);
+            target.anchoredPosition = Vector2.zero;
+            target.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, oldRectSize.x);
+            target.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, oldRectSize.y);
+            movedTarget = true;
+
+            // 캡처 직전에만 스케일 업
+            float appliedScale = 1f;
+            if (_useTempScaleDuringCapture && _tempCaptureScale > 1.001f)
+            {
+                appliedScale = Mathf.Max(1f, _tempCaptureScale);
+                target.localScale = Vector3.one * appliedScale;
+
+                if (_autoFitTempScaleToScreen)
+                {
+                    appliedScale = FitTempScaleToScreen(target, canvas, appliedScale, _fitScreenMargin);
+                    target.localScale = Vector3.one * appliedScale;
+                }
+            }
+            else
+            {
+                target.localScale = Vector3.one;
+            }
+
+            Canvas.ForceUpdateCanvases();
+            yield return new WaitForEndOfFrame();
+            Canvas.ForceUpdateCanvases();
+            yield return new WaitForEndOfFrame();
+
+            // (1) RawImage 단독일 때: 소스 텍스처 복사
+            if (_captureFromSourceTexture && !_includeChildrenInCapture)
+            {
+                var raw = target.GetComponent<RawImage>();
+                if (raw && raw.texture)
+                {
+                    tex = CopyRawImageAsSeen(raw);
+                }
+            }
+
+            // (2) 화면 캡처 (폴백)
+            if (tex == null)
+            {
+                if (_useHiResScreenshotCapture && _screenshotSuperSize > 1)
+                {
+                    Texture2D hiResTex = null;
+                    yield return StartCoroutine(CaptureByHiResScreenshot(target, canvas, t => hiResTex = t));
+                    tex = hiResTex;
+
+                    if (tex != null)
+                    {
+                        Debug.Log($"[Print] ★ HiRes 캡처 성공: {tex.width}x{tex.height} (superSize={_screenshotSuperSize})");
+                        try
+                        {
+                            string logPath = Path.Combine(Path.GetDirectoryName(Application.dataPath), "print_log.txt");
+                            File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] HiRes 캡처: {tex.width}x{tex.height} (superSize={_screenshotSuperSize})\n");
+                        }
+                        catch { }
+                    }
+                }
+
+                if (tex == null)
+                {
+                    tex = _includeChildrenInCapture
+                        ? CaptureRectTransformAreaIncludingChildren(target)
+                        : CaptureRectTransformArea(target);
+
+                    if (tex != null)
+                    {
+                        Debug.Log($"[Print] ★ ReadPixels 폴백 캡처: {tex.width}x{tex.height} (HiRes 실패)");
+                        try
+                        {
+                            string logPath = Path.Combine(Path.GetDirectoryName(Application.dataPath), "print_log.txt");
+                            File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] ReadPixels 폴백: {tex.width}x{tex.height} (HiRes 실패!)\n");
+                        }
+                        catch { }
+                    }
+                }
+            }
+
+            // target 원복 (이동했을 때만)
+            target.SetParent(oldParent, false);
+            target.localPosition = oldLocalPosition;
+            target.anchoredPosition = oldAnchoredPosition;
+            target.localScale = oldLocalScale;
+            target.localRotation = oldLocalRotation;
+            target.pivot = oldPivot;
+            target.anchorMin = oldAnchorMin;
+            target.anchorMax = oldAnchorMax;
+            target.offsetMin = oldOffsetMin;
+            target.offsetMax = oldOffsetMax;
+        }
 
         ToggleObjects(toHide, true);
 
@@ -487,8 +617,9 @@ public class PrintController : MonoBehaviour
             }
         }
 
+        // RenderTexture 캡처 시에는 이미 출력 해상도로 렌더링했으므로 리샘플 스킵
         ResampleMode mode = isLandscapeMode ? _landscapeResample : _portraitResample;
-        if (mode != ResampleMode.None)
+        if (mode != ResampleMode.None && !usedRenderTextureCapture)
         {
             int w = Mathf.Max(8, _outputWidth);
             int h = Mathf.Max(8, _outputHeight);
@@ -530,50 +661,84 @@ public class PrintController : MonoBehaviour
                 Debug.LogWarning("[Print] RESAMPLE 결과가 null이라 원본 tex 유지");
             }
         }
+        else if (usedRenderTextureCapture)
+        {
+            Debug.Log("[Print] RenderTexture 캡처 사용 → 리샘플 스킵 (이미 출력 해상도)");
+        }
+
+        // 2.5) 정확한 출력 해상도로 중앙 크롭 (여백 제거)
+        {
+            int exactW = isLandscapeMode ? _outputHeight : _outputWidth;
+            int exactH = isLandscapeMode ? _outputWidth : _outputHeight;
+
+            if (tex.width != exactW || tex.height != exactH)
+            {
+                Debug.Log($"[Print] 중앙 크롭 시작: {tex.width}x{tex.height} → {exactW}x{exactH}");
+                tex = CenterCropToExact(tex, exactW, exactH);
+            }
+        }
+
+        // 3) 샤프닝 필터 적용 (옵션)
+        if (_useSharpeningFilter && _sharpeningStrength > 0.01f)
+        {
+            tex = ApplySharpening(tex, _sharpeningStrength);
+            // Debug.Log($"[Print] 샤프닝 필터 적용 완료 (strength={_sharpeningStrength:0.##})");
+        }
 
         // 4) 파일 저장
+        Debug.Log($"[Print] ★ 최종 캡처 해상도: {tex.width}x{tex.height} (저장 직전)");
+
+        // 빌드 폴더에 로그 파일 추가 (웹캠 로그 뒤에 이어쓰기)
+        try
+        {
+            string logPath = Path.Combine(Path.GetDirectoryName(Application.dataPath), "print_log.txt");
+            string logContent = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 최종 캡처 해상도: {tex.width}x{tex.height}\n";
+            File.AppendAllText(logPath, logContent);
+        }
+        catch { }
+
         string folderPath = Application.persistentDataPath;
         Directory.CreateDirectory(folderPath);
         string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 
-        // QR용 이미지 저장 (캡처가 뒤집혀 있으므로 180도+좌우반전으로 정방향 만들기)
+        // QR용 이미지 저장 (좌우반전 + 상하반전 + 180도 회전 + 1/2 축소)
         string qrSavePath = null;
         if (_enableUploadAndQr && _ncpUploader != null)
         {
-            // QR용: 정방향으로 만들기 위해 180도 회전 + 좌우반전
+            // QR용: 좌우반전 + 상하반전 + 180도 회전
             Texture2D qrTex = CopyTexture(tex);
-            qrTex = Rotate180(qrTex);
-            qrTex = MirrorX(qrTex);
+            qrTex = MirrorX(qrTex);      // 좌우반전
+            qrTex = MirrorY(qrTex);      // 상하반전
+            qrTex = Rotate180(qrTex);    // 180도 회전
+
+            // 가로모드: 추가 좌우반전
             if (isLandscapeMode)
             {
                 qrTex = MirrorX(qrTex);
             }
 
+            // QR용 이미지 1/2 축소 (휴대폰에서 보기 편하게)
+            qrTex = ResizeTexture(qrTex, qrTex.width / 2, qrTex.height / 2);
+
             string qrFilename = $"photo_qr_{timestamp}.png";
             qrSavePath = Path.Combine(folderPath, qrFilename);
             File.WriteAllBytes(qrSavePath, qrTex.EncodeToPNG());
             Destroy(qrTex);
-            // Debug.Log($"[Print] QR용 저장 완료 (정방향): {qrSavePath}");
+            Debug.Log($"[Print] QR용 저장 완료: {qrSavePath}");
         }
 
-        // 프린터용: QR과 동일하게 정방향으로 저장
-        if (_rotate180OnSave)
+        // 프린터용: 좌우반전 + 상하반전 + 180도 회전 (항상 적용)
+        tex = MirrorX(tex);      // 좌우반전
+        tex = MirrorY(tex);      // 상하반전
+        tex = Rotate180(tex);    // 180도 회전
+
+        // 가로모드: 추가 좌우반전
+        if (isLandscapeMode)
         {
-            tex = Rotate180(tex);
             tex = MirrorX(tex);
-
-            if (isLandscapeMode)
-            {
-                // 가로모드: 472라인 MirrorX + 여기 MirrorX = 2번 → 추가 MirrorX로 QR과 동일하게
-                tex = MirrorX(tex);
-                // Debug.Log("[Print] 180도 회전 + 좌우반전x2 적용 완료 (가로모드, QR과 동일)");
-            }
-            else
-            {
-                // 세로모드: Rotate180 + MirrorX (QR과 동일)
-                // Debug.Log("[Print] 180도 회전 + 좌우반전 적용 완료 (세로모드, QR과 동일)");
-            }
+            Debug.Log("[Print] 프린터용 가로모드 추가 좌우반전 적용");
         }
+        Debug.Log("[Print] 프린터용 변환 적용 완료");
 
         // ✅ 프린터용: 가로 이미지면 90도 회전해서 세로로 저장 (DS-RX1은 Landscape 미지원)
         if (isLandscapeMode && tex.width > tex.height)
@@ -753,7 +918,9 @@ public class PrintController : MonoBehaviour
         {
             byte[] png = File.ReadAllBytes(tempPath);
 
-            full = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            // Linear 프로젝트에서 sRGB PNG를 그대로 읽으려면 linear=false (sRGB 텍스처로 취급)
+            // 하지만 LoadImage는 linear 파라미터를 무시하므로, markNonReadable=false로 해서 픽셀 접근 허용
+            full = new Texture2D(2, 2, TextureFormat.RGBA32, false, false);
             if (!full.LoadImage(png, false))
             {
                 Debug.LogWarning("[Print] HiResCapture: LoadImage failed");
@@ -777,12 +944,15 @@ public class PrintController : MonoBehaviour
             cropped = new Texture2D(w, h, TextureFormat.RGBA32, false);
             Color32[] dst = new Color32[w * h];
 
+            // 단순 픽셀 복사 (감마 보정 없음 - ScreenCapture가 이미 sRGB로 저장)
             for (int yy = 0; yy < h; yy++)
             {
                 int srcRow = (y + yy) * full.width;
                 int dstRow = yy * w;
                 for (int xx = 0; xx < w; xx++)
+                {
                     dst[dstRow + xx] = src[srcRow + (x + xx)];
+                }
             }
 
             cropped.SetPixels32(dst);
@@ -809,7 +979,7 @@ public class PrintController : MonoBehaviour
         int w = src.width;
         int h = src.height;
 
-        var rt = RenderTexture.GetTemporary(w, h, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+        var rt = RenderTexture.GetTemporary(w, h, 0, RenderTextureFormat.ARGB32);
         var prev = RenderTexture.active;
         RenderTexture.active = rt;
 
@@ -981,6 +1151,32 @@ public class PrintController : MonoBehaviour
             int row = y * w;
             for (int x = 0; x < w; x++)
                 d[row + (w - 1 - x)] = s[row + x];
+        }
+
+        dst.SetPixels32(d);
+        dst.Apply(false);
+        Destroy(src);
+        return dst;
+    }
+
+    /// <summary>
+    /// 상하반전 (Y축 미러)
+    /// </summary>
+    private Texture2D MirrorY(Texture2D src)
+    {
+        int w = src.width;
+        int h = src.height;
+        var dst = new Texture2D(w, h, TextureFormat.RGBA32, false);
+
+        var s = src.GetPixels32();
+        var d = new Color32[s.Length];
+
+        for (int y = 0; y < h; y++)
+        {
+            int srcRow = y * w;
+            int dstRow = (h - 1 - y) * w;
+            for (int x = 0; x < w; x++)
+                d[dstRow + x] = s[srcRow + x];
         }
 
         dst.SetPixels32(d);
@@ -1288,8 +1484,7 @@ public class PrintController : MonoBehaviour
         offsetX += moveRangeX * (biasX * 0.5f + 0.5f) - moveRangeX * 0.5f;
         offsetY += moveRangeY * (biasY * 0.5f + 0.5f) - moveRangeY * 0.5f;
 
-        var rt = RenderTexture.GetTemporary(targetW, targetH, 0,
-            RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+        var rt = RenderTexture.GetTemporary(targetW, targetH, 0, RenderTextureFormat.ARGB32);
         var prevRT = RenderTexture.active;
         RenderTexture.active = rt;
 
@@ -1339,8 +1534,7 @@ public class PrintController : MonoBehaviour
         float offsetX = (targetW - newW) * 0.5f;
         float offsetY = (targetH - newH) * 0.5f;
 
-        var rt = RenderTexture.GetTemporary(targetW, targetH, 0,
-            RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+        var rt = RenderTexture.GetTemporary(targetW, targetH, 0, RenderTextureFormat.ARGB32);
         var prevRT = RenderTexture.active;
         RenderTexture.active = rt;
 
@@ -1435,8 +1629,7 @@ public class PrintController : MonoBehaviour
         croppedTex.Apply(false);
 
         // 2) 타겟 크기로 리사이즈 (Bilinear)
-        var rt = RenderTexture.GetTemporary(targetW, targetH, 0,
-            RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+        var rt = RenderTexture.GetTemporary(targetW, targetH, 0, RenderTextureFormat.ARGB32);
         var prevRT = RenderTexture.active;
         RenderTexture.active = rt;
 
@@ -1487,8 +1680,7 @@ public class PrintController : MonoBehaviour
 
         // Debug.Log($"[Print] Stretch: src={src.width}x{src.height} (ratio={srcRatio:0.###}), final={finalW}x{finalH} (ratio={finalRatio:0.###}), stretch={stretchPercent:0.#}%, extra={extraRatio:0.##}");
 
-        var rt = RenderTexture.GetTemporary(finalW, finalH, 0,
-            RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+        var rt = RenderTexture.GetTemporary(finalW, finalH, 0, RenderTextureFormat.ARGB32);
         var prevRT = RenderTexture.active;
         RenderTexture.active = rt;
 
@@ -1538,8 +1730,7 @@ public class PrintController : MonoBehaviour
         // Debug.Log($"[Print] ScaleUp: src={srcW}x{srcH}, scaled={scaledW}x{scaledH}, target={targetW}x{targetH}, ratio={scaleRatio:0.##}");
 
         // 2) 소스를 확대된 크기로 Stretch
-        var rt = RenderTexture.GetTemporary(scaledW, scaledH, 0,
-            RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+        var rt = RenderTexture.GetTemporary(scaledW, scaledH, 0, RenderTextureFormat.ARGB32);
         var prevRT = RenderTexture.active;
         RenderTexture.active = rt;
 
@@ -1675,5 +1866,906 @@ public class PrintController : MonoBehaviour
 
         Destroy(src);   // 원본 해제
         return dst;
+    }
+
+    /// <summary>
+    /// 중앙 크롭: 캡처된 이미지를 정확한 출력 해상도로 중앙에서 크롭
+    /// 캡처 영역이 출력 해상도보다 클 경우 여분의 여백 제거
+    /// </summary>
+    private Texture2D CenterCropToExact(Texture2D src, int targetWidth, int targetHeight)
+    {
+        int srcW = src.width;
+        int srcH = src.height;
+
+        // 이미 정확히 맞으면 그대로 반환
+        if (srcW == targetWidth && srcH == targetHeight)
+        {
+            return src;
+        }
+
+        // 소스가 타겟보다 작으면 리사이즈 (비율 유지하며 커버)
+        if (srcW < targetWidth || srcH < targetHeight)
+        {
+            float scaleX = (float)targetWidth / srcW;
+            float scaleY = (float)targetHeight / srcH;
+            float scale = Mathf.Max(scaleX, scaleY);
+
+            int newW = Mathf.RoundToInt(srcW * scale);
+            int newH = Mathf.RoundToInt(srcH * scale);
+
+            src = ResizeTexture(src, newW, newH);
+            srcW = src.width;
+            srcH = src.height;
+        }
+
+        // 중앙에서 크롭
+        int cropX = (srcW - targetWidth) / 2;
+        int cropY = (srcH - targetHeight) / 2;
+
+        // 음수 방지
+        cropX = Mathf.Max(0, cropX);
+        cropY = Mathf.Max(0, cropY);
+
+        // 범위 초과 방지
+        int actualW = Mathf.Min(targetWidth, srcW - cropX);
+        int actualH = Mathf.Min(targetHeight, srcH - cropY);
+
+        Color32[] srcPixels = src.GetPixels32();
+        Color32[] dstPixels = new Color32[targetWidth * targetHeight];
+
+        for (int y = 0; y < actualH; y++)
+        {
+            int srcRow = (cropY + y) * srcW;
+            int dstRow = y * targetWidth;
+            for (int x = 0; x < actualW; x++)
+            {
+                dstPixels[dstRow + x] = srcPixels[srcRow + cropX + x];
+            }
+        }
+
+        Texture2D dst = new Texture2D(targetWidth, targetHeight, TextureFormat.RGBA32, false);
+        dst.SetPixels32(dstPixels);
+        dst.Apply(false);
+
+        Destroy(src);
+        Debug.Log($"[Print] 중앙 크롭 완료: {srcW}x{srcH} → {targetWidth}x{targetHeight}");
+        return dst;
+    }
+
+    /// <summary>
+    /// 텍스처 리사이즈 (Bilinear 보간, 색상 변환 없이 픽셀 직접 계산)
+    /// </summary>
+    private Texture2D ResizeTexture(Texture2D src, int newWidth, int newHeight)
+    {
+        int srcW = src.width;
+        int srcH = src.height;
+
+        Color32[] srcPixels = src.GetPixels32();
+        Color32[] dstPixels = new Color32[newWidth * newHeight];
+
+        float xRatio = (float)(srcW - 1) / newWidth;
+        float yRatio = (float)(srcH - 1) / newHeight;
+
+        for (int y = 0; y < newHeight; y++)
+        {
+            float srcY = y * yRatio;
+            int y0 = (int)srcY;
+            int y1 = Mathf.Min(y0 + 1, srcH - 1);
+            float yLerp = srcY - y0;
+
+            for (int x = 0; x < newWidth; x++)
+            {
+                float srcX = x * xRatio;
+                int x0 = (int)srcX;
+                int x1 = Mathf.Min(x0 + 1, srcW - 1);
+                float xLerp = srcX - x0;
+
+                // Bilinear 보간
+                Color32 c00 = srcPixels[y0 * srcW + x0];
+                Color32 c10 = srcPixels[y0 * srcW + x1];
+                Color32 c01 = srcPixels[y1 * srcW + x0];
+                Color32 c11 = srcPixels[y1 * srcW + x1];
+
+                byte r = (byte)(c00.r * (1 - xLerp) * (1 - yLerp) + c10.r * xLerp * (1 - yLerp) +
+                                c01.r * (1 - xLerp) * yLerp + c11.r * xLerp * yLerp);
+                byte g = (byte)(c00.g * (1 - xLerp) * (1 - yLerp) + c10.g * xLerp * (1 - yLerp) +
+                                c01.g * (1 - xLerp) * yLerp + c11.g * xLerp * yLerp);
+                byte b = (byte)(c00.b * (1 - xLerp) * (1 - yLerp) + c10.b * xLerp * (1 - yLerp) +
+                                c01.b * (1 - xLerp) * yLerp + c11.b * xLerp * yLerp);
+                byte a = (byte)(c00.a * (1 - xLerp) * (1 - yLerp) + c10.a * xLerp * (1 - yLerp) +
+                                c01.a * (1 - xLerp) * yLerp + c11.a * xLerp * yLerp);
+
+                dstPixels[y * newWidth + x] = new Color32(r, g, b, a);
+            }
+        }
+
+        Texture2D dst = new Texture2D(newWidth, newHeight, TextureFormat.RGBA32, false);
+        dst.SetPixels32(dstPixels);
+        dst.Apply(false);
+
+        Destroy(src);
+        return dst;
+    }
+
+    /// <summary>
+    /// 샤프닝 필터 적용 (Unsharp Mask 방식)
+    /// 경계를 강조하여 이미지를 선명하게 만듦
+    /// </summary>
+    private Texture2D ApplySharpening(Texture2D src, float strength)
+    {
+        int w = src.width;
+        int h = src.height;
+
+        Color[] pixels = src.GetPixels();
+        Color[] result = new Color[pixels.Length];
+
+        // 3x3 샤프닝 커널 (Laplacian 기반)
+        // 중앙 값을 강조하고 주변 값을 빼서 경계를 선명하게
+        float center = 1f + 4f * strength;
+        float side = -strength;
+
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                int idx = y * w + x;
+
+                // 가장자리는 원본 유지
+                if (x == 0 || x == w - 1 || y == 0 || y == h - 1)
+                {
+                    result[idx] = pixels[idx];
+                    continue;
+                }
+
+                // 인접 픽셀 인덱스
+                int top = (y + 1) * w + x;
+                int bottom = (y - 1) * w + x;
+                int left = y * w + (x - 1);
+                int right = y * w + (x + 1);
+
+                // 샤프닝 적용
+                Color c = pixels[idx] * center +
+                          pixels[top] * side +
+                          pixels[bottom] * side +
+                          pixels[left] * side +
+                          pixels[right] * side;
+
+                // 클램프 (0~1 범위)
+                c.r = Mathf.Clamp01(c.r);
+                c.g = Mathf.Clamp01(c.g);
+                c.b = Mathf.Clamp01(c.b);
+                c.a = pixels[idx].a; // 알파는 원본 유지
+
+                result[idx] = c;
+            }
+        }
+
+        var dst = new Texture2D(w, h, TextureFormat.RGBA32, false);
+        dst.SetPixels(result);
+        dst.Apply(false);
+
+        Destroy(src);
+        return dst;
+    }
+
+    // ==========================
+    // ✅ RenderTexture 기반 고화질 캡처
+    // ==========================
+
+    /// <summary>
+    /// CPU 기반 픽셀 직접 합성 - 색공간 변환 완전 우회
+    /// GPU 대신 CPU에서 텍스처를 직접 읽어서 합성
+    /// 순서: 배경(흰색) → 4컷 사진 → 프레임(알파 블렌딩) → 스티커
+    /// </summary>
+    private Texture2D CaptureWithRenderTexture(RectTransform frameRect, bool isLandscapeMode)
+    {
+        // 출력 크기 결정
+        int outW = isLandscapeMode ? _outputHeight : _outputWidth;
+        int outH = isLandscapeMode ? _outputWidth : _outputHeight;
+
+        // 결과 텍스처 생성 (흰색 배경)
+        Texture2D result = new Texture2D(outW, outH, TextureFormat.RGBA32, false);
+        Color32 white = new Color32(255, 255, 255, 255);
+        Color32[] pixels = new Color32[outW * outH];
+        for (int i = 0; i < pixels.Length; i++) pixels[i] = white;
+
+        // 프레임 월드 Rect
+        Rect frameWorldRect = GetWorldRect(frameRect);
+
+        // 1) 자식 요소들 먼저 그리기 (4컷 사진) - 프레임 아래에 깔림
+        DrawChildrenCPU(pixels, outW, outH, frameRect, frameWorldRect);
+
+        // 2) 프레임 이미지 그리기 (투명 영역으로 사진이 보임, 알파 블렌딩)
+        Image frameImage = frameRect.GetComponent<Image>();
+        if (frameImage != null && frameImage.enabled && frameImage.sprite != null)
+        {
+            Texture2D frameTex = GetReadableTexture(frameImage.sprite.texture);
+            if (frameTex != null)
+            {
+                Debug.Log($"[Print] 프레임 이미지 그리기 (알파 블렌딩): {frameTex.width}x{frameTex.height}");
+                BlitTextureCPU_Alpha(pixels, outW, outH, frameTex, new Rect(0, 0, outW, outH));
+                if (frameTex != frameImage.sprite.texture) Destroy(frameTex);
+            }
+        }
+
+        // 3) 스티커 그리기 (맨 위) - 프레임 자식에서 찾기 (한 번만 실행)
+        DrawStickersFromChildren(pixels, outW, outH, frameRect, frameWorldRect);
+
+        result.SetPixels32(pixels);
+        result.Apply(false);
+
+        Debug.Log($"[Print] ★ CPU 합성 캡처 완료: {outW}x{outH} (색공간 변환 없음)");
+
+        try
+        {
+            string logPath = Path.Combine(Path.GetDirectoryName(Application.dataPath), "print_log.txt");
+            File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] CPU 합성 캡처: {outW}x{outH}\n");
+        }
+        catch { }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 자식 요소들을 CPU로 그리기
+    /// ImageMain은 프레임 이미지이므로 마지막에 별도로 그림
+    /// </summary>
+    private void DrawChildrenCPU(Color32[] pixels, int outW, int outH, RectTransform parent, Rect parentWorldRect)
+    {
+        foreach (Transform child in parent)
+        {
+            string childName = child.name;
+
+            // ImageMain은 프레임 이미지 - 스킵 (나중에 알파 블렌딩으로 그림)
+            if (childName.Contains("ImageMain"))
+            {
+                continue;
+            }
+
+            // 스티커는 스킵 - DrawStickersFromChildren에서 별도로 처리
+            // DrawChildrenCPU는 BlitTextureCPU (덮어쓰기)를 사용하므로 투명 영역이 흰색으로 그려짐
+            if (childName.Contains("Sticker"))
+            {
+                Debug.Log($"[Print] DrawChildrenCPU에서 스티커 스킵: {childName}");
+                continue;
+            }
+
+            if (!child.gameObject.activeInHierarchy) continue;
+
+            RectTransform childRect = child.GetComponent<RectTransform>();
+            if (childRect == null) continue;
+
+            Rect childWorldRect = GetWorldRect(childRect);
+            Rect destRect = CalculateRelativeRect(childWorldRect, parentWorldRect, outW, outH);
+            Debug.Log($"[Print] → destRect: {destRect}");
+
+            // RawImage (웹캠 등)
+            RawImage rawImage = child.GetComponent<RawImage>();
+            if (rawImage != null && rawImage.enabled)
+            {
+                Debug.Log($"[Print] → RawImage 발견: texture={rawImage.texture != null}");
+                if (rawImage.texture != null)
+                {
+                    Texture2D srcTex = GetReadableTexture(rawImage.texture);
+                    if (srcTex != null)
+                    {
+                        Debug.Log($"[Print] → BlitTextureCPU 호출: {srcTex.width}x{srcTex.height} → {destRect}");
+                        BlitTextureCPU(pixels, outW, outH, srcTex, destRect);
+                        if (srcTex != rawImage.texture) Destroy(srcTex);
+                    }
+                }
+            }
+            else
+            {
+                // Image
+                Image image = child.GetComponent<Image>();
+                if (image != null && image.enabled)
+                {
+                    Debug.Log($"[Print] → Image 발견: sprite={image.sprite != null}");
+                    if (image.sprite != null)
+                    {
+                        Texture2D srcTex = GetReadableTexture(image.sprite.texture);
+                        if (srcTex != null)
+                        {
+                            Debug.Log($"[Print] → BlitTextureCPU 호출: {srcTex.width}x{srcTex.height} → {destRect}");
+                            BlitTextureCPU(pixels, outW, outH, srcTex, destRect);
+                            if (srcTex != image.sprite.texture) Destroy(srcTex);
+                        }
+                    }
+                }
+                else
+                {
+                    Debug.Log($"[Print] → Image/RawImage 없음 또는 비활성");
+                }
+            }
+
+            // 재귀적으로 자식의 자식도 처리
+            DrawChildrenCPU(pixels, outW, outH, childRect, parentWorldRect);
+        }
+    }
+
+    /// <summary>
+    /// 스티커들을 CPU로 그리기
+    /// </summary>
+    private void DrawStickersCPU(Color32[] pixels, int outW, int outH, DropZone dropZone, Rect frameWorldRect)
+    {
+        var stickers = dropZone.GetDroppedStickers();
+        if (stickers == null || stickers.Count == 0) return;
+
+        Debug.Log($"[Print] DrawStickersCPU: 스티커 {stickers.Count}개 발견");
+
+        foreach (var stickerObj in stickers)
+        {
+            if (stickerObj == null || !stickerObj.activeInHierarchy) continue;
+
+            // BG(배경) 오브젝트인 경우 자식에서 실제 스티커 찾기
+            DrawStickerRecursive(pixels, outW, outH, stickerObj.transform, frameWorldRect);
+        }
+    }
+
+    /// <summary>
+    /// 스티커를 재귀적으로 찾아서 그리기 (실제 스티커만 그림)
+    /// "ImageSticker"라는 정확한 이름만 그림 (BG, _1 등 접미사 있으면 자식만 탐색)
+    /// </summary>
+    private void DrawStickerRecursive(Color32[] pixels, int outW, int outH, Transform stickerTransform, Rect frameWorldRect)
+    {
+        if (stickerTransform == null || !stickerTransform.gameObject.activeInHierarchy) return;
+
+        string objName = stickerTransform.name;
+        Debug.Log($"[Print] 스티커 탐색 중: '{objName}', 자식수: {stickerTransform.childCount}");
+
+        // BG(배경)이면 무조건 스킵하고 자식만 탐색
+        if (objName.Contains("BG"))
+        {
+            Debug.Log($"[Print] '{objName}'은 BG(배경) → 자식만 탐색");
+            foreach (Transform child in stickerTransform)
+            {
+                DrawStickerRecursive(pixels, outW, outH, child, frameWorldRect);
+            }
+            return;
+        }
+
+        // Image 컴포넌트가 있으면 그리기 시도
+        RectTransform stickerRect = stickerTransform.GetComponent<RectTransform>();
+        Image stickerImage = stickerTransform.GetComponent<Image>();
+
+        if (stickerRect != null && stickerImage != null && stickerImage.sprite != null)
+        {
+            Sprite sprite = stickerImage.sprite;
+            Debug.Log($"[Print] ★★★ 스티커 그리기: {objName}, Sprite: {sprite.name}, SpriteRect: {sprite.rect}, preserveAspect: {stickerImage.preserveAspect}");
+
+            // Sprite 텍스처 가져오기
+            Texture2D stickerTex = GetSpriteTexture(sprite);
+            if (stickerTex != null)
+            {
+                // 텍스처 투명도 분석 (디버그)
+                Color32[] texPixels = stickerTex.GetPixels32();
+                int transparent = 0, opaque = 0, semiTransparent = 0;
+                for (int i = 0; i < texPixels.Length; i++)
+                {
+                    if (texPixels[i].a < 10) transparent++;
+                    else if (texPixels[i].a >= 245) opaque++;
+                    else semiTransparent++;
+                }
+                Debug.Log($"[Print] 스티커 텍스처 분석: {stickerTex.width}x{stickerTex.height}, 투명={transparent}, 불투명={opaque}, 반투명={semiTransparent}");
+
+                // 투명 픽셀 샘플 출력 (처음 3개) - RGB 값 확인
+                int sampleCount = 0;
+                for (int i = 0; i < texPixels.Length && sampleCount < 3; i++)
+                {
+                    if (texPixels[i].a < 10)
+                    {
+                        Debug.Log($"[Print] 투명픽셀[{i}]: R={texPixels[i].r}, G={texPixels[i].g}, B={texPixels[i].b}, A={texPixels[i].a}");
+                        sampleCount++;
+                    }
+                }
+
+                // RectTransform 영역
+                Rect stickerWorldRect = GetWorldRect(stickerRect);
+                Rect destWorldRect = stickerWorldRect;
+
+                // preserveAspect 처리
+                if (stickerImage.preserveAspect)
+                {
+                    float spriteW = sprite.rect.width;
+                    float spriteH = sprite.rect.height;
+                    float rectW = stickerWorldRect.width;
+                    float rectH = stickerWorldRect.height;
+
+                    float scaleX = rectW / spriteW;
+                    float scaleY = rectH / spriteH;
+                    float fitScale = Mathf.Min(scaleX, scaleY);
+
+                    float finalW = spriteW * fitScale;
+                    float finalH = spriteH * fitScale;
+                    float offsetX = (rectW - finalW) / 2f;
+                    float offsetY = (rectH - finalH) / 2f;
+
+                    destWorldRect = new Rect(
+                        stickerWorldRect.x + offsetX,
+                        stickerWorldRect.y + offsetY,
+                        finalW,
+                        finalH
+                    );
+                }
+
+                Rect destRect = CalculateRelativeRect(destWorldRect, frameWorldRect, outW, outH);
+                Debug.Log($"[Print] 스티커 destRect: {destRect}");
+
+                BlitStickerCPU(pixels, outW, outH, stickerTex, destRect);
+                // 원본 텍스처가 아닌 경우에만 삭제
+                if (stickerTex != sprite.texture)
+                {
+                    Destroy(stickerTex);
+                }
+            }
+            return;
+        }
+
+        // Image가 없으면 자식 탐색
+        Debug.Log($"[Print] '{objName}'은 Image 없음 → 자식 탐색");
+        foreach (Transform child in stickerTransform)
+        {
+            DrawStickerRecursive(pixels, outW, outH, child, frameWorldRect);
+        }
+    }
+
+    /// <summary>
+    /// 프레임 자식에서 스티커 찾아서 그리기 (Sticker 이름 포함된 오브젝트, BG 배경 스킵)
+    /// </summary>
+    private void DrawStickersFromChildren(Color32[] pixels, int outW, int outH, RectTransform frameRect, Rect frameWorldRect)
+    {
+        Debug.Log($"[Print] DrawStickersFromChildren: 프레임 자식 수 = {frameRect.childCount}");
+
+        foreach (Transform child in frameRect)
+        {
+            if (!child.gameObject.activeInHierarchy) continue;
+            if (!child.name.Contains("Sticker")) continue;
+
+            Debug.Log($"[Print] 스티커 발견(자식): {child.name}");
+
+            // BG 배경인 경우 재귀적으로 실제 스티커 찾기
+            DrawStickerRecursive(pixels, outW, outH, child, frameWorldRect);
+        }
+    }
+
+    /// <summary>
+    /// Sprite에서 실제 이미지 영역만 추출 (Atlas/Packed 지원)
+    /// </summary>
+    private Texture2D GetSpriteTexture(Sprite sprite)
+    {
+        if (sprite == null) return null;
+
+        Texture2D srcTex = GetReadableTexture(sprite.texture);
+        if (srcTex == null) return null;
+
+        Debug.Log($"[Print] GetSpriteTexture: sprite={sprite.name}, texture={srcTex.width}x{srcTex.height}, textureRect={sprite.textureRect}, rect={sprite.rect}");
+
+        // ★ 전체 텍스처를 그대로 사용 (투명 영역 포함)
+        // textureRect는 trim된 영역만 포함하므로 사용하지 않음
+        Debug.Log($"[Print] → 전체 텍스처 사용 (투명 영역 포함)");
+        return srcTex;
+    }
+
+    /// <summary>
+    /// 텍스처를 읽기 가능한 Texture2D로 변환 (알파 채널 완벽 보존)
+    /// </summary>
+    private Texture2D GetReadableTexture(Texture src)
+    {
+        if (src == null) return null;
+
+        // 이미 Texture2D이고 읽기 가능하면 그대로 반환
+        Texture2D srcTex2D = src as Texture2D;
+        if (srcTex2D != null && srcTex2D.isReadable)
+        {
+            return srcTex2D;
+        }
+
+        Debug.Log($"[Print] GetReadableTexture: '{src.name}' Read/Write 비활성화 → 셰이더로 복사");
+
+        // RenderTexture로 복사
+        RenderTexture rt = RenderTexture.GetTemporary(src.width, src.height, 0, RenderTextureFormat.ARGB32);
+        rt.filterMode = FilterMode.Point;
+
+        RenderTexture prevRT = RenderTexture.active;
+        RenderTexture.active = rt;
+
+        // 투명으로 초기화
+        GL.Clear(true, true, new Color(0, 0, 0, 0));
+
+        // ★ 커스텀 셰이더로 알파 채널 그대로 복사 (블렌딩 OFF)
+        Shader copyShader = Shader.Find("Hidden/BlitCopyAlpha");
+        if (copyShader == null)
+        {
+            copyShader = Shader.Find("Sprites/Default");
+        }
+
+        if (copyShader != null)
+        {
+            Material copyMat = new Material(copyShader);
+            Graphics.Blit(src, rt, copyMat);
+            Destroy(copyMat);
+        }
+        else
+        {
+            Graphics.Blit(src, rt);
+        }
+
+        RenderTexture.active = rt;
+
+        Texture2D readable = new Texture2D(src.width, src.height, TextureFormat.RGBA32, false);
+        readable.ReadPixels(new Rect(0, 0, src.width, src.height), 0, 0);
+        readable.Apply(false);
+
+        RenderTexture.active = prevRT;
+        RenderTexture.ReleaseTemporary(rt);
+
+        return readable;
+    }
+
+    /// <summary>
+    /// CPU에서 텍스처를 대상 영역에 그리기 (불투명, Bilinear)
+    /// </summary>
+    private void BlitTextureCPU(Color32[] destPixels, int destW, int destH, Texture2D src, Rect destRect)
+    {
+        if (src == null) return;
+
+        Color32[] srcPixels = src.GetPixels32();
+        int srcW = src.width;
+        int srcH = src.height;
+
+        int startX = Mathf.Max(0, Mathf.RoundToInt(destRect.x));
+        int startY = Mathf.Max(0, Mathf.RoundToInt(destRect.y));
+        int endX = Mathf.Min(destW, Mathf.RoundToInt(destRect.x + destRect.width));
+        int endY = Mathf.Min(destH, Mathf.RoundToInt(destRect.y + destRect.height));
+
+        float scaleX = (float)srcW / destRect.width;
+        float scaleY = (float)srcH / destRect.height;
+
+        for (int y = startY; y < endY; y++)
+        {
+            float srcY = (y - destRect.y) * scaleY;
+            int sy = Mathf.Clamp((int)srcY, 0, srcH - 1);
+
+            for (int x = startX; x < endX; x++)
+            {
+                float srcX = (x - destRect.x) * scaleX;
+                int sx = Mathf.Clamp((int)srcX, 0, srcW - 1);
+
+                int srcIdx = sy * srcW + sx;
+                int destIdx = y * destW + x;
+
+                destPixels[destIdx] = srcPixels[srcIdx];
+            }
+        }
+    }
+
+    /// <summary>
+    /// CPU에서 텍스처를 대상 영역에 그리기 (알파 블렌딩, 스티커용)
+    /// </summary>
+    private void BlitTextureCPU_Alpha(Color32[] destPixels, int destW, int destH, Texture2D src, Rect destRect)
+    {
+        if (src == null) return;
+
+        Color32[] srcPixels = src.GetPixels32();
+        int srcW = src.width;
+        int srcH = src.height;
+
+        int startX = Mathf.Max(0, Mathf.RoundToInt(destRect.x));
+        int startY = Mathf.Max(0, Mathf.RoundToInt(destRect.y));
+        int endX = Mathf.Min(destW, Mathf.RoundToInt(destRect.x + destRect.width));
+        int endY = Mathf.Min(destH, Mathf.RoundToInt(destRect.y + destRect.height));
+
+        float scaleX = (float)srcW / destRect.width;
+        float scaleY = (float)srcH / destRect.height;
+
+        for (int y = startY; y < endY; y++)
+        {
+            float srcY = (y - destRect.y) * scaleY;
+            int sy = Mathf.Clamp((int)srcY, 0, srcH - 1);
+
+            for (int x = startX; x < endX; x++)
+            {
+                float srcX = (x - destRect.x) * scaleX;
+                int sx = Mathf.Clamp((int)srcX, 0, srcW - 1);
+
+                int srcIdx = sy * srcW + sx;
+                int destIdx = y * destW + x;
+
+                Color32 srcC = srcPixels[srcIdx];
+
+                // 투명 픽셀 스킵 (알파 10 미만)
+                if (srcC.a < 10) continue;
+
+                if (srcC.a >= 245)
+                {
+                    // 거의 불투명
+                    destPixels[destIdx] = srcC;
+                }
+                else
+                {
+                    // 알파 블렌딩
+                    Color32 destC = destPixels[destIdx];
+                    float a = srcC.a / 255f;
+                    float ia = 1f - a;
+                    destPixels[destIdx] = new Color32(
+                        (byte)(srcC.r * a + destC.r * ia),
+                        (byte)(srcC.g * a + destC.g * ia),
+                        (byte)(srcC.b * a + destC.b * ia),
+                        255
+                    );
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 스티커 전용 CPU 그리기 (흰색 배경 제거)
+    /// </summary>
+    private void BlitStickerCPU(Color32[] destPixels, int destW, int destH, Texture2D src, Rect destRect)
+    {
+        if (src == null) return;
+
+        Color32[] srcPixels = src.GetPixels32();
+        int srcW = src.width;
+        int srcH = src.height;
+
+        int startX = Mathf.Max(0, Mathf.RoundToInt(destRect.x));
+        int startY = Mathf.Max(0, Mathf.RoundToInt(destRect.y));
+        int endX = Mathf.Min(destW, Mathf.RoundToInt(destRect.x + destRect.width));
+        int endY = Mathf.Min(destH, Mathf.RoundToInt(destRect.y + destRect.height));
+
+        float scaleX = (float)srcW / destRect.width;
+        float scaleY = (float)srcH / destRect.height;
+
+        for (int y = startY; y < endY; y++)
+        {
+            float srcY = (y - destRect.y) * scaleY;
+            int sy = Mathf.Clamp((int)srcY, 0, srcH - 1);
+
+            for (int x = startX; x < endX; x++)
+            {
+                float srcX = (x - destRect.x) * scaleX;
+                int sx = Mathf.Clamp((int)srcX, 0, srcW - 1);
+
+                int srcIdx = sy * srcW + sx;
+                int destIdx = y * destW + x;
+
+                Color32 srcC = srcPixels[srcIdx];
+
+                // 투명 픽셀 스킵 (알파 10 미만)
+                if (srcC.a < 10) continue;
+
+                if (srcC.a >= 245)
+                {
+                    destPixels[destIdx] = srcC;
+                }
+                else
+                {
+                    Color32 destC = destPixels[destIdx];
+                    float a = srcC.a / 255f;
+                    float ia = 1f - a;
+                    destPixels[destIdx] = new Color32(
+                        (byte)(srcC.r * a + destC.r * ia),
+                        (byte)(srcC.g * a + destC.g * ia),
+                        (byte)(srcC.b * a + destC.b * ia),
+                        255
+                    );
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 프레임과 자식(4컷 사진)을 RenderTexture에 그리기
+    /// </summary>
+    private void DrawFrameWithChildren(RectTransform frameRect, int outW, int outH)
+    {
+        if (frameRect == null) return;
+
+        Debug.Log($"[Print] DrawFrameWithChildren: {frameRect.name}, childCount={frameRect.childCount}");
+
+        // 프레임의 Rect 정보
+        Rect frameScreenRect = GetWorldRect(frameRect);
+        Debug.Log($"[Print] Frame WorldRect: {frameScreenRect}");
+
+        // 프레임 자체의 Image 그리기
+        Image frameImage = frameRect.GetComponent<Image>();
+        if (frameImage != null && frameImage.enabled)
+        {
+            Rect fullRect = new Rect(0, 0, outW, outH);
+
+            if (frameImage.sprite != null)
+            {
+                Debug.Log($"[Print] Frame has sprite: {frameImage.sprite.name}, color={frameImage.color}");
+                DrawSpriteToRT(frameImage.sprite.texture, fullRect, frameImage.color);
+            }
+            else
+            {
+                Debug.Log($"[Print] Frame has NO sprite, drawing color: {frameImage.color}");
+                DrawColorRect(fullRect, frameImage.color);
+            }
+        }
+        else
+        {
+            Debug.Log($"[Print] Frame has NO Image component or disabled");
+        }
+
+        // 자식들 순회하면서 그리기 (사진 슬롯들)
+        foreach (Transform child in frameRect)
+        {
+            Debug.Log($"[Print] Processing child: {child.name}");
+            DrawUIElement(child, frameRect, frameScreenRect, outW, outH);
+        }
+    }
+
+    /// <summary>
+    /// UI 요소를 RenderTexture에 그리기 (재귀)
+    /// </summary>
+    private void DrawUIElement(Transform element, RectTransform parentFrame, Rect parentScreenRect, int outW, int outH)
+    {
+        if (element == null || !element.gameObject.activeInHierarchy) return;
+
+        RectTransform rectTransform = element.GetComponent<RectTransform>();
+        if (rectTransform == null) return;
+
+        // 현재 요소의 월드 Rect
+        Rect elementWorldRect = GetWorldRect(rectTransform);
+
+        // 부모 프레임 기준 상대 위치 계산
+        Rect relativeRect = CalculateRelativeRect(elementWorldRect, parentScreenRect, outW, outH);
+
+        // RawImage 먼저 확인 (웹캠 등)
+        RawImage rawImage = element.GetComponent<RawImage>();
+        if (rawImage != null && rawImage.texture != null && rawImage.enabled)
+        {
+            Texture texToDraw = rawImage.texture;
+            if (_webcamPreview != null && rawImage.texture == _webcamPreview.GetTexture())
+            {
+                texToDraw = _webcamPreview.GetTexture();
+            }
+            Debug.Log($"[Print] DrawUIElement RawImage: {element.name}, tex={texToDraw.width}x{texToDraw.height}, rect={relativeRect}");
+            DrawTextureToRT(texToDraw, relativeRect, rawImage.color, rawImage.uvRect);
+        }
+        else
+        {
+            // Image 확인
+            Image image = element.GetComponent<Image>();
+            if (image != null && image.enabled)
+            {
+                if (image.sprite != null)
+                {
+                    Debug.Log($"[Print] DrawUIElement Image: {element.name}, sprite={image.sprite.name}, rect={relativeRect}");
+                    DrawSpriteToRT(image.sprite.texture, relativeRect, image.color);
+                }
+                else if (image.color.a > 0.01f)
+                {
+                    Debug.Log($"[Print] DrawUIElement ColorOnly: {element.name}, color={image.color}, rect={relativeRect}");
+                    DrawColorRect(relativeRect, image.color);
+                }
+                else
+                {
+                    Debug.Log($"[Print] DrawUIElement SKIP (no sprite, alpha=0): {element.name}");
+                }
+            }
+            else
+            {
+                Debug.Log($"[Print] DrawUIElement SKIP (no Image or disabled): {element.name}");
+            }
+        }
+
+        // 자식 요소들도 재귀적으로 그리기
+        foreach (Transform child in element)
+        {
+            DrawUIElement(child, parentFrame, parentScreenRect, outW, outH);
+        }
+    }
+
+    /// <summary>
+    /// 스티커들을 RenderTexture에 그리기
+    /// </summary>
+    private void DrawStickers(DropZone dropZone, RectTransform frameRect, int outW, int outH)
+    {
+        var stickers = dropZone.GetDroppedStickers();
+        if (stickers == null || stickers.Count == 0) return;
+
+        Rect frameScreenRect = GetWorldRect(frameRect);
+
+        foreach (var stickerObj in stickers)
+        {
+            if (stickerObj == null || !stickerObj.activeInHierarchy) continue;
+
+            RectTransform stickerRect = stickerObj.GetComponent<RectTransform>();
+            Image stickerImage = stickerObj.GetComponent<Image>();
+
+            if (stickerRect == null || stickerImage == null || stickerImage.sprite == null) continue;
+
+            Rect stickerWorldRect = GetWorldRect(stickerRect);
+            Rect relativeRect = CalculateRelativeRect(stickerWorldRect, frameScreenRect, outW, outH);
+
+            DrawSpriteToRT(stickerImage.sprite.texture, relativeRect, stickerImage.color);
+        }
+    }
+
+    /// <summary>
+    /// 월드 좌표 Rect 가져오기
+    /// </summary>
+    private Rect GetWorldRect(RectTransform rectTransform)
+    {
+        Vector3[] corners = new Vector3[4];
+        rectTransform.GetWorldCorners(corners);
+
+        float minX = Mathf.Min(corners[0].x, corners[1].x, corners[2].x, corners[3].x);
+        float maxX = Mathf.Max(corners[0].x, corners[1].x, corners[2].x, corners[3].x);
+        float minY = Mathf.Min(corners[0].y, corners[1].y, corners[2].y, corners[3].y);
+        float maxY = Mathf.Max(corners[0].y, corners[1].y, corners[2].y, corners[3].y);
+
+        return new Rect(minX, minY, maxX - minX, maxY - minY);
+    }
+
+    /// <summary>
+    /// 부모 기준 상대 위치 계산
+    /// </summary>
+    private Rect CalculateRelativeRect(Rect elementRect, Rect parentRect, int outW, int outH)
+    {
+        // 부모 대비 상대 비율 계산
+        float relX = (elementRect.x - parentRect.x) / parentRect.width;
+        float relY = (elementRect.y - parentRect.y) / parentRect.height;
+        float relW = elementRect.width / parentRect.width;
+        float relH = elementRect.height / parentRect.height;
+
+        // 출력 크기에 맞게 변환
+        return new Rect(
+            relX * outW,
+            relY * outH,
+            relW * outW,
+            relH * outH
+        );
+    }
+
+    /// <summary>
+    /// Texture를 RenderTexture에 그리기 (uvRect 지원, 불투명)
+    /// tint를 무시하고 텍스처 원본 색상 그대로 출력
+    /// </summary>
+    private void DrawTextureToRT(Texture tex, Rect destRect, Color tint, Rect uvRect)
+    {
+        if (tex == null) return;
+
+        var prevFilter = tex.filterMode;
+        tex.filterMode = FilterMode.Bilinear;
+
+        // tint 무시 - 텍스처 원본 색상 그대로 그리기
+        Graphics.DrawTexture(destRect, tex, uvRect, 0, 0, 0, 0, Color.white);
+
+        tex.filterMode = prevFilter;
+    }
+
+    /// <summary>
+    /// Sprite Texture를 RenderTexture에 그리기 (불투명)
+    /// tint를 무시하고 텍스처 원본 색상 그대로 출력
+    /// </summary>
+    private void DrawSpriteToRT(Texture tex, Rect destRect, Color tint)
+    {
+        if (tex == null) return;
+
+        var prevFilter = tex.filterMode;
+        tex.filterMode = FilterMode.Bilinear;
+
+        // tint 무시 - 텍스처 원본 색상 그대로 그리기
+        // Graphics.DrawTexture의 color 파라미터는 곱연산이므로 white 사용
+        Graphics.DrawTexture(destRect, tex, new Rect(0, 0, 1, 1), 0, 0, 0, 0, Color.white);
+
+        tex.filterMode = prevFilter;
+    }
+
+    /// <summary>
+    /// 단색 사각형을 RenderTexture에 그리기 (불투명)
+    /// </summary>
+    private void DrawColorRect(Rect destRect, Color color)
+    {
+        Texture2D whiteTex = Texture2D.whiteTexture;
+        // 알파=1로 불투명하게
+        Color opaqueColor = new Color(color.r, color.g, color.b, 1f);
+        Graphics.DrawTexture(destRect, whiteTex, new Rect(0, 0, 1, 1), 0, 0, 0, 0, opaqueColor);
     }
 }
