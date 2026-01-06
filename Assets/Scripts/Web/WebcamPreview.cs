@@ -36,7 +36,16 @@ public class WebcamPreview : MonoBehaviour
     [SerializeField] private bool _preInitializeOnStart = true;
     [Tooltip("게임 시작 시 웹캠을 미리 초기화 (렉 방지, 권장)")]
 
+    [Header("Image Enhancement")]
+    [SerializeField] private bool _applySharpen = true;
+    [Tooltip("웹캠 프리뷰에 샤프닝 필터 적용")]
+    [SerializeField] private Shader _sharpenShader;
+    [Tooltip("WebcamSharpen 셰이더 (Assets/Shaders/WebcamSharpen.shader)")]
+    [SerializeField, Range(0f, 2f)] private float _sharpenStrength = 0.5f;
+    [Tooltip("샤프닝 강도 (0: 없음, 0.5: 보통, 1+: 강함)")]
+
     private WebCamTexture _tex;
+    private Material _sharpenMaterial;
     private bool _isWebcamInitialized = false;
     private CanvasGroup _canvasGroup;
     private bool _isVisible = false;
@@ -55,6 +64,9 @@ public class WebcamPreview : MonoBehaviour
         _canvasGroup = _webcamTarget.GetComponent<CanvasGroup>();
         if (_canvasGroup == null)
             _canvasGroup = _webcamTarget.gameObject.AddComponent<CanvasGroup>();
+
+        // 샤프닝 Material 초기화
+        InitializeSharpenMaterial();
 
         if (_preInitializeOnStart)
         {
@@ -151,6 +163,46 @@ public class WebcamPreview : MonoBehaviour
         {
             _webcamTarget.rectTransform.localEulerAngles = new Vector3(0f, 0f, -rot);
             _lastRotation = rot;
+        }
+    }
+
+    /// <summary>
+    /// 샤프닝 Material 초기화
+    /// </summary>
+    private void InitializeSharpenMaterial()
+    {
+        if (!_applySharpen)
+            return;
+
+        // 셰이더가 지정되지 않았으면 이름으로 찾기
+        if (_sharpenShader == null)
+        {
+            _sharpenShader = Shader.Find("Hidden/WebcamSharpen");
+        }
+
+        if (_sharpenShader == null)
+        {
+            Debug.LogWarning("[WebcamPreview] WebcamSharpen 셰이더를 찾을 수 없습니다. 샤프닝 비활성화.");
+            _applySharpen = false;
+            return;
+        }
+
+        // Material 생성 및 RawImage에 적용
+        _sharpenMaterial = new Material(_sharpenShader);
+        _sharpenMaterial.SetFloat("_SharpenStrength", _sharpenStrength);
+        _webcamTarget.material = _sharpenMaterial;
+
+        Debug.Log($"[WebcamPreview] 샤프닝 필터 적용 (강도: {_sharpenStrength})");
+    }
+
+    /// <summary>
+    /// 샤프닝 강도 실시간 업데이트
+    /// </summary>
+    private void UpdateSharpenStrength()
+    {
+        if (_applySharpen && _sharpenMaterial != null)
+        {
+            _sharpenMaterial.SetFloat("_SharpenStrength", _sharpenStrength);
         }
     }
 
@@ -307,6 +359,16 @@ public class WebcamPreview : MonoBehaviour
         StopAndDisposeWebcam();
     }
 
+    private void OnDestroy()
+    {
+        // 샤프닝 Material 정리
+        if (_sharpenMaterial != null)
+        {
+            Destroy(_sharpenMaterial);
+            _sharpenMaterial = null;
+        }
+    }
+
     private void OnApplicationQuit()
     {
         StopAndDisposeWebcam();
@@ -461,6 +523,33 @@ public class WebcamPreview : MonoBehaviour
     public void SetMirror(bool mirror)
     {
         _mirrorHorizontal = mirror;
+    }
+
+    /// <summary>
+    /// 샤프닝 강도 설정 (0~2)
+    /// </summary>
+    public void SetSharpenStrength(float strength)
+    {
+        _sharpenStrength = Mathf.Clamp(strength, 0f, 2f);
+        UpdateSharpenStrength();
+    }
+
+    /// <summary>
+    /// 샤프닝 활성화/비활성화
+    /// </summary>
+    public void SetSharpenEnabled(bool enabled)
+    {
+        if (enabled && !_applySharpen)
+        {
+            _applySharpen = true;
+            InitializeSharpenMaterial();
+        }
+        else if (!enabled && _applySharpen)
+        {
+            _applySharpen = false;
+            if (_webcamTarget != null)
+                _webcamTarget.material = null;
+        }
     }
 
     /// <summary>

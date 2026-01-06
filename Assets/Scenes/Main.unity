@@ -8151,7 +8151,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &315599630
 Transform:
   m_ObjectHideFlags: 0
@@ -18083,7 +18083,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _currentState: 0
   _currentMode: 0
-  _timeScale: 1
+  _timeScale: 30
   _filmingToPhotoSelectTimer: 300
   _photoSelectToPrintTimer: 300
   _printToSuccessTimer: 120
@@ -50867,6 +50867,8 @@ MonoBehaviour:
   _tryHighResCapture: 1
   _highResWidth: 3840
   _highResHeight: 2160
+  _applySharpen: 1
+  _sharpenStrength: 0.3
   _stickerPanelCtrl: {fileID: 1981593912}
   _enableUploadAndQr: 1
   _ncpUploader: {fileID: 2012501910}

@@ -170,6 +170,12 @@ public class PrintController : MonoBehaviour
     [Tooltip("고해상도 캡처 목표 높이")]
     [SerializeField] private int _highResHeight = 2160;
 
+    [Header("Image Enhancement")]
+    [Tooltip("최종 이미지에 샤프닝 필터 적용")]
+    [SerializeField] private bool _applySharpen = true;
+    [Tooltip("샤프닝 강도 (0.0 ~ 1.0)")]
+    [SerializeField, Range(0f, 1f)] private float _sharpenStrength = 0.3f;
+
     [Tooltip("스티커 패널 컨트롤러 (스티커 정보 가져오기용)")]
     [SerializeField] private StickerPanelCtrl _stickerPanelCtrl;
 
@@ -2091,10 +2097,17 @@ public class PrintController : MonoBehaviour
         // 3) 스티커 그리기 (맨 위) - 프레임 자식에서 찾기 (한 번만 실행)
         DrawStickersFromChildren(pixels, outW, outH, frameRect, frameWorldRect);
 
+        // 4) 샤프닝 필터 적용 (선명도 향상)
+        if (_applySharpen && _sharpenStrength > 0f)
+        {
+            Debug.Log($"[Print] 샤프닝 필터 적용 중... (강도: {_sharpenStrength})");
+            pixels = ApplySharpenFilter(pixels, outW, outH, _sharpenStrength);
+        }
+
         result.SetPixels32(pixels);
         result.Apply(false);
 
-        Debug.Log($"[Print] ★ CPU 합성 캡처 완료: {outW}x{outH} (색공간 변환 없음)");
+        Debug.Log($"[Print] ★ CPU 합성 캡처 완료: {outW}x{outH} (Bilinear + 샤프닝)");
 
         try
         {
@@ -2424,20 +2437,112 @@ public class PrintController : MonoBehaviour
 
         for (int y = startY; y < endY; y++)
         {
-            float srcY = (y - destRect.y) * scaleY;
-            int sy = Mathf.Clamp((int)srcY, 0, srcH - 1);
+            float srcYf = (y - destRect.y) * scaleY;
 
             for (int x = startX; x < endX; x++)
             {
-                float srcX = (x - destRect.x) * scaleX;
-                int sx = Mathf.Clamp((int)srcX, 0, srcW - 1);
-
-                int srcIdx = sy * srcW + sx;
+                float srcXf = (x - destRect.x) * scaleX;
                 int destIdx = y * destW + x;
 
-                destPixels[destIdx] = srcPixels[srcIdx];
+                // Bilinear 샘플링
+                destPixels[destIdx] = SampleBilinear(srcPixels, srcW, srcH, srcXf, srcYf);
             }
         }
+    }
+
+    /// <summary>
+    /// Bilinear 샘플링 - 4개 인접 픽셀을 보간하여 부드러운 이미지 생성
+    /// </summary>
+    private Color32 SampleBilinear(Color32[] pixels, int width, int height, float x, float y)
+    {
+        // 좌표를 범위 내로 클램프
+        x = Mathf.Clamp(x, 0, width - 1.001f);
+        y = Mathf.Clamp(y, 0, height - 1.001f);
+
+        int x0 = (int)x;
+        int y0 = (int)y;
+        int x1 = Mathf.Min(x0 + 1, width - 1);
+        int y1 = Mathf.Min(y0 + 1, height - 1);
+
+        float fx = x - x0;
+        float fy = y - y0;
+
+        Color32 c00 = pixels[y0 * width + x0];
+        Color32 c10 = pixels[y0 * width + x1];
+        Color32 c01 = pixels[y1 * width + x0];
+        Color32 c11 = pixels[y1 * width + x1];
+
+        // 보간
+        float invFx = 1f - fx;
+        float invFy = 1f - fy;
+
+        float w00 = invFx * invFy;
+        float w10 = fx * invFy;
+        float w01 = invFx * fy;
+        float w11 = fx * fy;
+
+        return new Color32(
+            (byte)(c00.r * w00 + c10.r * w10 + c01.r * w01 + c11.r * w11),
+            (byte)(c00.g * w00 + c10.g * w10 + c01.g * w01 + c11.g * w11),
+            (byte)(c00.b * w00 + c10.b * w10 + c01.b * w01 + c11.b * w11),
+            (byte)(c00.a * w00 + c10.a * w10 + c01.a * w01 + c11.a * w11)
+        );
+    }
+
+    /// <summary>
+    /// 샤프닝 필터 적용 (Unsharp Mask 방식)
+    /// </summary>
+    private Color32[] ApplySharpenFilter(Color32[] pixels, int width, int height, float strength)
+    {
+        Color32[] result = new Color32[pixels.Length];
+
+        // 샤프닝 커널 (중심 강조, 주변 빼기)
+        // 원본 + strength * (원본 - 블러)
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                int idx = y * width + x;
+                Color32 center = pixels[idx];
+
+                // 3x3 영역 평균 (간단한 블러)
+                int sumR = 0, sumG = 0, sumB = 0;
+                int count = 0;
+
+                for (int ky = -1; ky <= 1; ky++)
+                {
+                    for (int kx = -1; kx <= 1; kx++)
+                    {
+                        int nx = Mathf.Clamp(x + kx, 0, width - 1);
+                        int ny = Mathf.Clamp(y + ky, 0, height - 1);
+                        Color32 neighbor = pixels[ny * width + nx];
+                        sumR += neighbor.r;
+                        sumG += neighbor.g;
+                        sumB += neighbor.b;
+                        count++;
+                    }
+                }
+
+                // 블러된 값
+                float blurR = sumR / (float)count;
+                float blurG = sumG / (float)count;
+                float blurB = sumB / (float)count;
+
+                // Unsharp Mask: 원본 + strength * (원본 - 블러)
+                float sharpR = center.r + strength * (center.r - blurR);
+                float sharpG = center.g + strength * (center.g - blurG);
+                float sharpB = center.b + strength * (center.b - blurB);
+
+                result[idx] = new Color32(
+                    (byte)Mathf.Clamp(sharpR, 0, 255),
+                    (byte)Mathf.Clamp(sharpG, 0, 255),
+                    (byte)Mathf.Clamp(sharpB, 0, 255),
+                    center.a
+                );
+            }
+        }
+
+        return result;
     }
 
     /// <summary>
