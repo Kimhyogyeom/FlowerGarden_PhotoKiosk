@@ -153,7 +153,8 @@ public class FilmingPanelCtrl : MonoBehaviour
     {
         if (_currentPanel != null) _currentPanel.SetActive(false);
         if (_changedPhotoPanel != null) _changedPhotoPanel.SetActive(true);
-        GameManager.Instance.SetState(KioskState.Quantity);
+        // [Quantity 임시 비활성화] Select → Payment 직접 전환
+        GameManager.Instance.SetState(KioskState.Payment);
     }
 
     /// <summary>

@@ -231,8 +231,8 @@ public class FadeAnimationCtrl : MonoBehaviour
                 break;
 
             case FadeState.SelectToFilming:
-                // Select → Filming(Quantity) 전환
-                CurrentState = FadeState.FilmingToQuantity;
+                // [Quantity 임시 비활성화] Select → Payment 직접 전환
+                CurrentState = FadeState.QuantityToPayment;
                 if (_filmingPanelCtrl != null)
                 {
                     _filmingPanelCtrl.PanelChanger();
@@ -319,8 +319,8 @@ public class FadeAnimationCtrl : MonoBehaviour
                 break;
 
             case FadeState.BackFromPayment:
-                // Payment → Quantity
-                CurrentState = FadeState.FilmingToQuantity;
+                // [Quantity 임시 비활성화] Payment → Select 직접 복귀
+                CurrentState = FadeState.SelectToFilming;
                 _homeButtonCtrl.ObjectsActiveCtrlPay();
                 break;
 

@@ -3,7 +3,10 @@
     "allow": [
       "Bash(ls:*)",
       "Bash(dir:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: 고해상도 캡처 시 웹캠 초기화 대기 로직 추가\n\n- 웹캠 활성화 안 됐을 시 최대 3초 대기 \\(스킵 대신\\)\n- 웹캠 안정화 안 됐을 시 최대 3초 대기\n- 모든 사용자가 동일한 4K 품질로 출력받도록 개선\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push)"
     ]
   }
 }

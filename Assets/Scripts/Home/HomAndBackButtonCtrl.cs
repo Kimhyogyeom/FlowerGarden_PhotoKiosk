@@ -199,8 +199,8 @@ public class HomAndBackButtonCtrl : MonoBehaviour
             item.gameObject.SetActive(false);
         }
         _payChangePanel.SetActive(true);
-        // [크로마키 임시 비활성화] Quantity로 변경
-        GameManager.Instance.SetState(KioskState.Quantity);
+        // [Quantity 임시 비활성화] Payment → Select 직접 복귀
+        GameManager.Instance.SetState(KioskState.Select);
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
     // ========================================Payment
