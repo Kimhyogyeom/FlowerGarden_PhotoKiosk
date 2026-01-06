@@ -335,9 +335,34 @@ public class WebcamPreview : MonoBehaviour
 
     private IEnumerator CaptureHighResolutionCoroutine(System.Action<Texture2D> onHighResReady, int targetWidth, int targetHeight)
     {
+        // 웹캠이 없거나 재생 중이 아니면 대기
+        float initWaitTime = 0f;
+        while ((_tex == null || !_tex.isPlaying) && initWaitTime < 3f)
+        {
+            Debug.Log("[WebcamPreview] 웹캠 활성화 대기 중...");
+            yield return new WaitForSeconds(0.2f);
+            initWaitTime += 0.2f;
+        }
+
         if (_tex == null || !_tex.isPlaying)
         {
-            Debug.LogWarning("[WebcamPreview] 웹캠이 활성화되지 않음");
+            Debug.LogWarning("[WebcamPreview] 웹캠 활성화 실패 - 고해상도 전환 스킵");
+            onHighResReady?.Invoke(null);
+            yield break;
+        }
+
+        // 웹캠이 충분히 안정화될 때까지 대기 (width/height가 16 이하면 아직 초기화 중)
+        float stabilizeWaitTime = 0f;
+        while ((_tex.width <= 16 || _tex.height <= 16) && stabilizeWaitTime < 3f)
+        {
+            Debug.Log($"[WebcamPreview] 웹캠 안정화 대기 중... ({_tex.width}x{_tex.height})");
+            yield return new WaitForSeconds(0.2f);
+            stabilizeWaitTime += 0.2f;
+        }
+
+        if (_tex.width <= 16 || _tex.height <= 16)
+        {
+            Debug.LogWarning($"[WebcamPreview] 웹캠 안정화 실패 ({_tex.width}x{_tex.height}) - 고해상도 전환 스킵");
             onHighResReady?.Invoke(null);
             yield break;
         }
@@ -346,12 +371,11 @@ public class WebcamPreview : MonoBehaviour
         int originalWidth = _tex.width;
         int originalHeight = _tex.height;
 
-        // 이미 목표 해상도 이상이면 바로 캡처
+        // 이미 목표 해상도 이상이면 바로 완료 (캡처는 PrintController에서 함)
         if (originalWidth >= targetWidth || originalHeight >= targetHeight)
         {
             Debug.Log($"[WebcamPreview] 현재 해상도가 충분함: {originalWidth}x{originalHeight}");
-            Texture2D captured = CaptureCurrentFrame();
-            onHighResReady?.Invoke(captured);
+            onHighResReady?.Invoke(null); // 캡처는 여기서 안 함
             yield break;
         }
 
@@ -368,21 +392,25 @@ public class WebcamPreview : MonoBehaviour
         _webcamTarget.texture = _tex;
         _tex.Play();
 
-        // 안정화 대기
-        yield return new WaitForSeconds(0.5f);
+        // 안정화 대기 (프레임이 준비될 때까지)
+        float waitTime = 0f;
+        while ((_tex.width <= 16 || _tex.height <= 16) && waitTime < 1.5f)
+        {
+            yield return null;
+            waitTime += Time.deltaTime;
+        }
+
+        // 추가 안정화
+        yield return new WaitForSeconds(0.2f);
 
         // 실제 해상도 확인
         int actualWidth = _tex.width;
         int actualHeight = _tex.height;
         Debug.Log($"[WebcamPreview] 고해상도 전환 결과: {actualWidth}x{actualHeight}");
 
-        // 캡처
-        Texture2D highResTex = CaptureCurrentFrame();
-
-        // 원래 해상도로 복원 (4K 미지원이면 어차피 FHD로 돌아감)
+        // 4K 미지원이면 FHD로 복원
         if (actualWidth < targetWidth && actualHeight < targetHeight)
         {
-            // 4K 미지원 → FHD로 복원
             Debug.Log("[WebcamPreview] 4K 미지원 → FHD로 복원");
             _tex.Stop();
             Destroy(_tex);
@@ -392,9 +420,12 @@ public class WebcamPreview : MonoBehaviour
             _tex.wrapMode = TextureWrapMode.Clamp;
             _webcamTarget.texture = _tex;
             _tex.Play();
+
+            // FHD 안정화 대기
+            yield return new WaitForSeconds(0.3f);
         }
 
-        onHighResReady?.Invoke(highResTex);
+        onHighResReady?.Invoke(null); // 캡처는 PrintController에서 함
     }
 
     /// <summary>
