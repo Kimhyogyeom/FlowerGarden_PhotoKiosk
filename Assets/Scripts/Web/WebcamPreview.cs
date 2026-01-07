@@ -90,6 +90,9 @@ public class WebcamPreview : MonoBehaviour
 
     private void Update()
     {
+        // === 장시간 방치 후 웹캠 연결 끊김 체크 ===
+        CheckWebcamHealth();
+
         // === Pre-Initialize 모드 ===
         if (_preInitializeOnStart)
         {
@@ -123,6 +126,44 @@ public class WebcamPreview : MonoBehaviour
                 // 꺼야 하는데 켜져 있음 → 정지
                 StopAndDisposeWebcam();
             }
+        }
+    }
+
+    /// <summary>
+    /// 장시간 방치 후 웹캠 연결 끊김 체크 및 자동 재시작
+    /// </summary>
+    private float _lastHealthCheckTime = 0f;
+    private const float HEALTH_CHECK_INTERVAL = 5f; // 5초마다 체크
+
+    private void CheckWebcamHealth()
+    {
+        // 5초마다 체크
+        if (Time.time - _lastHealthCheckTime < HEALTH_CHECK_INTERVAL) return;
+        _lastHealthCheckTime = Time.time;
+
+        // 웹캠이 초기화되어 있고 재생 중이어야 함
+        if (!_isWebcamInitialized || _tex == null) return;
+
+        // 웹캠이 멈췄거나 연결이 끊어진 경우
+        bool needsRestart = false;
+        string reason = "";
+
+        if (!_tex.isPlaying)
+        {
+            needsRestart = true;
+            reason = "isPlaying=false";
+        }
+        else if (_tex.width <= 16 || _tex.height <= 16)
+        {
+            needsRestart = true;
+            reason = $"size={_tex.width}x{_tex.height}";
+        }
+
+        if (needsRestart)
+        {
+            Debug.LogWarning($"[WebcamPreview] 웹캠 연결 끊김 감지 ({reason}) - 자동 재시작 시도");
+            StopAndDisposeWebcam();
+            InitAndStartWebcam();
         }
     }
 

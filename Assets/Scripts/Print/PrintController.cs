@@ -173,8 +173,8 @@ public class PrintController : MonoBehaviour
     [Header("Image Enhancement")]
     [Tooltip("최종 이미지에 샤프닝 필터 적용")]
     [SerializeField] private bool _applySharpen = true;
-    [Tooltip("샤프닝 강도 (0.0 ~ 1.0)")]
-    [SerializeField, Range(0f, 1f)] private float _sharpenStrength = 0.3f;
+    [Tooltip("샤프닝 강도 (0.0 ~ 1.0, Bilinear 보정 권장: 0.5)")]
+    [SerializeField, Range(0f, 1f)] private float _sharpenStrength = 0.5f;
 
     [Tooltip("스티커 패널 컨트롤러 (스티커 정보 가져오기용)")]
     [SerializeField] private StickerPanelCtrl _stickerPanelCtrl;
@@ -306,6 +306,18 @@ public class PrintController : MonoBehaviour
         _sharpeningStrength = _initSharpeningStrength;
 
         if (_qrPanel) _qrPanel.SetActive(false);
+
+        // QR 관련 초기화 (이전 사진이 남아있는 문제 방지)
+        if (_qrRawImage != null && _qrRawImage.texture != null)
+        {
+            // 기존 QR 텍스처 해제
+            Destroy(_qrRawImage.texture);
+            _qrRawImage.texture = null;
+        }
+        if (_qrUrlText != null)
+        {
+            _qrUrlText.text = "";
+        }
 
         if (deleteSavedPhotos)
         {
@@ -844,6 +856,13 @@ public class PrintController : MonoBehaviour
         }
 
         // Debug.Log("[QR] 업로드 성공 URL: " + url);
+
+        // 이전 QR 텍스처 삭제 (이전 사용자 QR이 남아있는 문제 방지)
+        if (_qrRawImage != null && _qrRawImage.texture != null)
+        {
+            Destroy(_qrRawImage.texture);
+            _qrRawImage.texture = null;
+        }
 
         // QR 생성 (너 프로젝트에 이미 있는 걸 사용)
         Texture2D qrTex = QrCodeGenerator_ZXing.Generate(url, _qrSize, 1);
@@ -2366,6 +2385,13 @@ public class PrintController : MonoBehaviour
     private Texture2D GetReadableTexture(Texture src)
     {
         if (src == null) return null;
+
+        // 장시간 방치 후 웹캠 연결 끊김 체크 (width/height가 0 또는 너무 작음)
+        if (src.width <= 16 || src.height <= 16)
+        {
+            Debug.LogWarning($"[Print] GetReadableTexture: 텍스처 크기가 너무 작음 ({src.width}x{src.height}) - 웹캠 연결 끊김?");
+            return null;
+        }
 
         // 이미 Texture2D이고 읽기 가능하면 그대로 반환
         Texture2D srcTex2D = src as Texture2D;

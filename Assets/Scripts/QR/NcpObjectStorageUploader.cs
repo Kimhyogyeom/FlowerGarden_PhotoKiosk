@@ -299,6 +299,7 @@ public class NcpObjectStorageUploader : MonoBehaviour
         {
             req.uploadHandler = new UploadHandlerRaw(bodyBytes);
             req.downloadHandler = new DownloadHandlerBuffer();
+            req.timeout = 30; // 30초 타임아웃 (무한 대기 방지)
 
             // headers (MUST match canonical headers)
             req.SetRequestHeader("Content-Type", contentType);
