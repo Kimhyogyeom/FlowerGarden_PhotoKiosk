@@ -21,6 +21,8 @@ public enum KioskState
 
     WaitingForPayment,  // 결제 대기 화면 (결제 진행 전 상태) // 4-5
 
+    Guide,              // 촬영 안내 화면 (결제 완료 후, 촬영 전 안내)
+
     Filming,            // 사진 촬영 진행 중 상태
 
     CutWindow,          // 4컷 화면

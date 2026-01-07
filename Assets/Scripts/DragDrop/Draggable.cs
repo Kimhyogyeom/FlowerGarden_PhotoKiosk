@@ -8,6 +8,7 @@ using UnityEngine.UI;
 /// - DropZone에 드롭되면 자식으로 추가
 /// - DropZone 밖에 드롭되면 삭제
 /// - 드롭된 스티커도 재드래그 가능
+/// - 드롭 시 스케일 슬라이더 표시
 /// </summary>
 public class Draggable : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
@@ -234,4 +235,17 @@ public class Draggable : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDra
     {
         _isDeleted = true;
     }
+
+    /// <summary>
+    /// RectTransform 반환 (스케일 슬라이더에서 사용)
+    /// </summary>
+    public RectTransform GetRectTransform()
+    {
+        return _rectTransform;
+    }
+
+    /// <summary>
+    /// 스폰된 상태인지 반환
+    /// </summary>
+    public bool IsSpawned => _isSpawned;
 }

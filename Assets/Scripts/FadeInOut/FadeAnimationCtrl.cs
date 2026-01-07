@@ -23,14 +23,14 @@ public enum FadeState
     /// <summary>Select → Filming(촬영) 화면 전환</summary>
     SelectToFilming,
 
-    /// <summary>Filming → Quantity(수량) 화면 전환</summary>
-    FilmingToQuantity,
+    /// <summary>Filming → Payment(결제) 화면 전환 (촬영 버튼 클릭 후)</summary>
+    FilmingToPayment,
 
-    /// <summary>Quantity → Payment(결제) 화면 전환</summary>
-    QuantityToPayment,
+    /// <summary>Payment → Guide(촬영 안내) 화면 전환</summary>
+    PaymentToGuide,
 
-    /// <summary>Payment → Filming Start(촬영 시작) 화면 전환</summary>
-    PaymentToFilmingStart,
+    /// <summary>Guide → Filming Start(촬영 시작) 화면 전환</summary>
+    GuideToFilmingStart,
 
     /// <summary>Filming Start → Captured Photo(포토 선택) 화면 전환</summary>
     FilmingStartToPhotoSelect,
@@ -70,10 +70,13 @@ public enum FadeState
     /// <summary>Select → Mode 뒤로가기</summary>
     BackFromSelect,
 
+    /// <summary>Filming → Select 뒤로가기</summary>
+    BackFromFilming,
+
     /// <summary>Quantity → Select 뒤로가기</summary>
     BackFromQuantity,
 
-    /// <summary>Payment → Quantity 뒤로가기</summary>
+    /// <summary>Payment → Filming 뒤로가기</summary>
     BackFromPayment,
 
     /// <summary>Chroma Key → Select 뒤로가기</summary>
@@ -121,6 +124,9 @@ public class FadeAnimationCtrl : MonoBehaviour
     [SerializeField] private PrintButtonHandler _printButtonHandler;
 
     [SerializeField] private CapturedPhotoPanelCtrl _capturePhotoPanelCtrl;
+
+    [SerializeField] private GuidePanelCtrl _guidePanelCtrl;
+    // 결제 완료 후 촬영 안내 패널 컨트롤러
     // 촬영 끝나고 포토 선택 화면으로 페이드 인아웃 되게끔?
 
     [SerializeField] private WindowModePanelCtrl _windowModePanelCtrl;
@@ -231,8 +237,8 @@ public class FadeAnimationCtrl : MonoBehaviour
                 break;
 
             case FadeState.SelectToFilming:
-                // [Quantity 임시 비활성화] Select → Payment 직접 전환
-                CurrentState = FadeState.QuantityToPayment;
+                // Select → Filming 전환 (촬영 버튼 대기 상태)
+                CurrentState = FadeState.FilmingToPayment;
                 if (_filmingPanelCtrl != null)
                 {
                     _filmingPanelCtrl.PanelChanger();
@@ -243,21 +249,32 @@ public class FadeAnimationCtrl : MonoBehaviour
                 }
                 break;
 
-            case FadeState.FilmingToQuantity:
-                // Quantity → Payment 전환
-                CurrentState = FadeState.QuantityToPayment;
-                _quantityToPaymentCtrl.ObjectActiveCtrl();
+            case FadeState.FilmingToPayment:
+                // Filming(촬영 버튼 클릭) → Payment 전환
+                CurrentState = FadeState.PaymentToGuide;
+                _paymentWatingPanelTranstionCtrl.OnPaymentWaiting();
                 break;
 
-            case FadeState.QuantityToPayment:
-                // Payment → Filming Start 전환
-                CurrentState = FadeState.PaymentToFilmingStart;
-                _paymentToNextStageCtrl.OnPaymentCompleted();
+            case FadeState.PaymentToGuide:
+                // Payment 완료 → Guide(촬영 안내) 화면 전환
+                CurrentState = FadeState.GuideToFilmingStart;
+                if (_guidePanelCtrl != null)
+                {
+                    _guidePanelCtrl.OnPaymentCompleted();
+                }
+                else
+                {
+                    UnityEngine.Debug.LogWarning("_guidePanelCtrl reference is missing");
+                }
                 break;
 
-            case FadeState.PaymentToFilmingStart:
-                // Filming Start → Photo Select 전환
+            case FadeState.GuideToFilmingStart:
+                // Guide → Filming Start (촬영 시작)
                 CurrentState = FadeState.FilmingStartToPhotoSelect;
+                if (_guidePanelCtrl != null)
+                {
+                    _guidePanelCtrl.OnGuideCompleted();
+                }
                 _filmingPanelCtrl.FadeEndCallBack();
                 break;
 
@@ -312,6 +329,12 @@ public class FadeAnimationCtrl : MonoBehaviour
                 _homeButtonCtrl.ObjectsActiveCtrlSel();
                 break;
 
+            case FadeState.BackFromFilming:
+                // Filming → Select
+                CurrentState = FadeState.SelectToFilming;
+                _filmingPanelCtrl.BackToSelect();
+                break;
+
             case FadeState.BackFromQuantity:
                 // Quantity → Select
                 CurrentState = FadeState.SelectToFilming;
@@ -319,9 +342,10 @@ public class FadeAnimationCtrl : MonoBehaviour
                 break;
 
             case FadeState.BackFromPayment:
-                // [Quantity 임시 비활성화] Payment → Select 직접 복귀
-                CurrentState = FadeState.SelectToFilming;
-                _homeButtonCtrl.ObjectsActiveCtrlPay();
+                // Payment → Filming(촬영 버튼 대기) 복귀
+                CurrentState = FadeState.FilmingToPayment;
+                _paymentWatingPanelTranstionCtrl.ClosePaymentPanel();  // 결제 패널 끄기
+                _filmingPanelCtrl.BackFromPayment();  // 카메라 윈도우 + 촬영 버튼 복원
                 break;
 
             case FadeState.BackFromChromaKey:

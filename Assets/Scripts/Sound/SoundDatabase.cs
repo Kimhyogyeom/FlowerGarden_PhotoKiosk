@@ -17,9 +17,11 @@ public class SoundDatabase : ScriptableObject
     public AudioClip _windowChromaSound;
     public AudioClip _windowQuantitySound;
     public AudioClip _windowPayment;
+    public AudioClip _windowGuideSound;          // 가이드 패널 TTS (촬영 전 안내)
     public AudioClip _windowCameraStartSound;
     public AudioClip _windowCamearaPlayingSound;
     public AudioClip _windowPhotoSelectSound;
+    public AudioClip _windowStickerSound;       // 스티커 패널 TTS
     public AudioClip _windowPrintSound;
 
     [Header("UI")]

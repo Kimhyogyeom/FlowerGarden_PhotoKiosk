@@ -17,9 +17,12 @@ public class PaymentWaitingPanelTransitionCtrl : MonoBehaviour
 
     [Header("Panel Settings")]
     [SerializeField] private GameObject _currentPanel;
-    // 수량 선택 + 결제수단 선택 같은 “결제 설정 화면” 패널
+    // 수량 선택 + 결제수단 선택 같은 "결제 설정 화면" 패널
 
     [SerializeField] private GameObject _waitingForPaymentPanel;
+
+    [SerializeField] private GameObject _cameraWindowPanel;
+    // PanelCameraWindow - 촬영 버튼 클릭 시 꺼지고, 결제 완료 시 다시 켜짐
 
     public bool _isAdmin = false;
     // 실제 결제 진행 패널 (여기에 PaymentPanelEnableBroadcaster 가 붙어 있으면
@@ -59,16 +62,16 @@ public class PaymentWaitingPanelTransitionCtrl : MonoBehaviour
         else
         {
             // 여기서 결제가 완료되면 콜백 받아서 아래 코드 실행시킬거임 (1209)
-            // Payment → Filming Start 화면 전환
-            _fadeAnimationCtrl.SetState(FadeState.QuantityToPayment);
+            // Payment → Guide(촬영 안내) 화면 전환
+            _fadeAnimationCtrl.SetState(FadeState.PaymentToGuide);
             _fadeAnimationCtrl.StartFade();
         }
 
     }
     public void PaymentHttpTesterStart()
     {
-        // Payment → Filming Start 화면 전환
-        _fadeAnimationCtrl.SetState(FadeState.QuantityToPayment);
+        // Payment → Guide(촬영 안내) 화면 전환
+        _fadeAnimationCtrl.SetState(FadeState.PaymentToGuide);
         _fadeAnimationCtrl.StartFade();
     }
     /// <summary>
@@ -102,5 +105,52 @@ public class PaymentWaitingPanelTransitionCtrl : MonoBehaviour
     public void ForceOpenWaitingForPayment()
     {
         OnClickGoToPayment();
+    }
+
+    /// <summary>
+    /// Filming → Payment 전환 시 호출
+    /// - 촬영 버튼 클릭 후 결제 화면으로 전환
+    /// - PanelCameraWindow 끄고 PanelPayment 켬
+    /// </summary>
+    public void OnPaymentWaiting()
+    {
+        // 키오스크 상태를 "결제" 로 설정
+        GameManager.Instance.SetState(KioskState.Payment);
+
+        // 카메라 윈도우 비활성화
+        if (_cameraWindowPanel != null)
+            _cameraWindowPanel.SetActive(false);
+
+        // 결제 패널 활성화
+        if (_currentPanel != null)
+            _currentPanel.SetActive(true);
+        else
+            Debug.LogWarning("[PaymentWaitingPanelTransitionCtrl] _currentPanel reference is missing");
+    }
+
+    /// <summary>
+    /// [더 이상 직접 사용되지 않음 - GuidePanelCtrl로 대체됨]
+    /// 결제 완료 후 촬영 시작 시 호출
+    /// - PanelPayment 끄고 PanelCameraWindow 다시 켬
+    /// </summary>
+    public void OnPaymentCompletedToFilming()
+    {
+        // 결제 패널 비활성화
+        if (_currentPanel != null)
+            _currentPanel.SetActive(false);
+
+        // 카메라 윈도우 다시 활성화
+        if (_cameraWindowPanel != null)
+            _cameraWindowPanel.SetActive(true);
+    }
+
+    /// <summary>
+    /// Payment → Filming 뒤로가기 시 호출
+    /// - 결제 패널만 끔 (카메라 윈도우는 FilmingPanelCtrl에서 처리)
+    /// </summary>
+    public void ClosePaymentPanel()
+    {
+        if (_currentPanel != null)
+            _currentPanel.SetActive(false);
     }
 }

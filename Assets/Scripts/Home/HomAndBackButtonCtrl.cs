@@ -32,16 +32,24 @@ public class HomAndBackButtonCtrl : MonoBehaviour
     [SerializeField] private GameObject _chrChangePanel;     // 오픈할 패널 
     // ──────────────────────────────────────────────────────────────────────────추가
 
+    [Header("Object Settings - Filming")]
+    [SerializeField] private Button _filBackButton;    // 뒤로가기 버튼
+    [SerializeField] private Button _filHomeButton;    // 홈 버튼
+    [SerializeField] private GameObject _filChangePanel;     // 오픈할 패널 (Select 패널)
 
     [Header("Object Settings - Quantity")]
     [SerializeField] private Button _quaBackButton;
     [SerializeField] private Button _quaHomeButton;    // 홈 버튼
-    [SerializeField] private GameObject _quaChangePanel;     // 오픈할 패널 
+    [SerializeField] private GameObject _quaChangePanel;     // 오픈할 패널
 
     [Header("Object Settings - Payment}")]
     [SerializeField] private Button _payBackButton;
     [SerializeField] private Button _payHomeButton;    // 홈 버튼
-    [SerializeField] private GameObject _payChangePanel;     // 오픈할 패널 
+    [SerializeField] private GameObject _payChangePanel;     // 오픈할 패널
+
+    [Header("Reset Controller")]
+    [SerializeField] private FilmingPanelCtrl _filmingPanelCtrl;  // 촬영 패널 리셋용
+
     void Awake()
     {
         // [Mode]
@@ -52,7 +60,11 @@ public class HomAndBackButtonCtrl : MonoBehaviour
         if (_selHomeButton != null) _selHomeButton.onClick.AddListener(OnHomeButtonClickSel);
         if (_selBackButton != null) _selBackButton.onClick.AddListener(OnBackButtonClickSel);
 
-        // [Select]
+        // [Filming]
+        if (_filHomeButton != null) _filHomeButton.onClick.AddListener(OnHomeButtonClickFil);
+        if (_filBackButton != null) _filBackButton.onClick.AddListener(OnBackButtonClickFil);
+
+        // [Quantity]
         if (_quaHomeButton != null) _quaHomeButton.onClick.AddListener(OnHomeButtonClickQUan);
         if (_quaBackButton != null) _quaBackButton.onClick.AddListener(OnBackButtonClickQUan);
 
@@ -75,6 +87,10 @@ public class HomAndBackButtonCtrl : MonoBehaviour
         }
         _modChangePanel.SetActive(true);
         GameManager.Instance.SetState(KioskState.Ready);
+
+        // 촬영 버튼 상태 리셋 (결제 화면에서 홈으로 갈 때 버튼 비활성화 문제 해결)
+        if (_filmingPanelCtrl != null)
+            _filmingPanelCtrl.ResetFilming();
     }
 
     // ========================================Mode
@@ -140,6 +156,37 @@ public class HomAndBackButtonCtrl : MonoBehaviour
     // ========================================Select
 
 
+    // ========================================Filming
+    /// <summary>
+    /// Filming 홈 버튼 누르면 실행될 함수
+    /// </summary>
+    private void OnHomeButtonClickFil()
+    {
+        _fadeAnimationCtrl.SetState(FadeState.HomeFromSelect);
+        _fadeAnimationCtrl.StartFade();
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
+    }
+    /// <summary>
+    /// Filming 백 버튼 누르면 실행될 함수
+    /// </summary>
+    private void OnBackButtonClickFil()
+    {
+        _fadeAnimationCtrl.SetState(FadeState.BackFromFilming);
+        _fadeAnimationCtrl.StartFade();
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
+    }
+    public void ObjectsActiveCtrlFil()
+    {
+        foreach (var item in _currentPanel)
+        {
+            item.gameObject.SetActive(false);
+        }
+        _filChangePanel.SetActive(true);
+        GameManager.Instance.SetState(KioskState.Select);
+    }
+    // ========================================Filming
+
+
     // ========================================Quantity
     /// <summary>
     /// Quantity 홈 버튼 누르면 실행될 함수
@@ -199,8 +246,8 @@ public class HomAndBackButtonCtrl : MonoBehaviour
             item.gameObject.SetActive(false);
         }
         _payChangePanel.SetActive(true);
-        // [Quantity 임시 비활성화] Payment → Select 직접 복귀
-        GameManager.Instance.SetState(KioskState.Select);
+        // Payment → Filming(촬영 버튼 대기) 복귀
+        GameManager.Instance.SetState(KioskState.Filming);
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
     // ========================================Payment

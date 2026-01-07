@@ -42,6 +42,9 @@ public class FilmingPanelCtrl : MonoBehaviour
     [SerializeField] private GameObject _nextButton;
     // 촬영 완료 후 다음 (포토 선택)으로 넘어가기 위한 버튼
 
+    [SerializeField] private GameObject _backButton;
+    // 촬영 전 뒤로가기 버튼 (촬영 시작 시 숨김)
+
     // 촬영 버튼 주변에 보여줄 텍스트 (예: "촬영중" 등 상태 표시)
 
     // [SerializeField] private GameObject _stepsObject;
@@ -147,23 +150,24 @@ public class FilmingPanelCtrl : MonoBehaviour
     /// <summary>
     /// 페이드 애니메이션이 끝난 뒤 호출되는 패널 변경 함수
     /// - 현재 패널 비활성화
-    /// - 촬영용 패널 활성화
+    /// - 촬영용 패널 활성화@
     /// </summary>
     public void PanelChanger()
     {
         if (_currentPanel != null) _currentPanel.SetActive(false);
         if (_changedPhotoPanel != null) _changedPhotoPanel.SetActive(true);
-        // [Quantity 임시 비활성화] Select → Payment 직접 전환
-        GameManager.Instance.SetState(KioskState.Payment);
+        // Select → Filming 전환 (촬영 시작 버튼 대기 상태)
+        GameManager.Instance.SetState(KioskState.Filming);
     }
 
     /// <summary>
     /// 카메라 윈도우에서 "사진 찍기" 버튼 클릭 시 호출
-    /// - 페이드 상태 설정 및 애니메이션 실행
+    /// - 촬영 버튼 클릭 → Payment 화면으로 전환
     /// </summary>
     public void OnPhotoButtonClicked()
     {
-        _fadeAnimationCtrl.SetState(FadeState.PaymentToFilmingStart);
+        // Filming → Payment 전환 (결제 후 촬영 시작)
+        _fadeAnimationCtrl.SetState(FadeState.FilmingToPayment);
         _fadeAnimationCtrl.StartFade();
         _photoButton.gameObject.SetActive(false);
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
@@ -175,6 +179,10 @@ public class FilmingPanelCtrl : MonoBehaviour
     /// </summary>
     public void FadeEndCallBack()
     {
+        // 촬영 시작 시 뒤로가기 버튼 숨김
+        if (_backButton != null)
+            _backButton.SetActive(false);
+
         if (_photoButton != null)
         {
             // GameManager.Instance.SetState(KioskState.Quantity);
@@ -299,6 +307,7 @@ public class FilmingPanelCtrl : MonoBehaviour
         // 버튼 색 / 텍스트 복구
         if (_photoButton != null)
         {
+            _photoButton.gameObject.SetActive(true);
             _photoButton.interactable = true;
             _photoButton.colors = _defaultPhotoButtonColors;
         }
@@ -315,6 +324,46 @@ public class FilmingPanelCtrl : MonoBehaviour
             _nextButton.SetActive(false);
         }
 
+        // 뒤로가기 버튼 다시 활성화
+        if (_backButton != null)
+            _backButton.SetActive(true);
+
         // Debug.Log("[FilmingPanelCtrl] FilmingEnd: UI reset to initial state.");
+    }
+
+    /// <summary>
+    /// Filming → Select 뒤로가기 시 호출
+    /// - 카메라 윈도우 끄고 Select 패널 다시 켬
+    /// </summary>
+    public void BackToSelect()
+    {
+        if (_changedPhotoPanel != null) _changedPhotoPanel.SetActive(false);
+        if (_currentPanel != null) _currentPanel.SetActive(true);
+        GameManager.Instance.SetState(KioskState.Select);
+    }
+
+    /// <summary>
+    /// Payment → Filming 뒤로가기 시 호출
+    /// - 결제 패널 끄고 카메라 윈도우 다시 켬
+    /// - 촬영 버튼 다시 활성화
+    /// </summary>
+    public void BackFromPayment()
+    {
+        // 카메라 윈도우 다시 활성화
+        if (_changedPhotoPanel != null)
+            _changedPhotoPanel.SetActive(true);
+
+        // 촬영 버튼 다시 활성화
+        if (_photoButton != null)
+        {
+            _photoButton.gameObject.SetActive(true);
+            _photoButton.interactable = true;
+        }
+
+        // 뒤로가기 버튼 활성화
+        if (_backButton != null)
+            _backButton.SetActive(true);
+
+        GameManager.Instance.SetState(KioskState.Filming);
     }
 }

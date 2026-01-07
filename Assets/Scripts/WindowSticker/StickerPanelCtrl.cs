@@ -193,6 +193,9 @@ public class StickerPanelCtrl : MonoBehaviour
         //     Debug.LogWarning("[StickerPanelCtrl] 원래 부모가 설정되지 않아 복원할 수 없습니다.");
         // }
 
+        // 모든 스티커 크기 리셋 (확대된 스티커를 원래 크기로)
+        ResetAllStickerScales();
+
         // 모든 스티커 삭제 (프레임 복원 전에 먼저 삭제)
         ClearAllStickers();
 
@@ -214,6 +217,17 @@ public class StickerPanelCtrl : MonoBehaviour
         if (_currentDropZone != null)
         {
             _currentDropZone.ClearAllStickers();
+        }
+    }
+
+    /// <summary>
+    /// 모든 스티커 크기를 원래대로 리셋 (확대된 스티커 초기화)
+    /// </summary>
+    public void ResetAllStickerScales()
+    {
+        if (_currentDropZone != null)
+        {
+            _currentDropZone.ResetAllStickerScales();
         }
     }
 

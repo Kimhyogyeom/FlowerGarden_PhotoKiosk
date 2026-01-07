@@ -6,6 +6,7 @@ using UnityEngine.EventSystems;
 /// 스티커 드롭 영역
 /// - 스티커가 드롭되면 프레임의 자식으로 추가
 /// - 드롭된 스티커 목록 관리
+/// - 드롭 시 스케일 슬라이더 표시
 /// - 리셋 시 모든 스티커 삭제
 /// </summary>
 public class DropZone : MonoBehaviour, IDropHandler
@@ -16,6 +17,9 @@ public class DropZone : MonoBehaviour, IDropHandler
 
     // 드롭된 스티커 목록
     private List<GameObject> _droppedStickers = new List<GameObject>();
+
+    // 현재 활성화된 스케일 슬라이더
+    private StickerScaleSlider _activeSlider;
 
     private RectTransform _rectTransform;
     private Camera _uiCamera;
@@ -69,7 +73,39 @@ public class DropZone : MonoBehaviour, IDropHandler
         // Draggable에게 드롭 성공 알림
         draggable.OnDroppedToZone(this);
 
+        // 스케일 슬라이더 표시 (기존 슬라이더는 제거하고 새로 생성)
+        ShowScaleSlider(sticker.GetComponent<RectTransform>());
+
         // Debug.Log($"[DropZone] 스티커 드롭 완료: {sticker.name}, 총 {_droppedStickers.Count}개");
+    }
+
+    /// <summary>
+    /// 스케일 슬라이더 표시 (새 스티커용)
+    /// </summary>
+    private void ShowScaleSlider(RectTransform stickerRect)
+    {
+        if (stickerRect == null) return;
+
+        // 기존 슬라이더 제거
+        HideScaleSlider();
+
+        // 새 슬라이더 생성 (Canvas 자식으로)
+        if (_canvas != null)
+        {
+            _activeSlider = StickerScaleSlider.Create(stickerRect, _canvas.transform);
+        }
+    }
+
+    /// <summary>
+    /// 스케일 슬라이더 숨기기
+    /// </summary>
+    public void HideScaleSlider()
+    {
+        if (_activeSlider != null)
+        {
+            _activeSlider.Remove();
+            _activeSlider = null;
+        }
     }
 
     /// <summary>
@@ -89,7 +125,8 @@ public class DropZone : MonoBehaviour, IDropHandler
     /// </summary>
     public void ClearAllStickers()
     {
-        // Debug.Log($"[DropZone] 모든 스티커 삭제 시작, 총 {_droppedStickers.Count}개");
+        // 슬라이더도 함께 제거
+        HideScaleSlider();
 
         foreach (var sticker in _droppedStickers)
         {
@@ -100,8 +137,16 @@ public class DropZone : MonoBehaviour, IDropHandler
         }
 
         _droppedStickers.Clear();
+    }
 
-        // Debug.Log("[DropZone] 모든 스티커 삭제 완료");
+    /// <summary>
+    /// [하위 호환용] 모든 스티커의 확대 상태를 원래 크기로 리셋
+    /// 슬라이더 방식에서는 사용하지 않지만 기존 코드 호환을 위해 유지
+    /// </summary>
+    public void ResetAllStickerScales()
+    {
+        // 슬라이더 방식에서는 별도 리셋 불필요
+        // 스티커 스케일은 슬라이더로 조절된 상태 그대로 유지
     }
 
     /// <summary>

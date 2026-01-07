@@ -20,9 +20,11 @@ MonoBehaviour:
   _windowSelectSound: {fileID: 8300000, guid: b050b2246c0b4144b94bc45522d83f99, type: 3}
   _windowChromaSound: {fileID: 8300000, guid: ae7e0c160ff5bbf46b8199d68ab1a968, type: 3}
   _windowQuantitySound: {fileID: 8300000, guid: 8693b51a7fe477b428a86989525664a9, type: 3}
-  _windowPayment: {fileID: 8300000, guid: 309f60f14dec55849b02d2383901e109, type: 3}
-  _windowCameraStartSound: {fileID: 8300000, guid: 8d84086eb442862409a41be76099c871, type: 3}
+  _windowPayment: {fileID: 8300000, guid: e369881b39b2ff5469a14b4e391ddcdf, type: 3}
+  _windowGuideSound: {fileID: 8300000, guid: e440ec35538bfd74eaa4c04c310d1529, type: 3}
+  _windowCameraStartSound: {fileID: 8300000, guid: 85cbcf009897d0b4094cdbecad2da0be, type: 3}
   _windowCamearaPlayingSound: {fileID: 8300000, guid: 65b8f9a1ab189e745b2ed5e6b35904f7, type: 3}
   _windowPhotoSelectSound: {fileID: 8300000, guid: 3320f710d007b3549a0386f48a04cc72, type: 3}
+  _windowStickerSound: {fileID: 8300000, guid: 90e2f3c1ccbe15448b3392dd566f9621, type: 3}
   _windowPrintSound: {fileID: 8300000, guid: 71b0201485cc04a42a2b036b14dccbe7, type: 3}
   _failSound: {fileID: 8300000, guid: eefefca8690a0d644871e829223bb320, type: 3}

@@ -375,7 +375,9 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
     public void FadeEndCallBack()
     {
         GameManager.Instance.SetState(KioskState.CutWindow);
-        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
+
+        // 포토 셀렉트(미리보기) 화면 TTS 재생
+        SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._windowPhotoSelectSound);
 
         // 타이머 시작 (GameManager 설정값 사용)
         if (_countdownTimer != null)
@@ -966,6 +968,12 @@ public class CapturedPhotoPanelCtrl : MonoBehaviour
         {
             _countdownTimer.StopTimer();
             // Debug.Log("[CapturedPhotoPanelCtrl] 타이머 정지됨");
+        }
+
+        // 스티커 패널 진입 TTS 재생
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._windowStickerSound);
         }
 
         // 포토 셀렉트 패널 비활성화

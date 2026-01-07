@@ -41,15 +41,12 @@ public class QuantityToPaymentCtrl : MonoBehaviour
 
     /// <summary>
     /// "다음" 버튼 클릭 시 호출
+    /// [Quantity 비활성화됨 - 현재 사용 안 함]
     /// </summary>
     private void OnClickNext()
     {
-        // 상태를 결제 대기 상태로 두고 싶다면 (원하는 경우 사용)
-        // GameManager.Instance.SetState(KioskState.WaitingForPayment);
-
-        // Quantity → Payment 화면 전환
-        _fadeAnimationCtrl.SetState(FadeState.FilmingToQuantity);
-        _fadeAnimationCtrl.StartFade();
+        // [Quantity 비활성화] 현재 흐름에서 사용되지 않음
+        // 필요시 FadeState.FilmingToQuantity 복원 필요
         SoundManager.Instance.PlaySFX(SoundManager.Instance._soundDatabase._buttonClickSound);
     }
     public void ObjectActiveCtrl()

@@ -2097,6 +2097,13 @@ public class PrintController : MonoBehaviour
         // 프레임 월드 Rect
         Rect frameWorldRect = GetWorldRect(frameRect);
 
+        // ★★★ 디버그: 프레임 구조 출력 ★★★
+        Debug.Log($"[Print] ========== 프레임 구조 분석 시작 ==========");
+        Debug.Log($"[Print] 프레임: {frameRect.name}, WorldRect: {frameWorldRect}");
+        Debug.Log($"[Print] 프레임 자식 수: {frameRect.childCount}");
+        PrintHierarchyDebug(frameRect, 0);
+        Debug.Log($"[Print] ========== 프레임 구조 분석 끝 ==========");
+
         // 1) 자식 요소들 먼저 그리기 (4컷 사진) - 프레임 아래에 깔림
         DrawChildrenCPU(pixels, outW, outH, frameRect, frameWorldRect);
 
@@ -2141,6 +2148,8 @@ public class PrintController : MonoBehaviour
     /// <summary>
     /// 자식 요소들을 CPU로 그리기
     /// ImageMain은 프레임 이미지이므로 마지막에 별도로 그림
+    /// ★ Grid 컨테이너(GameObjectGrid...)는 activeSelf로 체크 - 선택된 색상만 그림
+    /// ★ Grid 안의 ImageSelect... 자식들은 sprite 유무만 확인
     /// </summary>
     private void DrawChildrenCPU(Color32[] pixels, int outW, int outH, RectTransform parent, Rect parentWorldRect)
     {
@@ -2155,59 +2164,62 @@ public class PrintController : MonoBehaviour
             }
 
             // 스티커는 스킵 - DrawStickersFromChildren에서 별도로 처리
-            // DrawChildrenCPU는 BlitTextureCPU (덮어쓰기)를 사용하므로 투명 영역이 흰색으로 그려짐
             if (childName.Contains("Sticker"))
             {
                 Debug.Log($"[Print] DrawChildrenCPU에서 스티커 스킵: {childName}");
                 continue;
             }
 
-            if (!child.gameObject.activeInHierarchy) continue;
+            // ★ Grid 컨테이너(GameObjectGrid...)는 activeSelf로 체크
+            // 선택된 프레임 색상(Red/Blue/Black)만 그려야 함
+            if (childName.Contains("GameObjectGrid") || childName.Contains("GameObject"))
+            {
+                if (!child.gameObject.activeSelf)
+                {
+                    Debug.Log($"[Print] Grid 컨테이너 스킵 (비활성): {childName}");
+                    continue;
+                }
+                Debug.Log($"[Print] Grid 컨테이너 처리 (활성): {childName}");
+            }
 
             RectTransform childRect = child.GetComponent<RectTransform>();
             if (childRect == null) continue;
 
             Rect childWorldRect = GetWorldRect(childRect);
             Rect destRect = CalculateRelativeRect(childWorldRect, parentWorldRect, outW, outH);
-            Debug.Log($"[Print] → destRect: {destRect}");
+
+            bool hasContent = false;
 
             // RawImage (웹캠 등)
             RawImage rawImage = child.GetComponent<RawImage>();
-            if (rawImage != null && rawImage.enabled)
+            if (rawImage != null && rawImage.texture != null)
             {
-                Debug.Log($"[Print] → RawImage 발견: texture={rawImage.texture != null}");
-                if (rawImage.texture != null)
+                Debug.Log($"[Print] → RawImage 발견: {childName}, texture={rawImage.texture.name}");
+                Texture2D srcTex = GetReadableTexture(rawImage.texture);
+                if (srcTex != null)
                 {
-                    Texture2D srcTex = GetReadableTexture(rawImage.texture);
+                    Debug.Log($"[Print] → BlitTextureCPU 호출: {srcTex.width}x{srcTex.height} → {destRect}");
+                    BlitTextureCPU(pixels, outW, outH, srcTex, destRect);
+                    if (srcTex != rawImage.texture) Destroy(srcTex);
+                    hasContent = true;
+                }
+            }
+
+            // Image - sprite가 있는 경우만 그림
+            if (!hasContent)
+            {
+                Image image = child.GetComponent<Image>();
+                if (image != null && image.sprite != null)
+                {
+                    Debug.Log($"[Print] → Image 발견: {childName}, sprite={image.sprite.name}");
+                    Texture2D srcTex = GetReadableTexture(image.sprite.texture);
                     if (srcTex != null)
                     {
                         Debug.Log($"[Print] → BlitTextureCPU 호출: {srcTex.width}x{srcTex.height} → {destRect}");
                         BlitTextureCPU(pixels, outW, outH, srcTex, destRect);
-                        if (srcTex != rawImage.texture) Destroy(srcTex);
+                        if (srcTex != image.sprite.texture) Destroy(srcTex);
+                        hasContent = true;
                     }
-                }
-            }
-            else
-            {
-                // Image
-                Image image = child.GetComponent<Image>();
-                if (image != null && image.enabled)
-                {
-                    Debug.Log($"[Print] → Image 발견: sprite={image.sprite != null}");
-                    if (image.sprite != null)
-                    {
-                        Texture2D srcTex = GetReadableTexture(image.sprite.texture);
-                        if (srcTex != null)
-                        {
-                            Debug.Log($"[Print] → BlitTextureCPU 호출: {srcTex.width}x{srcTex.height} → {destRect}");
-                            BlitTextureCPU(pixels, outW, outH, srcTex, destRect);
-                            if (srcTex != image.sprite.texture) Destroy(srcTex);
-                        }
-                    }
-                }
-                else
-                {
-                    Debug.Log($"[Print] → Image/RawImage 없음 또는 비활성");
                 }
             }
 
@@ -2218,6 +2230,7 @@ public class PrintController : MonoBehaviour
 
     /// <summary>
     /// 스티커들을 CPU로 그리기
+    /// ★ 비활성화된 스티커도 그림 (프린트용 복사본 지원)
     /// </summary>
     private void DrawStickersCPU(Color32[] pixels, int outW, int outH, DropZone dropZone, Rect frameWorldRect)
     {
@@ -2228,7 +2241,8 @@ public class PrintController : MonoBehaviour
 
         foreach (var stickerObj in stickers)
         {
-            if (stickerObj == null || !stickerObj.activeInHierarchy) continue;
+            // ★ 비활성화 체크 제거 - null만 체크
+            if (stickerObj == null) continue;
 
             // BG(배경) 오브젝트인 경우 자식에서 실제 스티커 찾기
             DrawStickerRecursive(pixels, outW, outH, stickerObj.transform, frameWorldRect);
@@ -2238,10 +2252,12 @@ public class PrintController : MonoBehaviour
     /// <summary>
     /// 스티커를 재귀적으로 찾아서 그리기 (실제 스티커만 그림)
     /// "ImageSticker"라는 정확한 이름만 그림 (BG, _1 등 접미사 있으면 자식만 탐색)
+    /// ★ 비활성화된 스티커도 그림 (프린트용 복사본 지원)
     /// </summary>
     private void DrawStickerRecursive(Color32[] pixels, int outW, int outH, Transform stickerTransform, Rect frameWorldRect)
     {
-        if (stickerTransform == null || !stickerTransform.gameObject.activeInHierarchy) return;
+        // ★ 비활성화 체크 제거 - null만 체크
+        if (stickerTransform == null) return;
 
         string objName = stickerTransform.name;
         Debug.Log($"[Print] 스티커 탐색 중: '{objName}', 자식수: {stickerTransform.childCount}");
@@ -2344,6 +2360,7 @@ public class PrintController : MonoBehaviour
 
     /// <summary>
     /// 프레임 자식에서 스티커 찾아서 그리기 (Sticker 이름 포함된 오브젝트, BG 배경 스킵)
+    /// ★ 비활성화된 스티커도 그림 (프린트용 복사본 지원)
     /// </summary>
     private void DrawStickersFromChildren(Color32[] pixels, int outW, int outH, RectTransform frameRect, Rect frameWorldRect)
     {
@@ -2351,10 +2368,10 @@ public class PrintController : MonoBehaviour
 
         foreach (Transform child in frameRect)
         {
-            if (!child.gameObject.activeInHierarchy) continue;
+            // ★ 비활성화 체크 제거 - 스티커 이름만 확인
             if (!child.name.Contains("Sticker")) continue;
 
-            Debug.Log($"[Print] 스티커 발견(자식): {child.name}");
+            Debug.Log($"[Print] 스티커 발견(자식): {child.name}, active={child.gameObject.activeInHierarchy}");
 
             // BG 배경인 경우 재귀적으로 실제 스티커 찾기
             DrawStickerRecursive(pixels, outW, outH, child, frameWorldRect);
@@ -2852,6 +2869,29 @@ public class PrintController : MonoBehaviour
             relW * outW,
             relH * outH
         );
+    }
+
+    /// <summary>
+    /// 디버그용: Hierarchy 구조 출력
+    /// </summary>
+    private void PrintHierarchyDebug(Transform parent, int depth)
+    {
+        string indent = new string(' ', depth * 2);
+        foreach (Transform child in parent)
+        {
+            var rawImg = child.GetComponent<RawImage>();
+            var img = child.GetComponent<Image>();
+            string components = "";
+            if (rawImg != null) components += $"[RawImage: tex={rawImg.texture != null}] ";
+            if (img != null) components += $"[Image: sprite={img.sprite != null}] ";
+
+            Debug.Log($"[Print] {indent}├─ {child.name} (active={child.gameObject.activeInHierarchy}) {components}");
+
+            if (child.childCount > 0)
+            {
+                PrintHierarchyDebug(child, depth + 1);
+            }
+        }
     }
 
     /// <summary>

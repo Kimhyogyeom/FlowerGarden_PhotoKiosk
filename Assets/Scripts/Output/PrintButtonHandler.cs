@@ -142,6 +142,16 @@ public class PrintButtonHandler : MonoBehaviour
     /// </summary>
     public void OnClickPrint()
     {
+        // 스티커 스케일 슬라이더 숨기기 (화면 전환 전에)
+        if (_stickerPanelCtrl != null)
+        {
+            var dropZone = _stickerPanelCtrl.GetDropZone();
+            if (dropZone != null)
+            {
+                dropZone.HideScaleSlider();
+            }
+        }
+
         // Sticker → Print(출력) 화면 전환
         _fadeAnimationCtrl.SetState(FadeState.StickerToPrint);
         _fadeAnimationCtrl.StartFade();
