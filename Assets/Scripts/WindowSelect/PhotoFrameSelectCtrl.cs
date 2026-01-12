@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -7,6 +8,10 @@ using UnityEngine.UI;
 /// </summary>
 public class PhotoFrameSelectCtrl : MonoBehaviour
 {
+    /// <summary>
+    /// 프레임 선택 변경 시 호출되는 이벤트 (모드, 인덱스)
+    /// </summary>
+    public static event Action<KioskMode, int> OnFrameSelected;
     [Header("hight")]
     [SerializeField] private Sprite[] _photoFrameTextureHight;
     // 각 포토 프레임에 대응되는 텍스처 배열
@@ -72,6 +77,7 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
         _selectFlag2Hight = false;
 
         _selectIndexHight = 0;
+        OnFrameSelected?.Invoke(KioskMode.Hight, 0);
         // 최종 출력용 추가 프레임에도 동일한 텍스처 적용
         // _addFrameRawImage.sprite = _photoFrameTexture[0];
     }
@@ -98,6 +104,7 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
         _selectFlag2Hight = false;
 
         _selectIndexHight = 1;
+        OnFrameSelected?.Invoke(KioskMode.Hight, 1);
         // _addFrameRawImage.sprite = _photoFrameTexture[1];
     }
 
@@ -123,6 +130,7 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
         _selectFlag2Hight = true;
 
         _selectIndexHight = 2;
+        OnFrameSelected?.Invoke(KioskMode.Hight, 2);
         // _addFrameRawImage.sprite = _photoFrameTexture[2];
     }
     // ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -149,6 +157,7 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
         _selectFlag2Width = true;
 
         _selectIndexWidth = 0;
+        OnFrameSelected?.Invoke(KioskMode.Width, 0);
         // _addFrameRawImage.sprite = _photoFrameTexture[2];
     }
     /// <summary>
@@ -170,6 +179,7 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
         _selectFlag2Width = true;
 
         _selectIndexWidth = 1;
+        OnFrameSelected?.Invoke(KioskMode.Width, 1);
         // _addFrameRawImage.sprite = _photoFrameTexture[2];
     }
     /// <summary>
@@ -191,6 +201,7 @@ public class PhotoFrameSelectCtrl : MonoBehaviour
         _selectFlag2Width = true;
 
         _selectIndexWidth = 2;
+        OnFrameSelected?.Invoke(KioskMode.Width, 2);
         // _addFrameRawImage.sprite = _photoFrameTexture[2];
     }
     /// <summary>

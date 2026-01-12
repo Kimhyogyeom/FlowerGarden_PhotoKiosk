@@ -64,6 +64,11 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public KioskMode CurrentMode => _currentMode;
 
+    /// <summary>
+    /// 모드 변경 시 호출되는 이벤트
+    /// </summary>
+    public static event System.Action<KioskMode> OnModeChanged;
+
 #pragma warning disable CS0414
     [Range(1f, 30f)]
     [Header("TimeScale Value")]
@@ -156,6 +161,7 @@ public class GameManager : MonoBehaviour
     public void SetMode(KioskMode newMode)
     {
         _currentMode = newMode;
+        OnModeChanged?.Invoke(newMode);
         // Debug.Log($"[KIOSK] Mode -> {newMode}");
     }
 

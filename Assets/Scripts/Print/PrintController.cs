@@ -2084,6 +2084,11 @@ public class PrintController : MonoBehaviour
     /// </summary>
     private Texture2D CaptureWithRenderTexture(RectTransform frameRect, bool isLandscapeMode)
     {
+        // 로그 파일 초기화 및 모드 정보 기록
+        ClearLogFile();
+        string modeStr = isLandscapeMode ? "가로(Width)" : "세로(Hight)";
+        LogToFile($"모드: {modeStr}, 프레임: {frameRect.name}");
+
         // 출력 크기 결정
         int outW = isLandscapeMode ? _outputHeight : _outputWidth;
         int outH = isLandscapeMode ? _outputWidth : _outputHeight;
@@ -2135,12 +2140,8 @@ public class PrintController : MonoBehaviour
 
         Debug.Log($"[Print] ★ CPU 합성 캡처 완료: {outW}x{outH} (Bilinear + 샤프닝)");
 
-        try
-        {
-            string logPath = Path.Combine(Path.GetDirectoryName(Application.dataPath), "print_log.txt");
-            File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] CPU 합성 캡처: {outW}x{outH}\n");
-        }
-        catch { }
+        // 파일 로그 기록
+        LogToFile($"CPU 합성 캡처: {outW}x{outH}");
 
         return result;
     }
@@ -2150,8 +2151,18 @@ public class PrintController : MonoBehaviour
     /// ImageMain은 프레임 이미지이므로 마지막에 별도로 그림
     /// ★ Grid 컨테이너(GameObjectGrid...)는 activeSelf로 체크 - 선택된 색상만 그림
     /// ★ Grid 안의 ImageSelect... 자식들은 sprite 유무만 확인
+    /// ★ Mask 컴포넌트가 있으면 해당 영역으로 클리핑
     /// </summary>
     private void DrawChildrenCPU(Color32[] pixels, int outW, int outH, RectTransform parent, Rect parentWorldRect)
+    {
+        // clipRect 없이 호출 - 오버로드로 전달
+        DrawChildrenCPU(pixels, outW, outH, parent, parentWorldRect, null);
+    }
+
+    /// <summary>
+    /// 자식 요소들을 CPU로 그리기 (Mask 클리핑 지원)
+    /// </summary>
+    private void DrawChildrenCPU(Color32[] pixels, int outW, int outH, RectTransform parent, Rect parentWorldRect, Rect? clipRect)
     {
         foreach (Transform child in parent)
         {
@@ -2180,6 +2191,7 @@ public class PrintController : MonoBehaviour
                     continue;
                 }
                 Debug.Log($"[Print] Grid 컨테이너 처리 (활성): {childName}");
+                LogToFile($"Grid 처리 (활성): {childName}, 자식수={child.childCount}");
             }
 
             RectTransform childRect = child.GetComponent<RectTransform>();
@@ -2188,18 +2200,60 @@ public class PrintController : MonoBehaviour
             Rect childWorldRect = GetWorldRect(childRect);
             Rect destRect = CalculateRelativeRect(childWorldRect, parentWorldRect, outW, outH);
 
+            // ★ Mask 컴포넌트 체크 - 자식에게 전달할 clipRect 결정
+            Rect? childClipRect = clipRect;
+            Mask maskComponent = child.GetComponent<Mask>();
+            bool isMaskObject = (maskComponent != null && maskComponent.enabled);
+
+            // Mask 관련 상세 로그 (ImageMask가 포함된 이름만)
+            if (childName.Contains("Mask"))
+            {
+                string maskStatus = maskComponent == null ? "없음" : (maskComponent.enabled ? "활성" : "비활성");
+                LogToFile($"Mask 체크: {childName}, Mask컴포넌트={maskStatus}");
+            }
+
+            if (isMaskObject)
+            {
+                // Mask가 있으면 이 오브젝트의 destRect가 자식들의 clipRect가 됨
+                childClipRect = destRect;
+                string maskLog = $"★ Mask 발견: {childName}, clipRect=(x:{destRect.x:F2}, y:{destRect.y:F2}, w:{destRect.width:F2}, h:{destRect.height:F2}), 자식수={childRect.childCount}";
+                Debug.Log($"[Print] {maskLog}");
+                LogToFile(maskLog);
+
+                // ★ Mask 이미지의 알파 텍스처 가져오기 (사선 마스크 지원)
+                Texture2D maskAlphaTex = null;
+                Image maskImage = child.GetComponent<Image>();
+                if (maskImage != null && maskImage.sprite != null)
+                {
+                    maskAlphaTex = GetReadableTexture(maskImage.sprite.texture);
+                    LogToFile($"  → Mask 알파 텍스처 로드: {maskImage.sprite.texture.name}, {maskAlphaTex?.width}x{maskAlphaTex?.height}");
+                }
+
+                // Mask 오브젝트 자체는 그리지 않고, 자식만 처리 (알파 마스크 적용)
+                DrawChildrenWithMask(pixels, outW, outH, childRect, parentWorldRect, childClipRect, maskAlphaTex, destRect);
+
+                if (maskAlphaTex != null && maskImage != null && maskAlphaTex != maskImage.sprite.texture)
+                    Destroy(maskAlphaTex);
+
+                continue; // Mask 오브젝트 자체의 이미지는 스킵
+            }
+
             bool hasContent = false;
 
             // RawImage (웹캠 등)
             RawImage rawImage = child.GetComponent<RawImage>();
             if (rawImage != null && rawImage.texture != null)
             {
-                Debug.Log($"[Print] → RawImage 발견: {childName}, texture={rawImage.texture.name}");
                 Texture2D srcTex = GetReadableTexture(rawImage.texture);
                 if (srcTex != null)
                 {
-                    Debug.Log($"[Print] → BlitTextureCPU 호출: {srcTex.width}x{srcTex.height} → {destRect}");
-                    BlitTextureCPU(pixels, outW, outH, srcTex, destRect);
+                    if (clipRect.HasValue)
+                    {
+                        string clipLog = $"[클리핑] RawImage: {childName}, dest=(x:{destRect.x:F2}, y:{destRect.y:F2}, w:{destRect.width:F2}, h:{destRect.height:F2}), clip=(x:{clipRect.Value.x:F2}, y:{clipRect.Value.y:F2}, w:{clipRect.Value.width:F2}, h:{clipRect.Value.height:F2})";
+                        Debug.Log(clipLog);
+                        LogToFile(clipLog);
+                    }
+                    BlitTextureCPU_Clipped(pixels, outW, outH, srcTex, destRect, clipRect);
                     if (srcTex != rawImage.texture) Destroy(srcTex);
                     hasContent = true;
                 }
@@ -2211,20 +2265,76 @@ public class PrintController : MonoBehaviour
                 Image image = child.GetComponent<Image>();
                 if (image != null && image.sprite != null)
                 {
-                    Debug.Log($"[Print] → Image 발견: {childName}, sprite={image.sprite.name}");
                     Texture2D srcTex = GetReadableTexture(image.sprite.texture);
                     if (srcTex != null)
                     {
-                        Debug.Log($"[Print] → BlitTextureCPU 호출: {srcTex.width}x{srcTex.height} → {destRect}");
-                        BlitTextureCPU(pixels, outW, outH, srcTex, destRect);
+                        if (clipRect.HasValue)
+                        {
+                            string clipLog = $"[클리핑] Image: {childName}, dest=(x:{destRect.x:F2}, y:{destRect.y:F2}, w:{destRect.width:F2}, h:{destRect.height:F2}), clip=(x:{clipRect.Value.x:F2}, y:{clipRect.Value.y:F2}, w:{clipRect.Value.width:F2}, h:{clipRect.Value.height:F2})";
+                            Debug.Log(clipLog);
+                            LogToFile(clipLog);
+                        }
+                        BlitTextureCPU_Clipped(pixels, outW, outH, srcTex, destRect, clipRect);
                         if (srcTex != image.sprite.texture) Destroy(srcTex);
                         hasContent = true;
                     }
                 }
             }
 
-            // 재귀적으로 자식의 자식도 처리
-            DrawChildrenCPU(pixels, outW, outH, childRect, parentWorldRect);
+            // 재귀적으로 자식의 자식도 처리 (clipRect 전달)
+            DrawChildrenCPU(pixels, outW, outH, childRect, parentWorldRect, childClipRect);
+        }
+    }
+
+    /// <summary>
+    /// Mask의 자식들을 알파 마스크 텍스처를 적용해서 그리기 (사선 마스크 지원)
+    /// </summary>
+    private void DrawChildrenWithMask(Color32[] pixels, int outW, int outH, RectTransform parent, Rect parentWorldRect, Rect? clipRect, Texture2D maskTex, Rect maskDestRect)
+    {
+        foreach (Transform child in parent)
+        {
+            string childName = child.name;
+
+            RectTransform childRect = child.GetComponent<RectTransform>();
+            if (childRect == null) continue;
+
+            Rect childWorldRect = GetWorldRect(childRect);
+            Rect destRect = CalculateRelativeRect(childWorldRect, parentWorldRect, outW, outH);
+
+            // Image 컴포넌트 처리
+            Image image = child.GetComponent<Image>();
+            if (image != null && image.sprite != null)
+            {
+                Texture2D srcTex = GetReadableTexture(image.sprite.texture);
+                if (srcTex != null)
+                {
+                    LogToFile($"[알파마스크] Image: {childName}, dest=(x:{destRect.x:F2}, y:{destRect.y:F2}, w:{destRect.width:F2}, h:{destRect.height:F2})");
+
+                    // 알파 마스크 적용해서 그리기
+                    BlitTextureCPU_WithAlphaMask(pixels, outW, outH, srcTex, destRect, maskTex, maskDestRect);
+
+                    if (srcTex != image.sprite.texture) Destroy(srcTex);
+                }
+            }
+
+            // RawImage 컴포넌트 처리
+            RawImage rawImage = child.GetComponent<RawImage>();
+            if (rawImage != null && rawImage.texture != null)
+            {
+                Texture2D srcTex = GetReadableTexture(rawImage.texture);
+                if (srcTex != null)
+                {
+                    LogToFile($"[알파마스크] RawImage: {childName}, dest=(x:{destRect.x:F2}, y:{destRect.y:F2}, w:{destRect.width:F2}, h:{destRect.height:F2})");
+
+                    // 알파 마스크 적용해서 그리기
+                    BlitTextureCPU_WithAlphaMask(pixels, outW, outH, srcTex, destRect, maskTex, maskDestRect);
+
+                    if (srcTex != rawImage.texture) Destroy(srcTex);
+                }
+            }
+
+            // 재귀 처리 (자식의 자식)
+            DrawChildrenWithMask(pixels, outW, outH, childRect, parentWorldRect, clipRect, maskTex, maskDestRect);
         }
     }
 
@@ -2474,6 +2584,61 @@ public class PrintController : MonoBehaviour
         int startY = Mathf.Max(0, Mathf.RoundToInt(destRect.y));
         int endX = Mathf.Min(destW, Mathf.RoundToInt(destRect.x + destRect.width));
         int endY = Mathf.Min(destH, Mathf.RoundToInt(destRect.y + destRect.height));
+
+        float scaleX = (float)srcW / destRect.width;
+        float scaleY = (float)srcH / destRect.height;
+
+        for (int y = startY; y < endY; y++)
+        {
+            float srcYf = (y - destRect.y) * scaleY;
+
+            for (int x = startX; x < endX; x++)
+            {
+                float srcXf = (x - destRect.x) * scaleX;
+                int destIdx = y * destW + x;
+
+                // Bilinear 샘플링
+                destPixels[destIdx] = SampleBilinear(srcPixels, srcW, srcH, srcXf, srcYf);
+            }
+        }
+    }
+
+    /// <summary>
+    /// CPU 텍스처 복사 (Mask 클리핑 지원)
+    /// clipRect가 null이 아니면 해당 영역 밖의 픽셀은 그리지 않음
+    /// </summary>
+    private void BlitTextureCPU_Clipped(Color32[] destPixels, int destW, int destH, Texture2D src, Rect destRect, Rect? clipRect)
+    {
+        if (src == null) return;
+
+        // clipRect가 없으면 기존 함수 호출
+        if (!clipRect.HasValue)
+        {
+            BlitTextureCPU(destPixels, destW, destH, src, destRect);
+            return;
+        }
+
+        Color32[] srcPixels = src.GetPixels32();
+        int srcW = src.width;
+        int srcH = src.height;
+
+        Rect clip = clipRect.Value;
+
+        // destRect와 clipRect의 교집합 계산
+        int startX = Mathf.Max(0, Mathf.RoundToInt(Mathf.Max(destRect.x, clip.x)));
+        int startY = Mathf.Max(0, Mathf.RoundToInt(Mathf.Max(destRect.y, clip.y)));
+        int endX = Mathf.Min(destW, Mathf.RoundToInt(Mathf.Min(destRect.x + destRect.width, clip.x + clip.width)));
+        int endY = Mathf.Min(destH, Mathf.RoundToInt(Mathf.Min(destRect.y + destRect.height, clip.y + clip.height)));
+
+        // 클리핑 계산 결과 로그
+        LogToFile($"  → 클리핑 계산: startX={startX}, startY={startY}, endX={endX}, endY={endY}, 원본 destRect.y={destRect.y:F2}, clip.y={clip.y:F2}");
+
+        // 교집합이 없으면 그리지 않음
+        if (startX >= endX || startY >= endY)
+        {
+            LogToFile($"  → 교집합 없음 - 그리기 스킵");
+            return;
+        }
 
         float scaleX = (float)srcW / destRect.width;
         float scaleY = (float)srcH / destRect.height;
@@ -2881,9 +3046,11 @@ public class PrintController : MonoBehaviour
         {
             var rawImg = child.GetComponent<RawImage>();
             var img = child.GetComponent<Image>();
+            var mask = child.GetComponent<Mask>();
             string components = "";
             if (rawImg != null) components += $"[RawImage: tex={rawImg.texture != null}] ";
             if (img != null) components += $"[Image: sprite={img.sprite != null}] ";
+            if (mask != null) components += $"[★MASK: enabled={mask.enabled}] ";
 
             Debug.Log($"[Print] {indent}├─ {child.name} (active={child.gameObject.activeInHierarchy}) {components}");
 
@@ -2938,5 +3105,124 @@ public class PrintController : MonoBehaviour
         // 알파=1로 불투명하게
         Color opaqueColor = new Color(color.r, color.g, color.b, 1f);
         Graphics.DrawTexture(destRect, whiteTex, new Rect(0, 0, 1, 1), 0, 0, 0, 0, opaqueColor);
+    }
+
+    /// <summary>
+    /// CPU 텍스처 복사 (알파 마스크 적용 - 사선 마스크 지원)
+    /// maskTex의 알파값이 0인 부분은 그리지 않음
+    /// </summary>
+    private void BlitTextureCPU_WithAlphaMask(Color32[] destPixels, int destW, int destH, Texture2D src, Rect destRect, Texture2D maskTex, Rect maskRect)
+    {
+        if (src == null) return;
+
+        // 마스크 텍스처가 없으면 일반 Blit 사용
+        if (maskTex == null)
+        {
+            BlitTextureCPU(destPixels, destW, destH, src, destRect);
+            return;
+        }
+
+        Color32[] srcPixels = src.GetPixels32();
+        int srcW = src.width;
+        int srcH = src.height;
+
+        Color32[] maskPixels = maskTex.GetPixels32();
+        int maskW = maskTex.width;
+        int maskH = maskTex.height;
+
+        // destRect 범위 계산
+        int startX = Mathf.Max(0, Mathf.RoundToInt(destRect.x));
+        int startY = Mathf.Max(0, Mathf.RoundToInt(destRect.y));
+        int endX = Mathf.Min(destW, Mathf.RoundToInt(destRect.x + destRect.width));
+        int endY = Mathf.Min(destH, Mathf.RoundToInt(destRect.y + destRect.height));
+
+        if (startX >= endX || startY >= endY) return;
+
+        float srcScaleX = (float)srcW / destRect.width;
+        float srcScaleY = (float)srcH / destRect.height;
+
+        for (int y = startY; y < endY; y++)
+        {
+            // 마스크 텍스처 좌표 계산 (maskRect 기준)
+            float maskNormY = (y - maskRect.y) / maskRect.height;
+            // Y 반전 제거 - 텍스처와 화면 좌표계 일치
+            int maskY = Mathf.Clamp((int)(maskNormY * maskH), 0, maskH - 1);
+
+            float srcYf = (y - destRect.y) * srcScaleY;
+
+            for (int x = startX; x < endX; x++)
+            {
+                // 마스크 텍스처 좌표 계산
+                float maskNormX = (x - maskRect.x) / maskRect.width;
+                int maskX = Mathf.Clamp((int)(maskNormX * maskW), 0, maskW - 1);
+
+                // 마스크 알파 확인
+                int maskIdx = maskY * maskW + maskX;
+                byte maskAlpha = maskPixels[maskIdx].a;
+
+                // 알파가 0이면 그리지 않음 (마스크 바깥)
+                if (maskAlpha == 0) continue;
+
+                // 소스 텍스처에서 샘플링
+                float srcXf = (x - destRect.x) * srcScaleX;
+                Color32 srcColor = SampleBilinear(srcPixels, srcW, srcH, srcXf, srcYf);
+
+                int destIdx = y * destW + x;
+
+                // 마스크 알파가 255 미만이면 알파 블렌딩
+                if (maskAlpha < 255)
+                {
+                    float alpha = maskAlpha / 255f;
+                    Color32 existing = destPixels[destIdx];
+                    destPixels[destIdx] = new Color32(
+                        (byte)(existing.r * (1f - alpha) + srcColor.r * alpha),
+                        (byte)(existing.g * (1f - alpha) + srcColor.g * alpha),
+                        (byte)(existing.b * (1f - alpha) + srcColor.b * alpha),
+                        255
+                    );
+                }
+                else
+                {
+                    destPixels[destIdx] = srcColor;
+                }
+            }
+        }
+    }
+
+    // ===== 파일 로그 유틸 =====
+
+    private static string _logFilePath;
+
+    /// <summary>
+    /// print_log.txt 파일에 로그 기록
+    /// </summary>
+    private void LogToFile(string message)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(_logFilePath))
+            {
+                _logFilePath = Path.Combine(Path.GetDirectoryName(Application.dataPath), "print_log.txt");
+            }
+            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            File.AppendAllText(_logFilePath, $"[{timestamp}] {message}\n");
+        }
+        catch { }
+    }
+
+    /// <summary>
+    /// 마스크/클리핑 상세 로그 기록 - 새 캡처 시작 시 파일 초기화
+    /// </summary>
+    private void ClearLogFile()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(_logFilePath))
+            {
+                _logFilePath = Path.Combine(Path.GetDirectoryName(Application.dataPath), "print_log.txt");
+            }
+            File.WriteAllText(_logFilePath, $"=== Print Log Started: {DateTime.Now:yyyy-MM-dd HH:mm:ss} ===\n");
+        }
+        catch { }
     }
 }

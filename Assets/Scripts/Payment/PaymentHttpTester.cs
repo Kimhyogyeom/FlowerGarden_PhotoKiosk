@@ -1,6 +1,8 @@
 using System;
+using System.IO;
 using System.Text;
 using System.Collections;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using TMPro;
 using UnityEngine;
@@ -40,6 +42,16 @@ public class PaymentHttpTester : MonoBehaviour
     [Header("⚠ HTTPS 인증서 검증 무시 (테스트용)")]
     [SerializeField] private bool _ignoreCertificateError = false;
 
+    [Header("로컬 백업 설정")]
+    [Tooltip("K1 승인 성공 시 백엔드 실패해도 다음 화면으로 진행")]
+    [SerializeField] private bool _proceedOnK1ApprovalOnly = true;
+
+    [Tooltip("백엔드 전송 실패 시 즉시 재시도 횟수")]
+    [SerializeField] private int _immediateRetryCount = 3;
+
+    [Tooltip("재시도 간격 (초)")]
+    [SerializeField] private float _retryInterval = 2f;
+
     private bool _isRequesting = false;
     private long _msgNoCounter = 1;
 
@@ -47,6 +59,13 @@ public class PaymentHttpTester : MonoBehaviour
     private Coroutine _clearStatusCoroutine;
 
     [SerializeField] private float _messageTextTimer = 5f;
+
+    // 현재 결제 건의 고유 ID (로컬 백업에서 찾기 위해)
+    private string _currentPaymentId = null;
+
+    // 로컬 백업 파일 경로
+    private string BackupFolderPath => Path.Combine(Application.dataPath, "..", "PaymentBackup");
+    private string BackupFilePath => Path.Combine(BackupFolderPath, "failed_payments.json");
     /// <summary>
     /// HTTPS 인증서 검증 우회용 핸들러 (테스트 환경 전용)
     /// </summary>
@@ -67,6 +86,9 @@ public class PaymentHttpTester : MonoBehaviour
 
         // 시작 시에도 한 번 초기화
         ClearStatusTextImmediate();
+
+        // 앱 시작 시 미전송 결제 데이터 재전송 시도
+        StartCoroutine(RetryFailedPaymentsCoroutine());
     }
 
     private void OnDisable()
@@ -208,33 +230,103 @@ public class PaymentHttpTester : MonoBehaviour
 
             // 여기까지 왔으면 카드 승인 성공
             // Debug.Log("[PAY-HTTP] K1 REPLY 코드 = " + replyCode);
-            SetStatus("카드 승인 완료\n결과를 서버로 전송 중입니다...");
+            SetStatus("카드 승인 완료");
 
-            // 2단계: 받은 JSON 그대로 우리 서버로 전송
-            yield return StartCoroutine(ForwardK1ResponseToBackendCoroutine(k1Response, replyCode));
+            // ★ 안전 모드: K1 승인 성공 즉시 로컬에 백업 저장 (데이터 유실 방지)
+            _currentPaymentId = DateTime.Now.ToString("yyyyMMddHHmmss") + "_" + UnityEngine.Random.Range(1000, 9999);
+            SavePaymentToLocalBackup(k1Response, _currentPaymentId);
+            Debug.Log($"[PAY-HTTP] K1 승인 성공 → 로컬 백업 저장 완료 (ID: {_currentPaymentId})");
+
+            // ★ K1 승인만 성공하면 바로 다음 화면으로 전환 (사용자 경험 우선)
+            if (_proceedOnK1ApprovalOnly)
+            {
+                Debug.Log("[PAY-HTTP] K1 승인 성공 → 바로 다음 화면 전환");
+                OnAllProcessCompleted();
+            }
+
+            // 2단계: 받은 JSON 그대로 우리 서버로 전송 (백그라운드, 재시도 포함)
+            yield return StartCoroutine(ForwardK1ResponseToBackendWithRetryCoroutine(k1Response, replyCode, _currentPaymentId));
         }
 
         _isRequesting = false;
     }
 
     // ─────────────────────────────────────────────
-    // 2단계: 받은 K1 응답을 서버로 그대로 POST
+    // 2단계: 받은 K1 응답을 서버로 그대로 POST (재시도 포함)
     // ─────────────────────────────────────────────
 
-    private IEnumerator ForwardK1ResponseToBackendCoroutine(string k1Json, string replyCode)
+    private IEnumerator ForwardK1ResponseToBackendWithRetryCoroutine(string k1Json, string replyCode, string paymentId)
     {
         bool k1Approved = replyCode == "0000";
 
         if (string.IsNullOrWhiteSpace(_backendUrl))
         {
             Debug.LogError("[PAY-HTTP] Backend URL 이 비어있습니다. 인스펙터에서 _backendUrl 설정 필요");
-            ShowResultMessageTemporary("서버 URL 설정이 되어 있지 않습니다.\n관리자에게 문의해주세요.", _messageTextTimer);
+            if (!_proceedOnK1ApprovalOnly)
+            {
+                ShowResultMessageTemporary("서버 URL 설정이 되어 있지 않습니다.\n관리자에게 문의해주세요.", _messageTextTimer);
+            }
             yield break;
         }
 
-        SetStatus("결제 결과를 서버로 전송 중...");
+        // 즉시 재시도 포함해서 전송 시도
+        bool success = false;
+        int totalAttempts = _immediateRetryCount + 1; // 최초 1회 + 재시도 횟수
 
-        // 요구사항: "받은 정보 모두 그대로" → k1Json 을 그대로 보냄
+        for (int attempt = 1; attempt <= totalAttempts; attempt++)
+        {
+            Debug.Log($"[PAY-HTTP] 백엔드 전송 시도 {attempt}/{totalAttempts}");
+
+            yield return StartCoroutine(SendToBackendOnceCoroutine(k1Json, (result) => success = result));
+
+            if (success)
+            {
+                Debug.Log($"[PAY-HTTP] 백엔드 전송 성공 (시도 {attempt}회)");
+
+                // ★ 성공하면 로컬 백업에서 삭제
+                RemovePaymentFromLocalBackup(paymentId);
+                Debug.Log($"[PAY-HTTP] 로컬 백업에서 삭제 완료 (ID: {paymentId})");
+
+                // _proceedOnK1ApprovalOnly가 false일 때만 여기서 콜백
+                if (!_proceedOnK1ApprovalOnly)
+                {
+                    ShowResultMessageTemporary("결제가 정상적으로 완료되었습니다.", _messageTextTimer);
+                    OnAllProcessCompleted();
+                }
+
+                yield break; // 성공했으므로 종료
+            }
+
+            // 실패했으면 재시도 전 대기
+            if (attempt < totalAttempts)
+            {
+                Debug.Log($"[PAY-HTTP] 백엔드 전송 실패, {_retryInterval}초 후 재시도...");
+                yield return new WaitForSeconds(_retryInterval);
+            }
+        }
+
+        // 모든 시도 실패
+        Debug.LogError($"[PAY-HTTP] 백엔드 전송 최종 실패 ({totalAttempts}회 시도)");
+        Debug.Log($"[PAY-HTTP] 로컬 백업에 유지됨 (ID: {paymentId}) - 앱 재시작 시 재전송 시도");
+
+        // _proceedOnK1ApprovalOnly가 true면 이미 화면 전환됨, 메시지 표시 안 함
+        if (!_proceedOnK1ApprovalOnly && k1Approved)
+        {
+            ShowResultMessageTemporary("결제는 승인되었으나 서버와 통신에 실패했습니다.\n관리자에게 문의해주세요.", _messageTextTimer);
+        }
+
+        // (선택) 서버 연동 실패 + 승인됨 → 추후 자동 취소 구현 위치
+        if (_tryAutoCancelOnBackendFail && k1Approved)
+        {
+            TryAutoCancelPayment(k1Json);
+        }
+    }
+
+    /// <summary>
+    /// 백엔드로 1회 전송 시도 (재시도 없음)
+    /// </summary>
+    private IEnumerator SendToBackendOnceCoroutine(string k1Json, Action<bool> onComplete)
+    {
         byte[] bodyRaw = Encoding.UTF8.GetBytes(k1Json);
 
         using (UnityWebRequest request = new UnityWebRequest(_backendUrl, "POST"))
@@ -243,17 +335,12 @@ public class PaymentHttpTester : MonoBehaviour
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
 
-            // HTTPS + 우회 옵션
             if (_ignoreCertificateError &&
                 _backendUrl.StartsWith("https", StringComparison.OrdinalIgnoreCase))
             {
                 request.certificateHandler = new BypassCertificateHandler();
                 request.disposeCertificateHandlerOnDispose = true;
-                Debug.LogWarning("[PAY-HTTP] ⚠ Backend HTTPS 인증서 검증을 무시하고 요청합니다. (테스트 전용)");
             }
-
-            // Debug.Log("[PAY-HTTP] Backend HTTP POST 보내는 중... " + _backendUrl);
-            // Debug.Log("[PAY-HTTP] Backend Request Body(K1 그대로) = " + k1Json);
 
             yield return request.SendWebRequest();
 
@@ -264,102 +351,20 @@ public class PaymentHttpTester : MonoBehaviour
             bool netOk = !(request.isNetworkError || request.isHttpError);
 #endif
 
-            string backendResp = request.downloadHandler.text;
-
-            // Debug.Log("========== [PAY-HTTP] Backend 응답 수신 ==========");
-            // Debug.Log($"[PAY-HTTP] Backend HTTP Status = {statusCode}");
-            // Debug.Log("[PAY-HTTP] Backend RAW RESPONSE = " + backendResp);
-
-            // 서버 응답 JSON도 필드별로 찍어보기
-            // LogAllJsonFields(backendResp, "[PAY-HTTP] Backend RESPONSE FIELD");
-
-            // 네트워크 레벨에서 실패 (서버가 안 떠있거나, 포트/방화벽 문제 등)
             if (!netOk || statusCode == 0)
             {
-                Debug.LogError("[PAY-HTTP] Backend request.error = " + request.error);
-
-                string uiMsg;
-
-                if (k1Approved)
-                {
-                    uiMsg =
-                        "결제는 승인되었으나 서버와 통신에 실패했습니다.\n" +
-                        "관리자에게 문의하시고 승인 취소 여부를 확인해주세요.";
-                }
-                else
-                {
-                    uiMsg =
-                        "서버와 통신 중 오류가 발생했습니다.\n" +
-                        "잠시 후 다시 시도해주세요.";
-                }
-
-                ShowResultMessageTemporary(uiMsg, _messageTextTimer);
-
-                // (선택) 서버 연동 실패 + 승인됨 → 추후 자동 취소 구현 위치
-                if (_tryAutoCancelOnBackendFail && k1Approved)
-                {
-                    TryAutoCancelPayment(k1Json);
-                }
-
+                Debug.LogError($"[PAY-HTTP] Backend 요청 실패: {request.error}");
+                onComplete?.Invoke(false);
                 yield break;
             }
 
-            // 여기서부터는 서버에서 응답은 줬음 (200, 400, 500 등)
-            // 서버 스펙:
-            // 200 + {"success": true, "receiptNo": "...", "message": "저장 완료"}
-            // 400/500 + {"success": false, "message": "..."}
-
+            string backendResp = request.downloadHandler.text;
             bool isSuccess = (statusCode == 200);
             bool? bodySuccess = ExtractJsonBoolField(backendResp, "success");
             if (bodySuccess.HasValue)
                 isSuccess = isSuccess && bodySuccess.Value;
 
-            string msg = ExtractJsonStringField(backendResp, "message");
-
-            if (isSuccess)
-            {
-                // Debug.Log("[PAY-HTTP] 서버 저장 성공");
-
-                string finalMessage = string.IsNullOrEmpty(msg)
-                    ? "결제가 정상적으로 완료되었습니다."
-                    : msg;
-
-                ShowResultMessageTemporary(finalMessage, _messageTextTimer);
-
-                // ★ 이 시점이 '모든 게 끝난 시점'
-                OnAllProcessCompleted();
-            }
-            else
-            {
-                Debug.LogWarning("[PAY-HTTP] 서버 저장 실패");
-
-                string serverMsg = string.IsNullOrEmpty(msg)
-                    ? "서버에서 결제 결과 처리에 실패했습니다."
-                    : msg;
-
-                string uiMsg;
-
-                if (k1Approved)
-                {
-                    // ★ 결제는 됐는데 서버 처리만 실패한 케이스
-                    uiMsg =
-                        "결제는 승인되었으나 서버 연동에 실패했습니다.\n" +
-                        $"사유: {serverMsg}\n" +
-                        "관리자에게 문의하시고 승인 취소 여부를 확인해주세요.";
-                }
-                else
-                {
-                    uiMsg = "결제가 승인되지 않았습니다.\n" + serverMsg;
-                }
-
-                ShowResultMessageTemporary(uiMsg, _messageTextTimer);
-
-                // (선택) 승인 성공 + 서버 응답 실패 시 자동 취소 훅
-                if (_tryAutoCancelOnBackendFail && k1Approved)
-                {
-                    TryAutoCancelPayment(k1Json);
-                }
-            }
+            onComplete?.Invoke(isSuccess);
         }
     }
 
@@ -427,6 +432,318 @@ public class PaymentHttpTester : MonoBehaviour
     {
         if (_statusText != null)
             _statusText.text = string.Empty;
+    }
+
+    // ─────────────────────────────────────────────
+    // 로컬 백업 저장/로드/재전송
+    // ─────────────────────────────────────────────
+
+    /// <summary>
+    /// K1 승인 즉시 로컬에 백업 저장 (ID 포함)
+    /// </summary>
+    private void SavePaymentToLocalBackup(string k1Json, string paymentId)
+    {
+        try
+        {
+            // 폴더 생성
+            if (!Directory.Exists(BackupFolderPath))
+            {
+                Directory.CreateDirectory(BackupFolderPath);
+            }
+
+            // 기존 데이터 로드
+            List<FailedPaymentData> failedList = LoadFailedPayments();
+
+            // 새 데이터 추가
+            var newData = new FailedPaymentData
+            {
+                paymentId = paymentId,
+                savedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                amount = _amount,
+                k1Response = k1Json,
+                retryCount = 0
+            };
+            failedList.Add(newData);
+
+            // JSON으로 저장
+            string json = JsonListToString(failedList);
+            File.WriteAllText(BackupFilePath, json, Encoding.UTF8);
+
+            Debug.Log($"[PAY-HTTP] 로컬 백업 저장 완료: {BackupFilePath} (총 {failedList.Count}건)");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[PAY-HTTP] 로컬 백업 저장 실패: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 백엔드 전송 성공 시 로컬 백업에서 해당 건 삭제
+    /// </summary>
+    private void RemovePaymentFromLocalBackup(string paymentId)
+    {
+        try
+        {
+            List<FailedPaymentData> failedList = LoadFailedPayments();
+
+            int removedCount = failedList.RemoveAll(x => x.paymentId == paymentId);
+
+            if (removedCount > 0)
+            {
+                if (failedList.Count > 0)
+                {
+                    string json = JsonListToString(failedList);
+                    File.WriteAllText(BackupFilePath, json, Encoding.UTF8);
+                }
+                else
+                {
+                    // 모두 삭제되면 파일도 삭제
+                    if (File.Exists(BackupFilePath))
+                    {
+                        File.Delete(BackupFilePath);
+                    }
+                }
+                Debug.Log($"[PAY-HTTP] 로컬 백업에서 삭제 완료 (ID: {paymentId})");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[PAY-HTTP] 로컬 백업 삭제 실패: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 로컬에 저장된 실패 결제 데이터 로드
+    /// </summary>
+    private List<FailedPaymentData> LoadFailedPayments()
+    {
+        var result = new List<FailedPaymentData>();
+
+        if (!File.Exists(BackupFilePath))
+            return result;
+
+        try
+        {
+            string json = File.ReadAllText(BackupFilePath, Encoding.UTF8);
+            result = JsonStringToList(json);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[PAY-HTTP] 로컬 백업 로드 실패: {ex.Message}");
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 앱 시작 시 미전송 결제 데이터 재전송 시도
+    /// </summary>
+    private IEnumerator RetryFailedPaymentsCoroutine()
+    {
+        // 앱 시작 후 잠시 대기
+        yield return new WaitForSeconds(5f);
+
+        List<FailedPaymentData> failedList = LoadFailedPayments();
+        if (failedList.Count == 0)
+        {
+            Debug.Log("[PAY-HTTP] 미전송 결제 데이터 없음");
+            yield break;
+        }
+
+        Debug.Log($"[PAY-HTTP] 미전송 결제 데이터 {failedList.Count}건 재전송 시도");
+
+        var successIds = new List<string>(); // 성공한 ID 목록
+
+        for (int i = 0; i < failedList.Count; i++)
+        {
+            var data = failedList[i];
+            data.retryCount++;
+
+            Debug.Log($"[PAY-HTTP] 재전송 시도 #{i + 1}: {data.savedAt} (ID: {data.paymentId}, 시도 횟수: {data.retryCount})");
+
+            // 재시도 횟수 포함해서 시도
+            bool success = false;
+            int retryAttempts = _immediateRetryCount + 1;
+
+            for (int attempt = 1; attempt <= retryAttempts; attempt++)
+            {
+                yield return StartCoroutine(SendToBackendOnceCoroutine(data.k1Response, (result) => success = result));
+
+                if (success)
+                {
+                    Debug.Log($"[PAY-HTTP] 재전송 성공 #{i + 1} (시도 {attempt}회)");
+                    successIds.Add(data.paymentId);
+                    break;
+                }
+
+                if (attempt < retryAttempts)
+                {
+                    yield return new WaitForSeconds(_retryInterval);
+                }
+            }
+
+            if (!success)
+            {
+                Debug.LogWarning($"[PAY-HTTP] 재전송 최종 실패 #{i + 1} (ID: {data.paymentId})");
+            }
+
+            // 요청 간 간격
+            yield return new WaitForSeconds(1f);
+        }
+
+        // 성공한 건 삭제
+        foreach (var id in successIds)
+        {
+            RemovePaymentFromLocalBackup(id);
+        }
+
+        // 결과 로그
+        int remaining = failedList.Count - successIds.Count;
+        if (remaining > 0)
+        {
+            Debug.Log($"[PAY-HTTP] 재전송 완료 - 성공: {successIds.Count}건, 실패: {remaining}건 (다음 앱 시작 시 재시도)");
+        }
+        else
+        {
+            Debug.Log("[PAY-HTTP] 모든 미전송 건 재전송 완료");
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    // 로컬 백업용 데이터 클래스 & JSON 헬퍼
+    // ─────────────────────────────────────────────
+
+    [Serializable]
+    private class FailedPaymentData
+    {
+        public string paymentId;
+        public string savedAt;
+        public int amount;
+        public string k1Response;
+        public int retryCount;
+    }
+
+    /// <summary>
+    /// List를 JSON 문자열로 변환 (간단한 수동 직렬화)
+    /// </summary>
+    private string JsonListToString(List<FailedPaymentData> list)
+    {
+        var sb = new StringBuilder();
+        sb.Append('[');
+        for (int i = 0; i < list.Count; i++)
+        {
+            if (i > 0) sb.Append(',');
+            sb.Append('{');
+            sb.AppendFormat("\"paymentId\":\"{0}\",", EscapeJsonString(list[i].paymentId ?? ""));
+            sb.AppendFormat("\"savedAt\":\"{0}\",", EscapeJsonString(list[i].savedAt));
+            sb.AppendFormat("\"amount\":{0},", list[i].amount);
+            sb.AppendFormat("\"k1Response\":\"{0}\",", EscapeJsonString(list[i].k1Response));
+            sb.AppendFormat("\"retryCount\":{0}", list[i].retryCount);
+            sb.Append('}');
+        }
+        sb.Append(']');
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// JSON 문자열을 List로 변환 (간단한 수동 역직렬화)
+    /// </summary>
+    private List<FailedPaymentData> JsonStringToList(string json)
+    {
+        var result = new List<FailedPaymentData>();
+        if (string.IsNullOrEmpty(json) || !json.StartsWith("["))
+            return result;
+
+        // 간단한 파싱: 각 객체를 분리
+        int depth = 0;
+        int objStart = -1;
+
+        for (int i = 0; i < json.Length; i++)
+        {
+            char c = json[i];
+            if (c == '{')
+            {
+                if (depth == 0) objStart = i;
+                depth++;
+            }
+            else if (c == '}')
+            {
+                depth--;
+                if (depth == 0 && objStart >= 0)
+                {
+                    string objJson = json.Substring(objStart, i - objStart + 1);
+                    var data = ParseFailedPaymentData(objJson);
+                    if (data != null)
+                        result.Add(data);
+                    objStart = -1;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private FailedPaymentData ParseFailedPaymentData(string objJson)
+    {
+        try
+        {
+            var data = new FailedPaymentData();
+            data.paymentId = ExtractJsonStringField(objJson, "paymentId") ?? "";
+            data.savedAt = ExtractJsonStringField(objJson, "savedAt") ?? "";
+            data.k1Response = UnescapeJsonString(ExtractJsonStringField(objJson, "k1Response") ?? "");
+
+            string amountStr = ExtractJsonNumberField(objJson, "amount");
+            int.TryParse(amountStr, out data.amount);
+
+            string retryStr = ExtractJsonNumberField(objJson, "retryCount");
+            int.TryParse(retryStr, out data.retryCount);
+
+            // paymentId가 없는 기존 데이터 호환성
+            if (string.IsNullOrEmpty(data.paymentId))
+            {
+                data.paymentId = data.savedAt.Replace("-", "").Replace(":", "").Replace(" ", "") + "_legacy";
+            }
+
+            return data;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private string ExtractJsonNumberField(string json, string fieldName)
+    {
+        string pattern = "\"" + fieldName + "\"";
+        int idx = json.IndexOf(pattern, StringComparison.Ordinal);
+        if (idx < 0) return null;
+
+        idx = json.IndexOf(':', idx);
+        if (idx < 0) return null;
+
+        int start = idx + 1;
+        while (start < json.Length && char.IsWhiteSpace(json[start])) start++;
+
+        int end = start;
+        while (end < json.Length && (char.IsDigit(json[end]) || json[end] == '-'))
+            end++;
+
+        if (end > start)
+            return json.Substring(start, end - start);
+
+        return null;
+    }
+
+    private string EscapeJsonString(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return s;
+        return s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r");
+    }
+
+    private string UnescapeJsonString(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return s;
+        return s.Replace("\\\"", "\"").Replace("\\\\", "\\").Replace("\\n", "\n").Replace("\\r", "\r");
     }
 
     // ─────────────────────────────────────────────

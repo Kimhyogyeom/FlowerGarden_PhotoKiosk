@@ -60,6 +60,24 @@ public class PrintPhotoImageMapping : MonoBehaviour
     [SerializeField] private Image[] _gridBlackImagesCurrentWidth;
     [SerializeField] private Image[] _gridBlackImagesChangeWidth;
 
+    // ================= 원본 프레임 Grid (캡처 대상) =================
+
+    [Header("Source Grid (Hight) - 원본 프레임용")]
+    [Tooltip("원본 세로 프레임의 빨강 Grid")]
+    [SerializeField] private GameObject _sourceRedObjectHight;
+    [Tooltip("원본 세로 프레임의 파랑 Grid")]
+    [SerializeField] private GameObject _sourceBlueObjectHight;
+    [Tooltip("원본 세로 프레임의 검정 Grid")]
+    [SerializeField] private GameObject _sourceBlackObjectHight;
+
+    [Header("Source Grid (Width) - 원본 프레임용")]
+    [Tooltip("원본 가로 프레임의 빨강 Grid")]
+    [SerializeField] private GameObject _sourceRedObjectWidth;
+    [Tooltip("원본 가로 프레임의 파랑 Grid")]
+    [SerializeField] private GameObject _sourceBlueObjectWidth;
+    [Tooltip("원본 가로 프레임의 검정 Grid")]
+    [SerializeField] private GameObject _sourceBlackObjectWidth;
+
     // 복사된 스티커 목록 (리셋 시 삭제용)
     private List<GameObject> _copiedStickers = new List<GameObject>();
 
@@ -119,6 +137,15 @@ public class PrintPhotoImageMapping : MonoBehaviour
         if (_redObjectWidth) _redObjectWidth.SetActive(false);
         if (_blueObjectWidth) _blueObjectWidth.SetActive(false);
         if (_blackObjectWidth) _blackObjectWidth.SetActive(false);
+
+        // 원본 프레임 Grid도 전부 끄고 시작
+        if (_sourceRedObjectHight) _sourceRedObjectHight.SetActive(false);
+        if (_sourceBlueObjectHight) _sourceBlueObjectHight.SetActive(false);
+        if (_sourceBlackObjectHight) _sourceBlackObjectHight.SetActive(false);
+
+        if (_sourceRedObjectWidth) _sourceRedObjectWidth.SetActive(false);
+        if (_sourceBlueObjectWidth) _sourceBlueObjectWidth.SetActive(false);
+        if (_sourceBlackObjectWidth) _sourceBlackObjectWidth.SetActive(false);
 
         // 현재 모드에 맞는 스프라이트 배열에서 frame 선택
         Sprite frame = null;
@@ -188,8 +215,6 @@ public class PrintPhotoImageMapping : MonoBehaviour
         switch (index)
         {
             case 0: // 빨강
-                // Debug.Log("[ImageMapping] Red Frame 적용 (" + (isHightMode ? "Hight" : "Width") + ")");
-
                 if (isHightMode)
                 {
                     if (_redObject) _redObject.SetActive(true);
@@ -200,11 +225,11 @@ public class PrintPhotoImageMapping : MonoBehaviour
                     if (_redObjectWidth) _redObjectWidth.SetActive(true);
                     ApplyGrid(_gridRedImagesChangeWidth, _gridRedImagesCurrentWidth);
                 }
+                // 현재 캡처 대상 프레임에서 Grid 찾아서 활성화
+                ActivateGridInCurrentFrame("GameObjectGridRed");
                 break;
 
             case 1: // 파랑
-                // Debug.Log("[ImageMapping] Blue Frame 적용 (" + (isHightMode ? "Hight" : "Width") + ")");
-
                 if (isHightMode)
                 {
                     if (_blueObject) _blueObject.SetActive(true);
@@ -215,11 +240,11 @@ public class PrintPhotoImageMapping : MonoBehaviour
                     if (_blueObjectWidth) _blueObjectWidth.SetActive(true);
                     ApplyGrid(_gridBlueImagesChangeWidth, _gridBlueImagesCurrentWidth);
                 }
+                // 현재 캡처 대상 프레임에서 Grid 찾아서 활성화
+                ActivateGridInCurrentFrame("GameObjectGridBlue");
                 break;
 
             case 2: // 검정
-                // Debug.Log("[ImageMapping] Black Frame 적용 (" + (isHightMode ? "Hight" : "Width") + ")");
-
                 if (isHightMode)
                 {
                     if (_blackObject) _blackObject.SetActive(true);
@@ -230,11 +255,59 @@ public class PrintPhotoImageMapping : MonoBehaviour
                     if (_blackObjectWidth) _blackObjectWidth.SetActive(true);
                     ApplyGrid(_gridBlackImagesChangeWidth, _gridBlackImagesCurrentWidth);
                 }
+                // 현재 캡처 대상 프레임에서 Grid 찾아서 활성화
+                ActivateGridInCurrentFrame("GameObjectGridBlack");
                 break;
         }
 
         // 스티커 복사 (원본 프레임 → 프린트용 프레임)
         CopyStickersToTarget(isHightMode);
+    }
+
+    /// <summary>
+    /// 현재 캡처 대상 프레임에서 이름으로 Grid를 찾아 활성화
+    /// </summary>
+    private void ActivateGridInCurrentFrame(string gridName)
+    {
+        if (_stickerPanelCtrl == null) return;
+
+        var currentFrame = _stickerPanelCtrl.GetCurrentFrame();
+        if (currentFrame == null)
+        {
+            Debug.LogWarning($"[ImageMapping] CurrentFrame이 null - {gridName} 활성화 실패");
+            return;
+        }
+
+        // 현재 프레임의 모든 Grid를 먼저 비활성화
+        DeactivateAllGridsInFrame(currentFrame.transform);
+
+        // 지정된 Grid만 활성화
+        var gridTransform = currentFrame.transform.Find(gridName);
+        if (gridTransform != null)
+        {
+            gridTransform.gameObject.SetActive(true);
+            Debug.Log($"[ImageMapping] ★ {gridName} 활성화됨 (CurrentFrame 내), activeInHierarchy={gridTransform.gameObject.activeInHierarchy}");
+        }
+        else
+        {
+            Debug.LogWarning($"[ImageMapping] {gridName}을 CurrentFrame에서 찾을 수 없음");
+        }
+    }
+
+    /// <summary>
+    /// 프레임 내 모든 Grid 오브젝트 비활성화
+    /// </summary>
+    private void DeactivateAllGridsInFrame(Transform frame)
+    {
+        string[] gridNames = { "GameObjectGridRed", "GameObjectGridBlue", "GameObjectGridBlack" };
+        foreach (var name in gridNames)
+        {
+            var grid = frame.Find(name);
+            if (grid != null)
+            {
+                grid.gameObject.SetActive(false);
+            }
+        }
     }
 
     /// <summary>
