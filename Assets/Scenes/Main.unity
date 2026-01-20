@@ -16645,10 +16645,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c393ad33b46fab479138c7678d73d9d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _resetButtonImage: {fileID: 0}
+  _resetButtonImage: {fileID: 1832467709}
   _requiredClicks: 10
   _resetPaperCount: 690
-  _paperEmptyUI: {fileID: 0}
+  _paperEmptyUI: {fileID: 732606970}
   _debugCountText: {fileID: 0}
 --- !u!1 &600889016
 GameObject:
@@ -19301,12 +19301,12 @@ GameObject:
   - component: {fileID: 732606973}
   - component: {fileID: 732606972}
   m_Layer: 5
-  m_Name: RawImageBackground_1
+  m_Name: RawImageDescription
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &732606971
 RectTransform:
   m_ObjectHideFlags: 0
@@ -19349,7 +19349,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 0
+  m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
