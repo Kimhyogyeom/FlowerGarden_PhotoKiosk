@@ -380,7 +380,8 @@ public class PrintController : MonoBehaviour
         {
             Debug.Log("[Print] 고해상도 캡처 시도 중...");
             bool highResReady = false;
-            _webcamPreview.CaptureHighResolution((tex) => {
+            _webcamPreview.CaptureHighResolution((tex) =>
+            {
                 highResReady = true;
                 if (tex != null)
                 {
