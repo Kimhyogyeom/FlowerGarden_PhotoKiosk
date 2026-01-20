@@ -30,3 +30,6 @@ sysinfo.txt
 # NCP 인증 키 (절대 커밋하지 마세요!)
 Assets/StreamingAssets/ncp_secrets.json
 Assets/StreamingAssets/ncp_secrets.json.meta
+
+# 운영 매뉴얼 문서 (외부 배포용)
+MANUAL_*.md

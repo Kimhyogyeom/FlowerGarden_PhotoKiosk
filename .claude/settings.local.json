@@ -11,7 +11,8 @@
       "Bash(git push:*)",
       "Bash(Select-Object -First 3 -ExpandProperty FullName)",
       "Bash(findstr:*)",
-      "Bash(del \"\\\\?\\\\c:\\\\Unity_Project\\\\HW_PhotKiosks\\\\nul\")"
+      "Bash(del \"\\\\?\\\\c:\\\\Unity_Project\\\\HW_PhotKiosks\\\\nul\")",
+      "Bash(find:*)"
     ]
   }
 }
