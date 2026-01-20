@@ -803,6 +803,13 @@ public class PrintController : MonoBehaviour
         }
 
         StopProgressUI();
+
+        // 용지 카운터 감소
+        if (PaperCounterManager.Instance != null)
+        {
+            PaperCounterManager.Instance.OnPrintCompleted();
+        }
+
         onDone?.Invoke();
     }
 
