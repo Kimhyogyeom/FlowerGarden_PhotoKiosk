@@ -31,6 +31,8 @@ public class PaperCounterManager : MonoBehaviour
 
     [Header("용지 부족 UI")]
     [SerializeField] private GameObject _paperEmptyUI;
+    [Tooltip("이 값 이하일 때 용지 부족 UI 표시")]
+    [SerializeField] private int _lowPaperThreshold = 20;
 
     [Header("디버그")]
     [SerializeField] private Text _debugCountText;
@@ -50,7 +52,7 @@ public class PaperCounterManager : MonoBehaviour
     /// <summary>
     /// 용지가 비었는지 여부
     /// </summary>
-    public bool IsPaperEmpty => CurrentCount <= 0;
+    public bool IsPaperEmpty => CurrentCount <= _lowPaperThreshold;
 
     /// <summary>
     /// 용지 카운트 변경 이벤트
@@ -186,7 +188,7 @@ public class PaperCounterManager : MonoBehaviour
         // 용지 부족 UI 활성화/비활성화
         if (_paperEmptyUI != null)
         {
-            _paperEmptyUI.SetActive(_data.currentCount <= 0);
+            _paperEmptyUI.SetActive(_data.currentCount <= _lowPaperThreshold);
         }
 
         // 디버그 텍스트 업데이트

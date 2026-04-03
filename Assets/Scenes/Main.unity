@@ -16650,6 +16650,7 @@ MonoBehaviour:
   _requiredClicks: 10
   _resetPaperCount: 700
   _paperEmptyUI: {fileID: 732606970}
+  _lowPaperThreshold: 30
   _debugCountText: {fileID: 0}
 --- !u!1 &600889016
 GameObject:

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "unity": {
+      "source": "yuemori/UnityMCPTest",
+      "sourceType": "github",
+      "computedHash": "9f516c9a2956e48340cb2aa2743322a4d5a1593e0fad18a05456b6a27de0b6e7"
+    }
+  }
+}
