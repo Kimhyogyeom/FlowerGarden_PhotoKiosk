@@ -1,0 +1,15 @@
+{
+    "currentCount": 700,
+    "lastResetTime": "2026-04-08 16:47:15",
+    "resetCount": 1,
+    "totalPrintCount": 0,
+    "logs": [
+        {
+            "timestamp": "2026-04-08 16:47:15",
+            "action": "RESET",
+            "beforeCount": 0,
+            "afterCount": 700,
+            "message": "용지 교체 완료 (700장으로 리셋)"
+        }
+    ]
+}

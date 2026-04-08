@@ -28,7 +28,7 @@ public class PrintController : MonoBehaviour
     [SerializeField] private bool _usePrinterBridge = true;
     [SerializeField] private string _bridgeExeName = "PhotoPrinterBridge.exe";
     [SerializeField, Min(1)] private int _bridgeCopies = 1;
-    [SerializeField] private float _bridgeTimeoutSeconds = 60f;
+    [SerializeField] private float _bridgeTimeoutSeconds = 90f;
 
     [Header("Timing")]
     [SerializeField] private float _captureStartDelay = 1f;
@@ -344,23 +344,38 @@ public class PrintController : MonoBehaviour
         // Debug.Log("[Print] ResetPrintState: 초기화 완료");
     }
 
+    // ===== Print Error Log =====
+
+    private static string PrintLogFilePath => Path.Combine(Path.GetFullPath(Path.Combine(Application.dataPath, "..")), "print_error_log.txt");
+
+    private static void WritePrintLog(string level, string message)
+    {
+        try
+        {
+            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            string line = $"[{timestamp}] [{level}] {message}\n";
+            File.AppendAllText(PrintLogFilePath, line);
+        }
+        catch { }
+    }
+
     // ===== 외부 API =====
 
     public void PrintRawImage(Image image, Action onDone, params GameObject[] toHideTemporarily)
     {
-        if (!image) { Debug.LogError("[Print] Image is null"); onDone?.Invoke(); return; }
+        if (!image) { Debug.LogError("[Print] Image is null"); WritePrintLog("ERROR", "PrintRawImage: Image is null"); onDone?.Invoke(); return; }
         PrintUIArea(image.rectTransform, onDone, toHideTemporarily);
     }
 
     public void PrintRawImage(RawImage rawImage, Action onDone, params GameObject[] toHideTemporarily)
     {
-        if (!rawImage) { Debug.LogError("[Print] RawImage is null"); onDone?.Invoke(); return; }
+        if (!rawImage) { Debug.LogError("[Print] RawImage is null"); WritePrintLog("ERROR", "PrintRawImage: RawImage is null"); onDone?.Invoke(); return; }
         PrintUIArea(rawImage.rectTransform, onDone, toHideTemporarily);
     }
 
     public void PrintUIArea(RectTransform target, Action onDone, params GameObject[] toHideTemporarily)
     {
-        if (!target) { Debug.LogError("[Print] target RectTransform is null"); onDone?.Invoke(); return; }
+        if (!target) { Debug.LogError("[Print] target RectTransform is null"); WritePrintLog("ERROR", "PrintUIArea: target RectTransform is null"); onDone?.Invoke(); return; }
         StartCoroutine(CaptureAndPrintRoutine(target, onDone, toHideTemporarily));
     }
 
@@ -368,7 +383,7 @@ public class PrintController : MonoBehaviour
 
     private IEnumerator CaptureAndPrintRoutine(RectTransform target, Action onDone, GameObject[] toHide)
     {
-        if (!target) { Debug.LogError("[Print] CaptureAndPrintRoutine: target is null"); onDone?.Invoke(); yield break; }
+        if (!target) { Debug.LogError("[Print] CaptureAndPrintRoutine: target is null"); WritePrintLog("ERROR", "CaptureAndPrintRoutine: target is null"); onDone?.Invoke(); yield break; }
 
         if (_captureStartDelay > 0f)
             yield return new WaitForSeconds(_captureStartDelay);
@@ -590,6 +605,7 @@ public class PrintController : MonoBehaviour
         if (tex == null)
         {
             Debug.LogError("[Print] Capture failed (null texture)");
+            WritePrintLog("ERROR", "Capture failed (null texture) - 캡처 실패로 인쇄 건너뜀");
             onDone?.Invoke();
             yield break;
         }
@@ -770,8 +786,19 @@ public class PrintController : MonoBehaviour
         string filename = $"photo_raw_{timestamp}.png";
         string savePath = Path.Combine(folderPath, filename);
 
-        File.WriteAllBytes(savePath, tex.EncodeToPNG());
-        // Debug.Log($"[Print] 프린터용 저장 완료: {savePath} ({tex.width}x{tex.height})");
+        try
+        {
+            File.WriteAllBytes(savePath, tex.EncodeToPNG());
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[Print] 파일 저장 실패: {e.Message}");
+            WritePrintLog("ERROR", $"파일 저장 실패: {savePath} / {e.Message}");
+            Destroy(tex);
+            onDone?.Invoke();
+            yield break;
+        }
+        WritePrintLog("INFO", $"인쇄 시작 - 파일 저장 완료: {savePath} ({tex.width}x{tex.height})");
         Destroy(tex);
 
         // ✅ 저장 직후 업로드+QR (옵션) - QR용 파일 사용
@@ -1270,7 +1297,7 @@ public class PrintController : MonoBehaviour
         return dst;
     }
 
-    // ===== Bridge 인쇄 =====
+    // ===== Bridge 인쇄 (1회 자동 재시도 포함) =====
     private IEnumerator PrintViaBridgeAndNotify(string imagePath, bool isLandscapeMode)
     {
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
@@ -1280,6 +1307,7 @@ public class PrintController : MonoBehaviour
         if (!File.Exists(bridgePath))
         {
             Debug.LogWarning($"[Print] Bridge exe not found: {bridgePath} -> legacy print로 폴백");
+            WritePrintLog("WARN", $"Bridge exe 없음: {bridgePath} -> legacy 폴백");
             yield return StartCoroutine(PrintAndNotifyLegacy(imagePath));
             yield break;
         }
@@ -1287,58 +1315,93 @@ public class PrintController : MonoBehaviour
         int unityCopies = Mathf.Max(1, _printCount);
         int bridgeCopies = Mathf.Max(1, _bridgeCopies);
         int totalCopies = unityCopies * bridgeCopies;
-
         float timeout = Mathf.Max(5f, _bridgeTimeoutSeconds);
-
-        Process proc = null;
-        bool started = false;
-
         string landscapeFlag = isLandscapeMode ? "1" : "0";
 
-        try
+        const int maxAttempts = 2; // 최초 1회 + 재시도 1회
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++)
         {
-            var psi = new ProcessStartInfo(bridgePath)
+            Process proc = null;
+            bool started = false;
+
+            try
             {
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                Arguments = $"\"{imagePath}\" {totalCopies} {timeout} \"{_printerName}\" {landscapeFlag}"
-            };
+                var psi = new ProcessStartInfo(bridgePath)
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    Arguments = $"\"{imagePath}\" {totalCopies} {timeout} \"{_printerName}\" {landscapeFlag}"
+                };
 
-            // Debug.Log($"[Print] Bridge start: {psi.FileName} {psi.Arguments}");
-            proc = Process.Start(psi);
-            started = (proc != null);
-        }
-        catch (Exception e)
-        {
-            Debug.LogError($"[Print] Bridge 예외 발생(시작 실패): {e.Message}");
-            started = false;
+                proc = Process.Start(psi);
+                started = (proc != null);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[Print] Bridge 예외 발생(시작 실패): {e.Message}");
+                WritePrintLog("ERROR", $"Bridge 시작 예외 (시도 {attempt}/{maxAttempts}): {e.Message}");
+                started = false;
+            }
+
+            if (!started)
+            {
+                if (attempt < maxAttempts)
+                {
+                    WritePrintLog("WARN", $"Bridge 시작 실패 (시도 {attempt}/{maxAttempts}) -> 3초 후 재시도");
+                    yield return new WaitForSeconds(3f);
+                    continue;
+                }
+
+                Debug.LogWarning("[Print] Bridge 프로세스 시작 실패 -> legacy print로 폴백");
+                WritePrintLog("ERROR", "Bridge 프로세스 시작 최종 실패 -> legacy 폴백");
+                yield return StartCoroutine(PrintAndNotifyLegacy(imagePath));
+                yield break;
+            }
+
+            float elapsed = 0f;
+            while (!proc.HasExited && elapsed < timeout)
+            {
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            if (!proc.HasExited)
+            {
+                try { proc.Kill(); } catch { }
+                Debug.LogWarning("[Print] Bridge timeout 초과, 프로세스 강제 종료");
+                WritePrintLog("ERROR", $"Bridge 타임아웃 ({timeout}초 초과) (시도 {attempt}/{maxAttempts}). 이미지: {imagePath}");
+
+                if (attempt < maxAttempts)
+                {
+                    WritePrintLog("WARN", "타임아웃 후 3초 대기 → 재시도");
+                    yield return new WaitForSeconds(3f);
+                    continue;
+                }
+            }
+            else
+            {
+                int exitCode = proc.ExitCode;
+                if (exitCode != 0)
+                {
+                    Debug.LogWarning($"[Print] Bridge 비정상 종료 (exit code: {exitCode})");
+                    WritePrintLog("ERROR", $"Bridge 비정상 종료 (exit code: {exitCode}) (시도 {attempt}/{maxAttempts}). 이미지: {imagePath}");
+
+                    if (attempt < maxAttempts)
+                    {
+                        WritePrintLog("WARN", "비정상 종료 후 3초 대기 → 재시도");
+                        yield return new WaitForSeconds(3f);
+                        continue;
+                    }
+                }
+                else
+                {
+                    WritePrintLog("OK", $"Bridge 인쇄 정상 완료 (copies: {totalCopies}, 시도 {attempt}/{maxAttempts}). 이미지: {imagePath}");
+                    break; // 성공 → 루프 탈출
+                }
+            }
         }
 
-        if (!started)
-        {
-            Debug.LogWarning("[Print] Bridge 프로세스 시작 실패 -> legacy print로 폴백");
-            yield return StartCoroutine(PrintAndNotifyLegacy(imagePath));
-            yield break;
-        }
-
-        float elapsed = 0f;
-        while (!proc.HasExited && elapsed < timeout)
-        {
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
-
-        if (!proc.HasExited)
-        {
-            try { proc.Kill(); } catch { }
-            Debug.LogWarning("[Print] Bridge timeout 초과, 프로세스 강제 종료");
-        }
-        else
-        {
-            // Debug.Log("[Print] Bridge 인쇄 완료 (또는 정상 종료)");
-        }
-
-        // Debug.Log("출력 완료! (Bridge)");
         if (_outputSuccessCtrl) _outputSuccessCtrl.OutputSuccessObjChange();
 #else
         yield return StartCoroutine(PrintAndNotifyLegacy(imagePath));
@@ -1371,6 +1434,7 @@ public class PrintController : MonoBehaviour
             catch (Exception e)
             {
                 Debug.LogError($"[Print] printto failed: {e.Message} -> OS print fallback");
+                WritePrintLog("ERROR", $"Legacy printto 실패: {e.Message}");
             }
         }
 
@@ -1395,13 +1459,19 @@ public class PrintController : MonoBehaviour
             catch (Exception e)
             {
                 Debug.LogError($"[Print] OS print failed: {e.Message}");
+                WritePrintLog("ERROR", $"Legacy OS print 실패: {e.Message}");
             }
         }
 
         if (!started)
         {
             Debug.LogWarning("[Print] No print process started");
+            WritePrintLog("ERROR", $"Legacy 인쇄 프로세스 시작 완전 실패. 이미지: {imagePath}");
             yield break;
+        }
+        else
+        {
+            WritePrintLog("OK", $"Legacy 인쇄 프로세스 시작 완료. 이미지: {imagePath}");
         }
 
         if (needAutoConfirm)
